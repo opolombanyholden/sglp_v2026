@@ -2,6 +2,13 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Operator\GuideController;
+use App\Http\Controllers\Operator\DossierController;
+use App\Http\Controllers\Operator\AdherentController;
+use App\Http\Controllers\Operator\DeclarationController;
+use App\Http\Controllers\Operator\DocumentController;
+use App\Http\Controllers\Operator\MessageController;
+use App\Http\Controllers\Operator\OrganisationController;
+use App\Http\Controllers\Operator\ProfileController;
 
 /*
 |--------------------------------------------------------------------------
