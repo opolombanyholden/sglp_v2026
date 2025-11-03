@@ -1112,9 +1112,9 @@
             </li>
             @endif
             
-            @if(Route::has('admin.geolocalisation.communes.index'))
+            @if(Route::has('admin.geolocalisation.communes-villes.index'))
             <li class="nav-item">
-                <a href="{{ route('admin.geolocalisation.communes.index') }}" class="nav-link-custom {{ request()->routeIs('admin.geolocalisation.communes.*') ? 'active' : '' }}">
+                <a href="{{ route('admin.geolocalisation.communes-villes.index') }}" class="nav-link-custom {{ request()->routeIs('admin.geolocalisation.communes.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-city"></i>
                     <span class="nav-text">Communes/Villes</span>
                 </a>

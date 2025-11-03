@@ -508,7 +508,8 @@ Route::middleware(['web', 'auth', 'verified', 'operator'])->prefix('operator')->
     */
     Route::prefix('dossiers')->name('dossiers.')->group(function () {
         Route::get('/', [DossierController::class, 'index'])->name('index');
-        Route::get('/create/{type?}', [DossierController::class, 'create'])->name('create');
+        Route::get('/create', [DossierController::class, 'create'])->name('create');
+        Route::get('/create/{type}', [DossierController::class, 'create'])->name('create-type');
         Route::post('/', [DossierController::class, 'store'])->name('store');
         Route::get('/{dossier}', [DossierController::class, 'show'])->name('show');
         Route::get('/{dossier}/edit', [DossierController::class, 'edit'])->name('edit');

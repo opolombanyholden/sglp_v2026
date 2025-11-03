@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\RolesController;
 use App\Http\Controllers\Admin\PermissionsController;
 use App\Http\Controllers\Admin\PermissionMatrixController;
 use App\Http\Controllers\Admin\ValidationEntityController;
+use App\Http\Controllers\Admin\WorkflowStepController; // ✅ NOUVEAU - 02/11/2025
 
 
 
@@ -344,10 +345,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸŒ TERRITOIRES - HIÃ‰RARCHIE GÃ‰OGRAPHIQUE COMPLÃˆTE
+    | ðŸŒ geolocalisation - HIÃ‰RARCHIE GÃ‰OGRAPHIQUE COMPLÃˆTE
     |--------------------------------------------------------------------------
     */
-    Route::prefix('territoires')->name('territoires.')->group(function () {
+    Route::prefix('geolocalisation')->name('geolocalisation.')->group(function () {
         
         // PROVINCES
         Route::prefix('provinces')->name('provinces.')->group(function () {
@@ -590,6 +591,56 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         Route::put('/{id}', [ValidationEntityController::class, 'update'])->name('update');
         Route::delete('/{id}', [ValidationEntityController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/toggle-status', [ValidationEntityController::class, 'toggleStatus'])->name('toggle-status');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | ⚙️ MODULE WORKFLOW STEPS - GESTION DES ÉTAPES DE WORKFLOW ⭐ NOUVEAU
+    |--------------------------------------------------------------------------
+    | Gestion complète des étapes du workflow de validation
+    | ✅ Ajouté le : 02/11/2025
+    | ✅ 12 routes (7 CRUD + 5 custom)
+    | 
+    | Fonctionnalités :
+    | - CRUD complet des étapes
+    | - Timeline visuelle avec ordre
+    | - Drag & drop pour réorganisation
+    | - Statistiques avancées
+    | - Duplication d'étapes
+    | - Export de configuration
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('workflow-steps')->name('workflow-steps.')->group(function () {
+    
+        // ========== ROUTES AVEC CHEMINS FIXES EN PREMIER ==========
+        
+        Route::get('/', [WorkflowStepController::class, 'index'])->name('index');
+        Route::get('/create', [WorkflowStepController::class, 'create'])->name('create');
+        
+        // ⭐ ROUTES DE CONFIGURATION (AVANT /{id}) ⭐
+        Route::get('/configure', [WorkflowStepController::class, 'configure'])->name('configure');
+        Route::post('/configure/save', [WorkflowStepController::class, 'saveConfiguration'])->name('configure.save');
+        Route::get('/timeline', [WorkflowStepController::class, 'timeline'])->name('timeline');
+        
+        // Routes AJAX
+        Route::post('/{stepId}/assign-entity', [WorkflowStepController::class, 'assignEntity'])->name('assign-entity');
+        Route::delete('/{stepId}/remove-entity/{entityId}', [WorkflowStepController::class, 'removeEntity'])->name('remove-entity');
+        Route::post('/{stepId}/reorder-entities', [WorkflowStepController::class, 'reorderEntities'])->name('reorder-entities');
+        
+        // Toggle, reorder, duplicate, export, statistics
+        Route::patch('/{id}/toggle-status', [WorkflowStepController::class, 'toggleStatus'])->name('toggle-status');
+        Route::post('/reorder', [WorkflowStepController::class, 'reorder'])->name('reorder');
+        Route::post('/{id}/duplicate', [WorkflowStepController::class, 'duplicate'])->name('duplicate');
+        Route::get('/export', [WorkflowStepController::class, 'export'])->name('export');
+        Route::get('/{id}/statistics', [WorkflowStepController::class, 'statistics'])->name('statistics');
+        
+        // ========== ROUTES AVEC PARAMÈTRES DYNAMIQUES À LA FIN ==========
+        
+        Route::get('/{id}', [WorkflowStepController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [WorkflowStepController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [WorkflowStepController::class, 'update'])->name('update');
+        Route::delete('/{id}', [WorkflowStepController::class, 'destroy'])->name('destroy');
+        Route::post('/', [WorkflowStepController::class, 'store'])->name('store');
     });
 
 });

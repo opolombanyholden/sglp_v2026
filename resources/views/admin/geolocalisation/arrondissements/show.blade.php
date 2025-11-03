@@ -104,7 +104,7 @@
                                 <tr>
                                     <th width="40%" class="text-muted">Commune/Ville :</th>
                                     <td>
-                                        <a href="{{ route('admin.geolocalisation.communes.show', $arrondissement->communeVille) }}">
+                                        <a href="{{ route('admin.geolocalisation.communes-villes.show', $arrondissement->communeVille) }}">
                                             {{ $arrondissement->communeVille->nom }}
                                         </a>
                                         <small class="text-muted d-block">{{ ucfirst($arrondissement->communeVille->type) }}</small>

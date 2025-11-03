@@ -12,7 +12,7 @@
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Administration</a></li>
                         <li class="breadcrumb-item"><a href="#">Géolocalisation</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.geolocalisation.communes.index') }}">Communes & Villes</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.geolocalisation.communes-villes.index') }}">Communes & Villes</a></li>
                         <li class="breadcrumb-item active">Nouvelle</li>
                     </ol>
                 </div>
@@ -23,7 +23,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ route('admin.geolocalisation.communes.store') }}" id="commune-ville-form">
+    <form method="POST" action="{{ route('admin.geolocalisation.communes-villes.store') }}" id="commune-ville-form">
         @csrf
 
         <div class="row">
@@ -269,7 +269,7 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="mdi mdi-content-save"></i> Enregistrer
                             </button>
-                            <a href="{{ route('admin.geolocalisation.communes.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('admin.geolocalisation.communes-villes.index') }}" class="btn btn-secondary">
                                 <i class="mdi mdi-arrow-left"></i> Retour à la liste
                             </a>
                         </div>

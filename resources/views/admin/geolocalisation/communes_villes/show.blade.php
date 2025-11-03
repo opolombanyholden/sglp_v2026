@@ -12,7 +12,7 @@
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Administration</a></li>
                         <li class="breadcrumb-item"><a href="#">Géolocalisation</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.geolocalisation.communes.index') }}">Communes & Villes</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.geolocalisation.communes-villes.index') }}">Communes & Villes</a></li>
                         <li class="breadcrumb-item active">{{ $communeVille->nom }}</li>
                     </ol>
                 </div>
@@ -39,10 +39,10 @@
                             </span>
                         </div>
                         <div class="btn-group">
-                            <a href="{{ route('admin.geolocalisation.communes.edit', $communeVille) }}" class="btn btn-warning">
+                            <a href="{{ route('admin.geolocalisation.communes-villes.edit', $communeVille) }}" class="btn btn-warning">
                                 <i class="mdi mdi-pencil"></i> Modifier
                             </a>
-                            <a href="{{ route('admin.geolocalisation.communes.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('admin.geolocalisation.communes-villes.index') }}" class="btn btn-secondary">
                                 <i class="mdi mdi-arrow-left"></i> Retour à la liste
                             </a>
                         </div>
@@ -444,7 +444,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <form action="{{ route('admin.geolocalisation.communes.destroy', $communeVille) }}" method="POST" style="display: inline;">
+                <form action="{{ route('admin.geolocalisation.communes-villes.destroy', $communeVille) }}" method="POST" style="display: inline;">
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn-danger">

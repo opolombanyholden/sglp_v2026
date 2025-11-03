@@ -12,7 +12,7 @@
                     <ol class="breadcrumb m-0">
                         <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Administration</a></li>
                         <li class="breadcrumb-item"><a href="#">Géolocalisation</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('admin.geolocalisation.communes.index') }}">Communes & Villes</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('admin.geolocalisation.communes-villes.index') }}">Communes & Villes</a></li>
                         <li class="breadcrumb-item active">Modifier</li>
                     </ol>
                 </div>
@@ -38,7 +38,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('admin.geolocalisation.communes.update', $communeVille) }}" id="commune-ville-form">
+    <form method="POST" action="{{ route('admin.geolocalisation.communes-villes.update', $communeVille) }}" id="commune-ville-form">
         @csrf
         @method('PUT')
 
@@ -298,10 +298,10 @@
                             <button type="submit" class="btn btn-primary">
                                 <i class="mdi mdi-content-save"></i> Mettre à jour
                             </button>
-                            <a href="{{ route('admin.geolocalisation.communes.show', $communeVille) }}" class="btn btn-info">
+                            <a href="{{ route('admin.geolocalisation.communes-villes.show', $communeVille) }}" class="btn btn-info">
                                 <i class="mdi mdi-eye"></i> Voir les détails
                             </a>
-                            <a href="{{ route('admin.geolocalisation.communes.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('admin.geolocalisation.communes-villes.index') }}" class="btn btn-secondary">
                                 <i class="mdi mdi-arrow-left"></i> Retour à la liste
                             </a>
                         </div>

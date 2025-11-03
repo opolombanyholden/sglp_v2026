@@ -166,7 +166,7 @@
                                             <small class="text-muted">Code: {{ $arrondissement->code }}</small>
                                         </td>
                                         <td>
-                                            <a href="{{ route('admin.geolocalisation.communes.show', $arrondissement->communeVille) }}" 
+                                            <a href="{{ route('admin.geolocalisation.communes-villes.show', $arrondissement->communeVille) }}" 
                                                class="text-decoration-none">
                                                 {{ $arrondissement->communeVille->nom }}
                                             </a>

@@ -47,13 +47,13 @@
                         <h5 class="card-title mb-0">
                             <i class="mdi mdi-filter-variant"></i> Filtres et Actions
                         </h5>
-                        <a href="{{ route('admin.geolocalisation.communes.create') }}" class="btn btn-primary">
+                        <a href="{{ route('admin.geolocalisation.communes-villes.create') }}" class="btn btn-primary">
                             <i class="mdi mdi-plus-circle"></i> Nouvelle Commune/Ville
                         </a>
                     </div>
                 </div>
                 <div class="card-body">
-                    <form method="GET" action="{{ route('admin.geolocalisation.communes.index') }}" class="row g-3">
+                    <form method="GET" action="{{ route('admin.geolocalisation.communes-villes.index') }}" class="row g-3">
                         <div class="col-md-3">
                             <label class="form-label">Département</label>
                             <select name="departement_id" class="form-select">
@@ -190,12 +190,12 @@
                                             </td>
                                             <td>
                                                 <div class="btn-group btn-group-sm">
-                                                    <a href="{{ route('admin.geolocalisation.communes.show', $communeVille) }}" 
+                                                    <a href="{{ route('admin.geolocalisation.communes-villes.show', $communeVille) }}" 
                                                        class="btn btn-soft-info" 
                                                        title="Voir les détails">
                                                         <i class="mdi mdi-eye"></i>
                                                     </a>
-                                                    <a href="{{ route('admin.geolocalisation.communes.edit', $communeVille) }}" 
+                                                    <a href="{{ route('admin.geolocalisation.communes-villes.edit', $communeVille) }}" 
                                                        class="btn btn-soft-warning" 
                                                        title="Modifier">
                                                         <i class="mdi mdi-pencil"></i>
@@ -240,7 +240,7 @@
                                     Commencez par ajouter votre première commune ou ville.
                                 @endif
                             </p>
-                            <a href="{{ route('admin.geolocalisation.communes.create') }}" class="btn btn-primary">
+                            <a href="{{ route('admin.geolocalisation.communes-villes.create') }}" class="btn btn-primary">
                                 <i class="mdi mdi-plus-circle"></i> Ajouter une Commune/Ville
                             </a>
                         </div>
