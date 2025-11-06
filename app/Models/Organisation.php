@@ -227,6 +227,22 @@ class Organisation extends Model
             ->where('is_active', true);
     }
 
+    public function personnes()
+    {
+        // Retourner une collection fusionnant fondateurs et adhérents
+        $fondateurs = $this->fondateurs()->get()->map(function($f) {
+            $f->setAttribute('type_personne', 'fondateur');
+            return $f;
+        });
+        
+        $adherents = $this->adherents()->get()->map(function($a) {
+            $a->setAttribute('type_personne', 'adherent');
+            return $a;
+        });
+        
+        return $fondateurs->merge($adherents);
+    }
+
     /**
      * Relation : Établissements de l'organisation
      * 

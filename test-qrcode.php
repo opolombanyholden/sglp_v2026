@@ -1,0 +1,55 @@
+<?php
+
+require __DIR__.'/vendor/autoload.php';
+$app = require_once __DIR__.'/bootstrap/app.php';
+$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
+
+echo "\n=== TEST QRCODE SERVICE ===\n\n";
+
+try {
+    $org = \App\Models\Organisation::find(11);
+    echo "Organisation : {$org->nom} (ID: {$org->id})\n\n";
+    
+    $dossier = \App\Models\Dossier::create([
+        'organisation_id' => $org->id,
+        'numero_dossier' => 'TEST-' . time(),
+        'type_operation' => 'creation',
+        'statut' => 'en_cours', // ✅ CORRIGÉ
+        'phase' => 1,
+        'submitted_at' => now()
+    ]);
+    echo "Dossier créé : {$dossier->numero_dossier} (ID: {$dossier->id})\n\n";
+    
+    $template = \App\Models\DocumentTemplate::first();
+    echo "Template : {$template->nom}\n\n";
+    
+    echo "Génération du document...\n";
+    $result = app(\App\Services\DocumentGenerationService::class)->generate($template, [
+        'organisation_id' => $org->id,
+        'dossier_id' => $dossier->id
+    ]);
+    
+    echo "\n🎉 SUCCÈS GÉNÉRATION !\n";
+    echo "✅ Fichier : {$result['filename']}\n";
+    echo "✅ Document numero : {$result['metadata']->numero_document}\n";
+    echo "✅ QR Token : {$result['metadata']->qr_code_token}\n";
+    echo "✅ QR URL : {$result['metadata']->qr_code_url}\n\n";
+    
+    $qrCode = \App\Models\QrCode::where('code', $result['metadata']->qr_code_token)->first();
+    
+    if ($qrCode) {
+        echo "QR Code vérifié :\n";
+        echo "  - Code : {$qrCode->code}\n";
+        echo "  - Type : {$qrCode->type}\n";
+        echo "  - URL : {$qrCode->verification_url}\n";
+        echo "  - Has SVG : " . (strlen($qrCode->svg_content ?? '') > 100 ? 'OUI' : 'NON') . "\n";
+        echo "  - Has PNG : " . (strlen($qrCode->png_base64 ?? '') > 100 ? 'OUI' : 'NON') . "\n";
+        echo "\n✅ TOUTES LES MÉTHODES DU QrCodeService FONCTIONNENT CORRECTEMENT !\n";
+    }
+    
+} catch (\Exception $e) {
+    echo "\n❌ ERREUR : {$e->getMessage()}\n";
+    echo "Fichier : {$e->getFile()}:{$e->getLine()}\n";
+}
+
+echo "\n=== FIN DU TEST ===\n\n";

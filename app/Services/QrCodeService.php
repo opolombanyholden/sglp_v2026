@@ -11,10 +11,212 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
+/**
+ * ========================================
+ * SERVICE DE GÉNÉRATION DE QR CODES
+ * ========================================
+ * 
+ * Service amélioré pour générer et gérer les QR codes
+ * Compatible avec DocumentGenerationService et ImageHelperService
+ * 
+ * CORRECTIONS PRINCIPALES :
+ * - ✅ Ajout de generateToken() et getVerificationUrl()
+ * - ✅ URL de vérification : domaine/annuaire/verify/{qr_code}
+ * - ✅ Méthode getQrCodeBase64ForPdf() pour intégration PDF
+ * - ✅ Méthode generateForDocument() pour documents
+ * - ✅ Correction de regenerateForPdf()
+ * - ✅ Uniformisation des URLs
+ * 
+ * Projet : SGLP
+ * Version : 2.0 - Mise à jour globale
+ */
 class QrCodeService
 {
     /**
-     * ✅ SOLUTION FICHIER : Générer un QR Code avec sauvegarde sur disque
+     * ========================================
+     * NOUVELLES MÉTHODES PUBLIQUES REQUISES
+     * ========================================
+     */
+
+    /**
+     * ✅ NOUVEAU : Générer un token unique pour QR code
+     * 
+     * Utilisé par DocumentGenerationService
+     * Format : QR-XXXXXXXXXXXX (16 caractères alphanumériques)
+     * 
+     * @return string Token unique
+     */
+    public function generateToken(): string
+    {
+        do {
+            $token = 'QR-' . strtoupper(Str::random(16));
+        } while (QrCode::where('code', $token)->exists());
+
+        Log::info('Token QR Code généré', ['token' => $token]);
+
+        return $token;
+    }
+
+    /**
+     * ✅ NOUVEAU : Obtenir l'URL de vérification pour un token
+     * 
+     * Format : domaine/annuaire/verify/{qr_code}
+     * Exemple : https://sglp.ga/annuaire/verify/QR-ABC123XYZ456
+     * 
+     * @param string $token Token du QR code
+     * @return string URL complète de vérification
+     */
+    public function getVerificationUrl(string $token): string
+    {
+        $url = url("/annuaire/verify/{$token}");
+        
+        Log::debug('URL de vérification générée', [
+            'token' => $token,
+            'url' => $url
+        ]);
+
+        return $url;
+    }
+
+    /**
+     * ✅ NOUVEAU : Obtenir le QR code en base64 pour intégration PDF
+     * 
+     * Méthode flexible qui :
+     * 1. Utilise le QrCode existant si fourni
+     * 2. Génère un nouveau QR à partir d'une URL
+     * 3. Priorise SVG encodé en base64 (meilleure qualité)
+     * 
+     * Compatible avec ImageHelperService
+     * 
+     * @param QrCode|null $qrCode QR code existant (optionnel)
+     * @param string|null $url URL pour générer un nouveau QR (optionnel)
+     * @return string Base64 data URI (data:image/svg+xml;base64,...)
+     */
+    public function getQrCodeBase64ForPdf(?QrCode $qrCode = null, ?string $url = null): string
+    {
+        try {
+            // CAS 1 : Utiliser un QrCode existant
+            if ($qrCode) {
+                // Prioriser SVG encodé
+                if (!empty($qrCode->svg_content)) {
+                    $svgContent = $qrCode->svg_content;
+                    $base64 = base64_encode($svgContent);
+                    return "data:image/svg+xml;base64,{$base64}";
+                }
+                
+                // Fallback : PNG base64 existant
+                if (!empty($qrCode->png_base64)) {
+                    // Vérifier si déjà au format data URI
+                    if (strpos($qrCode->png_base64, 'data:image/') === 0) {
+                        return $qrCode->png_base64;
+                    }
+                    return "data:image/png;base64,{$qrCode->png_base64}";
+                }
+                
+                // Fallback : Utiliser l'URL de vérification
+                if (!empty($qrCode->verification_url)) {
+                    $url = $qrCode->verification_url;
+                }
+            }
+
+            // CAS 2 : Générer un nouveau QR depuis une URL
+            if ($url) {
+                return $this->generateQrBase64FromUrl($url);
+            }
+
+            // CAS 3 : Aucune source valide - retourner placeholder
+            Log::warning('QR Code base64 : aucune source valide, utilisation placeholder');
+            return $this->getPlaceholderBase64();
+
+        } catch (\Exception $e) {
+            Log::error('Erreur getQrCodeBase64ForPdf', [
+                'qr_code_id' => $qrCode->id ?? null,
+                'url' => $url,
+                'error' => $e->getMessage()
+            ]);
+            return $this->getPlaceholderBase64();
+        }
+    }
+
+    /**
+     * ✅ NOUVEAU : Générer un QR code pour un document
+     * 
+     * Méthode simplifiée pour DocumentGenerationService
+     * 
+     * @param string $documentNumero Numéro unique du document
+     * @param array $data Données du document
+     * @return QrCode QR code créé
+     */
+    public function generateForDocument(string $documentNumero, array $data): QrCode
+    {
+        try {
+            // Générer token et URL
+            $code = $this->generateToken();
+            $verificationUrl = $this->getVerificationUrl($code);
+
+            // Préparer les données de vérification
+            $donneesVerification = [
+                'document_numero' => $documentNumero,
+                'organisation_nom' => $data['organisation_nom'] ?? 'Organisation',
+                'organisation_id' => $data['organisation_id'] ?? null,
+                'type_document' => $data['type_document'] ?? 'Document',
+                'date_generation' => now()->toISOString(),
+                'verification_url' => $verificationUrl,
+                'hash_verification' => null
+            ];
+
+            // Générer hash de vérification
+            $hashVerification = hash('sha256', json_encode($donneesVerification, JSON_UNESCAPED_UNICODE));
+            $donneesVerification['hash_verification'] = $hashVerification;
+
+            // Générer les QR codes (SVG + PNG)
+            $svgContent = $this->generateRealQrCodeSvg($verificationUrl, $code);
+            $pngBase64 = $this->generateRealQrCodePng($verificationUrl, $code);
+            $qrFilePath = $this->saveQrCodeAsFile($verificationUrl, $code, 'svg');
+
+            // Créer l'enregistrement
+            $qrCode = QrCode::create([
+                'code' => $code,
+                'type' => 'document_verification',
+                'verifiable_type' => null, // Pas d'entité liée directement
+                'verifiable_id' => null,
+                'document_numero' => $documentNumero,
+                'donnees_verification' => $donneesVerification,
+                'hash_verification' => $hashVerification,
+                'svg_content' => $svgContent,
+                'png_base64' => $pngBase64,
+                'file_path' => $qrFilePath,
+                'verification_url' => $verificationUrl,
+                'nombre_verifications' => 0,
+                'expire_at' => now()->addYears(5),
+                'is_active' => true
+            ]);
+
+            Log::info('QR Code généré pour document', [
+                'qr_code_id' => $qrCode->id,
+                'code' => $code,
+                'document_numero' => $documentNumero
+            ]);
+
+            return $qrCode;
+
+        } catch (\Exception $e) {
+            Log::error('Erreur génération QR Code pour document', [
+                'document_numero' => $documentNumero,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * ========================================
+     * MÉTHODES EXISTANTES CORRIGÉES
+     * ========================================
+     */
+
+    /**
+     * ✅ CORRIGÉ : Générer un QR Code pour un dossier avec URL correcte
      */
     public function generateForDossier(Dossier $dossier)
     {
@@ -25,16 +227,18 @@ class QrCodeService
             }
 
             $organisation = $dossier->organisation;
-            $code = 'QR-' . strtoupper(Str::random(16));
-            $organisationId = $organisation->id;
-            $verificationUrl = "https://www.sglp.ga/annuaire/verify/{$organisationId}";
+            
+            // ✅ CORRECTION : Générer token et URL correcte
+            $code = $this->generateToken();
+            $verificationUrl = $this->getVerificationUrl($code); // URL : domaine/annuaire/verify/{code}
             
             $dateSubmission = $this->formatDateSafely($dossier->submitted_at);
             
             $donneesVerification = [
                 'dossier_numero' => $dossier->numero_dossier,
                 'organisation_nom' => $organisation->nom,
-                'organisation_type' => $organisation->type,
+                'organisation_id' => $organisation->id,
+                'organisation_type' => $organisation->type ?? 'Type non défini',
                 'numero_recepisse' => $organisation->numero_recepisse,
                 'date_soumission' => $dateSubmission,
                 'statut' => $dossier->statut,
@@ -46,10 +250,10 @@ class QrCodeService
             $hashVerification = hash('sha256', json_encode($donneesVerification, JSON_UNESCAPED_UNICODE));
             $donneesVerification['hash_verification'] = $hashVerification;
 
-            // ✅ SOLUTION : Générer QR code ET sauvegarder en fichier (SVG prioritaire)
+            // Générer QR code et sauvegarder en fichier (SVG prioritaire)
             $svgContent = $this->generateRealQrCodeSvg($verificationUrl, $code);
             $pngBase64 = $this->generateRealQrCodePng($verificationUrl, $code);
-            $qrFilePath = $this->saveQrCodeAsFile($verificationUrl, $code, 'svg'); // ⭐ SVG par défaut
+            $qrFilePath = $this->saveQrCodeAsFile($verificationUrl, $code, 'svg');
 
             $qrCode = QrCode::create([
                 'code' => $code,
@@ -61,24 +265,24 @@ class QrCodeService
                 'hash_verification' => $hashVerification,
                 'svg_content' => $svgContent,
                 'png_base64' => $pngBase64,
-                'file_path' => $qrFilePath, // ✅ NOUVEAU : Chemin du fichier
+                'file_path' => $qrFilePath,
                 'verification_url' => $verificationUrl,
                 'nombre_verifications' => 0,
                 'expire_at' => now()->addYears(5),
                 'is_active' => true
             ]);
 
-            Log::info('QR Code généré avec fichier', [
+            Log::info('QR Code généré pour dossier', [
                 'qr_code_id' => $qrCode->id,
                 'code' => $code,
-                'file_path' => $qrFilePath,
+                'dossier_id' => $dossier->id,
                 'verification_url' => $verificationUrl
             ]);
 
             return $qrCode;
 
         } catch (\Exception $e) {
-            Log::error('Erreur génération QR Code avec fichier', [
+            Log::error('Erreur génération QR Code pour dossier', [
                 'dossier_id' => $dossier->id ?? 'null',
                 'error' => $e->getMessage()
             ]);
@@ -87,7 +291,100 @@ class QrCodeService
     }
 
     /**
-     * ✅ MÉTHODE MISE À JOUR : Sauvegarder le QR code en tant que fichier (SVG prioritaire)
+     * ✅ CORRIGÉ : Régénérer un QR code pour PDF (sans ImageMagick)
+     */
+    public function regenerateForPdf(QrCode $qrCode): bool
+    {
+        try {
+            if (!$qrCode->verification_url) {
+                Log::error('Impossible de régénérer QR : URL manquante', [
+                    'qr_code_id' => $qrCode->id
+                ]);
+                return false;
+            }
+
+            // Régénérer SVG et PNG (méthodes corrigées)
+            $svgContent = $this->generateRealQrCodeSvg($qrCode->verification_url, $qrCode->code);
+            $pngBase64 = $this->generateRealQrCodePng($qrCode->verification_url, $qrCode->code);
+
+            // Tenter de sauvegarder le fichier
+            $fileName = $this->saveQrCodeAsFile($qrCode->verification_url, $qrCode->code, 'svg');
+            $saved = !empty($fileName);
+
+            // Préparer les données de mise à jour
+            $updateData = [
+                'svg_content' => $svgContent,
+                'png_base64' => $pngBase64
+            ];
+
+            if ($saved) {
+                $updateData['file_path'] = $fileName;
+            }
+
+            $qrCode->update($updateData);
+
+            Log::info('QR Code régénéré pour PDF', [
+                'qr_code_id' => $qrCode->id,
+                'svg_size' => strlen($svgContent ?? ''),
+                'base64_size' => strlen($pngBase64 ?? ''),
+                'file_saved' => $saved ? 'YES' : 'NO'
+            ]);
+
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Erreur régénération QR code pour PDF', [
+                'qr_code_id' => $qrCode->id,
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * ========================================
+     * MÉTHODES PRIVÉES DE GÉNÉRATION
+     * ========================================
+     */
+
+    /**
+     * ✅ Générer un QR Code base64 depuis une URL
+     */
+    private function generateQrBase64FromUrl(string $url): string
+    {
+        try {
+            if (!class_exists('\SimpleSoftwareIO\QrCode\Facades\QrCode')) {
+                return $this->getPlaceholderBase64();
+            }
+
+            // Générer SVG
+            $svg = QrCodeGenerator::format('svg')
+                ->size(150)
+                ->margin(2)
+                ->color(0, 0, 0)
+                ->backgroundColor(255, 255, 255)
+                ->errorCorrection('H')
+                ->generate($url);
+
+            // Nettoyer le XML header
+            $svg = str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $svg);
+            $svg = trim($svg);
+
+            // Encoder en base64
+            $base64 = base64_encode($svg);
+            return "data:image/svg+xml;base64,{$base64}";
+
+        } catch (\Exception $e) {
+            Log::error('Erreur génération QR base64', [
+                'url' => $url,
+                'error' => $e->getMessage()
+            ]);
+            return $this->getPlaceholderBase64();
+        }
+    }
+
+    /**
+     * Sauvegarder le QR code en tant que fichier (SVG prioritaire)
      */
     private function saveQrCodeAsFile($url, $code, $format = 'svg')
     {
@@ -97,7 +394,7 @@ class QrCodeService
                 return null;
             }
 
-            // ⭐ PRIORITÉ AU SVG : Pas d'ImageMagick requis
+            // Priorité au SVG (pas d'ImageMagick requis)
             if ($format === 'svg') {
                 $qrData = QrCodeGenerator::format('svg')
                     ->size(120)
@@ -132,8 +429,7 @@ class QrCodeService
                 Log::info('QR Code fichier sauvegardé', [
                     'code' => $code,
                     'file_name' => $fileName,
-                    'format' => $format,
-                    'size' => strlen($qrData ?? '')
+                    'format' => $format
                 ]);
                 
                 return $fileName;
@@ -160,7 +456,83 @@ class QrCodeService
     }
 
     /**
-     * ✅ MÉTHODE : Obtenir l'URL publique du fichier QR code
+     * Générer un QR Code RÉEL SVG scannable
+     */
+    private function generateRealQrCodeSvg($url, $code)
+    {
+        try {
+            if (!class_exists('\SimpleSoftwareIO\QrCode\Facades\QrCode')) {
+                return $this->getPlaceholderSvg($code);
+            }
+
+            $svg = QrCodeGenerator::format('svg')
+                ->size(150)
+                ->margin(2)
+                ->color(0, 0, 0)
+                ->backgroundColor(255, 255, 255)
+                ->errorCorrection('H')
+                ->generate($url);
+
+            $svg = str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $svg);
+            
+            return trim($svg);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur génération SVG QR Code', [
+                'code' => $code,
+                'error' => $e->getMessage()
+            ]);
+            return $this->getPlaceholderSvg($code);
+        }
+    }
+
+    /**
+     * Générer un QR Code PNG avec fallback SVG
+     */
+    private function generateRealQrCodePng($url, $code)
+    {
+        try {
+            if (!class_exists('\SimpleSoftwareIO\QrCode\Facades\QrCode')) {
+                Log::warning('Bibliothèque QR Code non disponible');
+                $svgContent = $this->getPlaceholderSvg($code);
+                return base64_encode($svgContent);
+            }
+
+            if (!extension_loaded('gd')) {
+                Log::warning('Extension GD non disponible, encodage SVG en base64');
+                $svgContent = $this->generateRealQrCodeSvg($url, $code);
+                return base64_encode($svgContent);
+            }
+
+            $png = QrCodeGenerator::format('png')
+                ->size(150)
+                ->margin(2)
+                ->color(0, 0, 0)
+                ->backgroundColor(255, 255, 255)
+                ->errorCorrection('H')
+                ->generate($url);
+
+            return base64_encode($png);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur génération PNG QR Code', [
+                'code' => $code,
+                'error' => $e->getMessage()
+            ]);
+            
+            $svgContent = $this->generateRealQrCodeSvg($url, $code);
+            return base64_encode($svgContent);
+        }
+    }
+
+    /**
+     * ========================================
+     * MÉTHODES UTILITAIRES
+     * ========================================
+     */
+
+    /**
+     * Obtenir l'URL publique du fichier QR code
      */
     public function getQrCodeFileUrl(QrCode $qrCode)
     {
@@ -180,7 +552,7 @@ class QrCodeService
     }
 
     /**
-     * ✅ MÉTHODE : Vérifier si le fichier QR code existe
+     * Vérifier si le fichier QR code existe
      */
     public function hasQrCodeFile(QrCode $qrCode)
     {
@@ -188,266 +560,7 @@ class QrCodeService
     }
 
     /**
-     * ✅ MÉTHODE MISE À JOUR : Générer un QR Code RÉEL SVG scannable
-     */
-    private function generateRealQrCodeSvg($url, $code)
-    {
-        try {
-            if (!class_exists('\SimpleSoftwareIO\QrCode\Facades\QrCode')) {
-                return $this->getPlaceholderSvg($code);
-            }
-
-            $svg = QrCodeGenerator::format('svg')
-                ->size(150)
-                ->margin(2)
-                ->color(0, 0, 0)
-                ->backgroundColor(255, 255, 255)
-                ->errorCorrection('H') // ⭐ Correction maximale
-                ->generate($url);
-
-            $svg = str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $svg);
-            
-            return trim($svg);
-
-        } catch (\Exception $e) {
-            Log::error('Erreur génération SVG QR Code', [
-                'code' => $code,
-                'error' => $e->getMessage()
-            ]);
-            return $this->getPlaceholderSvg($code);
-        }
-    }
-
-    /**
-     * ✅ MÉTHODE MISE À JOUR : Générer un QR Code PNG avec fallback SVG
-     */
-    private function generateRealQrCodePng($url, $code)
-    {
-        try {
-            if (!class_exists('\SimpleSoftwareIO\QrCode\Facades\QrCode')) {
-                return null;
-            }
-
-            // Vérifier si GD est disponible avant de tenter PNG
-            if (!extension_loaded('gd')) {
-                Log::info('Extension GD non disponible, utilisation SVG comme PNG');
-                $svgContent = $this->generateRealQrCodeSvg($url, $code);
-                return $svgContent ? base64_encode($svgContent) : null;
-            }
-
-            $pngData = QrCodeGenerator::format('png')
-                ->size(120)
-                ->margin(2)
-                ->color(0, 0, 0)
-                ->backgroundColor(255, 255, 255)
-                ->errorCorrection('H')
-                ->generate($url);
-
-            return base64_encode($pngData);
-
-        } catch (\Exception $e) {
-            Log::warning('Erreur génération PNG QR Code, fallback vers SVG', [
-                'code' => $code,
-                'error' => $e->getMessage()
-            ]);
-            
-            // Fallback : Utiliser SVG encodé en base64
-            $svgContent = $this->generateRealQrCodeSvg($url, $code);
-            return $svgContent ? base64_encode($svgContent) : null;
-        }
-    }
-
-    /**
-     * ✅ MÉTHODE MISE À JOUR : Regénérer un QR Code existant sans ImageMagick
-     */
-    public function regenerateQrCodeSvg(QrCode $qrCode)
-    {
-        try {
-            if (!$qrCode->verification_url) {
-                if ($qrCode->verifiable_type === 'App\\Models\\Organisation') {
-                    $qrCode->verification_url = "https://www.sglp.ga/annuaire/verify/{$qrCode->verifiable_id}";
-                } else {
-                    $dossier = $qrCode->verifiable;
-                    if ($dossier && $dossier->organisation) {
-                        $qrCode->verification_url = "https://www.sglp.ga/annuaire/verify/{$dossier->organisation->id}";
-                    }
-                }
-            }
-
-            $svgContent = $this->generateRealQrCodeSvg($qrCode->verification_url, $qrCode->code);
-            $pngBase64 = $this->generateRealQrCodePng($qrCode->verification_url, $qrCode->code);
-            $qrFilePath = $this->saveQrCodeAsFile($qrCode->verification_url, $qrCode->code, 'svg'); // ⭐ SVG prioritaire
-            
-            $qrCode->update([
-                'svg_content' => $svgContent,
-                'png_base64' => $pngBase64,
-                'file_path' => $qrFilePath,
-                'verification_url' => $qrCode->verification_url
-            ]);
-
-            Log::info('QR Code regénéré avec fichier SVG', [
-                'qr_code_id' => $qrCode->id,
-                'file_path' => $qrFilePath
-            ]);
-
-            return $qrCode;
-
-        } catch (\Exception $e) {
-            Log::error('Erreur regénération QR Code', [
-                'qr_code_id' => $qrCode->id,
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
-    }
-
-    /**
-     * ✅ NOUVELLE MÉTHODE : Obtenir QR code optimisé pour PDF (Base64)
-     */
-    public function getQrCodeForPdf(QrCode $qrCode): ?string
-    {
-        // Priorité 1: PNG base64 déjà stocké et valide
-        if (!empty($qrCode->png_base64) && strlen($qrCode->png_base64 ?? '') > 500) {
-            return 'data:image/png;base64,' . $qrCode->png_base64;
-        }
-        
-        // Priorité 2: SVG converti en base64 (recommandé pour DomPDF)
-        if (!empty($qrCode->svg_content)) {
-            return 'data:image/svg+xml;base64,' . base64_encode($qrCode->svg_content);
-        }
-        
-        // Priorité 3: Fichier existant vers base64
-        if (!empty($qrCode->file_path)) {
-            $filePath = storage_path('app/public/' . $qrCode->file_path);
-            if (file_exists($filePath)) {
-                try {
-                    $imageData = file_get_contents($filePath);
-                    $mimeType = $this->getMimeTypeFromPath($qrCode->file_path);
-                    return 'data:' . $mimeType . ';base64,' . base64_encode($imageData);
-                } catch (\Exception $e) {
-                    Log::warning('Erreur lecture fichier QR pour PDF', [
-                        'qr_code_id' => $qrCode->id,
-                        'file_path' => $qrCode->file_path,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-            }
-        }
-        
-        // Priorité 4: Générer à la volée depuis l'URL
-        if (!empty($qrCode->verification_url)) {
-            return $this->generateQrCodeBase64($qrCode->verification_url);
-        }
-        
-        Log::warning('Impossible de générer QR code pour PDF', [
-            'qr_code_id' => $qrCode->id,
-            'has_png_base64' => !empty($qrCode->png_base64),
-            'has_svg_content' => !empty($qrCode->svg_content),
-            'has_file_path' => !empty($qrCode->file_path),
-            'has_verification_url' => !empty($qrCode->verification_url)
-        ]);
-        
-        return null;
-    }
-
-    /**
-     * ✅ MÉTHODE CORRIGÉE : Générer QR code en base64 sans ImageMagick
-     */
-    private function generateQrCodeBase64(string $url): ?string
-    {
-        try {
-            if (!class_exists('\SimpleSoftwareIO\QrCode\Facades\QrCode')) {
-                Log::error('Bibliothèque QR Code non disponible pour génération base64');
-                return null;
-            }
-
-            // ✅ UTILISER UNIQUEMENT SVG (pas de PNG = pas d'ImageMagick)
-            $svgContent = QrCodeGenerator::format('svg')
-                ->size(120)
-                ->margin(2)
-                ->color(0, 0, 0)
-                ->backgroundColor(255, 255, 255)
-                ->errorCorrection('H')
-                ->generate($url);
-
-            // Nettoyer le SVG
-            $svgContent = trim(str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $svgContent));
-
-            // Retourner le SVG en base64
-            return 'data:image/svg+xml;base64,' . base64_encode($svgContent);
-
-        } catch (\Exception $e) {
-            Log::error('Erreur génération QR code SVG base64', [
-                'url' => $url,
-                'error' => $e->getMessage()
-            ]);
-            return null;
-        }
-    }
-
-    /**
-     * ✅ MÉTHODE AMÉLIORÉE : Régénérer QR codes pour PDF sans ImageMagick
-     */
-    public function regenerateQrCodeForPdf(QrCode $qrCode): bool
-    {
-        try {
-            if (empty($qrCode->verification_url)) {
-                Log::warning('Impossible de régénérer QR code sans URL', ['qr_code_id' => $qrCode->id]);
-                return false;
-            }
-
-            // ✅ STRATÉGIE 1 : Priorité au SVG (toujours fonctionnel)
-            $svgContent = QrCodeGenerator::format('svg')
-                ->size(150)
-                ->margin(2)
-                ->color(0, 0, 0)
-                ->backgroundColor(255, 255, 255)
-                ->errorCorrection('H')
-                ->generate($qrCode->verification_url);
-
-            // Nettoyer le SVG
-            $svgContent = trim(str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $svgContent));
-
-            // ✅ STRATÉGIE 2 : Encoder SVG comme PNG base64 (compatible DomPDF)
-            $pngBase64 = base64_encode($svgContent);
-
-            // ✅ STRATÉGIE 3 : Sauvegarder fichier SVG
-            $fileName = "qr-codes/{$qrCode->code}.svg";
-            $saved = Storage::disk('public')->put($fileName, $svgContent);
-
-            // Mettre à jour le QR code
-            $updateData = [
-                'svg_content' => $svgContent,
-                'png_base64' => $pngBase64 // SVG encodé comme "PNG"
-            ];
-
-            if ($saved) {
-                $updateData['file_path'] = $fileName;
-            }
-
-            $qrCode->update($updateData);
-
-            Log::info('QR Code régénéré pour PDF sans ImageMagick', [
-                'qr_code_id' => $qrCode->id,
-                'svg_size' => strlen($svgContent ?? ''),
-                'base64_size' => strlen($pngBase64 ?? ''),
-                'file_saved' => $saved ? 'YES' : 'NO',
-                'method' => 'SVG_ONLY'
-            ]);
-
-            return true;
-
-        } catch (\Exception $e) {
-            Log::error('Erreur régénération QR code pour PDF', [
-                'qr_code_id' => $qrCode->id,
-                'error' => $e->getMessage()
-            ]);
-            return false;
-        }
-    }
-
-    /**
-     * ✅ MÉTHODE UTILITAIRE : Valider un QR code pour PDF
+     * Valider un QR code pour PDF
      */
     public function validateQrCodeForPdf(QrCode $qrCode): array
     {
@@ -465,7 +578,7 @@ class QrCodeService
             $validation['issues'][] = 'SVG content manquant ou invalide';
         }
 
-        // Vérifier PNG base64 (peut être SVG encodé)
+        // Vérifier PNG base64
         if (!empty($qrCode->png_base64) && strlen($qrCode->png_base64 ?? '') > 500) {
             $validation['methods_available'][] = 'png_base64';
         } else {
@@ -508,22 +621,79 @@ class QrCodeService
     }
 
     /**
-     * ✅ MÉTHODE UTILITAIRE : Déterminer MIME type depuis le chemin
+     * Vérifier un QR code
      */
-    private function getMimeTypeFromPath(string $path): string
+    public function verifyQrCode($code)
     {
-        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-        
-        $mimeTypes = [
-            'svg' => 'image/svg+xml',
-            'png' => 'image/png',
-            'jpg' => 'image/jpeg',
-            'jpeg' => 'image/jpeg',
-            'gif' => 'image/gif'
-        ];
-        
-        return $mimeTypes[$extension] ?? 'image/svg+xml';
+        try {
+            $qrCode = QrCode::where('code', $code)
+                ->where('is_active', true)
+                ->where(function($query) {
+                    $query->whereNull('expire_at')
+                          ->orWhere('expire_at', '>', now());
+                })
+                ->first();
+
+            if (!$qrCode) {
+                return [
+                    'success' => false,
+                    'message' => 'QR Code non trouvé ou expiré'
+                ];
+            }
+
+            $qrCode->increment('nombre_verifications');
+            $qrCode->update(['derniere_verification' => now()]);
+
+            $donneesVerification = [];
+            if ($qrCode->donnees_verification) {
+                if (is_string($qrCode->donnees_verification)) {
+                    $donneesVerification = json_decode($qrCode->donnees_verification, true) ?? [];
+                } elseif (is_array($qrCode->donnees_verification)) {
+                    $donneesVerification = $qrCode->donnees_verification;
+                }
+            }
+
+            return [
+                'success' => true,
+                'qr_code' => $qrCode,
+                'donnees' => $donneesVerification,
+                'verifications_count' => $qrCode->nombre_verifications
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('Erreur vérification QR Code', [
+                'code' => $code,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'message' => 'Erreur lors de la vérification'
+            ];
+        }
     }
+
+    /**
+     * Vérifier si le QR a un PNG
+     */
+    public function hasPng(QrCode $qrCode)
+    {
+        return !empty($qrCode->png_base64) && strlen($qrCode->png_base64 ?? '') > 100;
+    }
+
+    /**
+     * Vérifier si le QR a un SVG
+     */
+    public function hasSvg(QrCode $qrCode)
+    {
+        return !empty($qrCode->svg_content) && strlen($qrCode->svg_content ?? '') > 100;
+    }
+
+    /**
+     * ========================================
+     * MÉTHODES PRIVÉES UTILITAIRES
+     * ========================================
+     */
 
     /**
      * Gestion sécurisée des dates
@@ -581,65 +751,30 @@ class QrCodeService
     }
 
     /**
-     * Autres méthodes utilitaires (conservées)
+     * Placeholder base64 pour PDF
      */
-    public function hasPng(QrCode $qrCode)
+    private function getPlaceholderBase64(): string
     {
-        return !empty($qrCode->png_base64) && strlen($qrCode->png_base64 ?? '') > 100;
+        $svg = $this->getPlaceholderSvg('QR-PLACEHOLDER');
+        $base64 = base64_encode($svg);
+        return "data:image/svg+xml;base64,{$base64}";
     }
 
-    public function hasSvg(QrCode $qrCode)
+    /**
+     * Déterminer MIME type depuis le chemin
+     */
+    private function getMimeTypeFromPath(string $path): string
     {
-        return !empty($qrCode->svg_content) && strlen($qrCode->svg_content ?? '') > 100;
-    }
-
-    public function verifyQrCode($code)
-    {
-        try {
-            $qrCode = QrCode::where('code', $code)
-                ->where('is_active', true)
-                ->where(function($query) {
-                    $query->whereNull('expire_at')
-                          ->orWhere('expire_at', '>', now());
-                })
-                ->first();
-
-            if (!$qrCode) {
-                return [
-                    'success' => false,
-                    'message' => 'QR Code non trouvé ou expiré'
-                ];
-            }
-
-            $qrCode->increment('nombre_verifications');
-            $qrCode->update(['derniere_verification' => now()]);
-
-            $donneesVerification = [];
-            if ($qrCode->donnees_verification) {
-                if (is_string($qrCode->donnees_verification)) {
-                    $donneesVerification = json_decode($qrCode->donnees_verification, true) ?? [];
-                } elseif (is_array($qrCode->donnees_verification)) {
-                    $donneesVerification = $qrCode->donnees_verification;
-                }
-            }
-
-            return [
-                'success' => true,
-                'qr_code' => $qrCode,
-                'donnees' => $donneesVerification,
-                'verifications_count' => $qrCode->nombre_verifications
-            ];
-
-        } catch (\Exception $e) {
-            Log::error('Erreur vérification QR Code', [
-                'code' => $code,
-                'error' => $e->getMessage()
-            ]);
-
-            return [
-                'success' => false,
-                'message' => 'Erreur lors de la vérification'
-            ];
-        }
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        
+        $mimeTypes = [
+            'svg' => 'image/svg+xml',
+            'png' => 'image/png',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'gif' => 'image/gif'
+        ];
+        
+        return $mimeTypes[$extension] ?? 'image/svg+xml';
     }
 }
