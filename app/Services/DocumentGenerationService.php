@@ -15,9 +15,15 @@ use Barryvdh\DomPDF\Facade\Pdf;
 /**
  * SERVICE DE GÉNÉRATION DE DOCUMENTS
  * 
- * ⭐ VERSION AMÉLIORÉE - ÉTAPE 1.3 COMPLÈTE
+ * ⭐ VERSION CORRIGÉE - NOVEMBRE 2025
  * Service principal pour générer les documents PDF à la volée
  * à partir des templates Blade configurés
+ * 
+ * CORRECTIONS APPLIQUÉES :
+ * - ✅ Changement de generateSVG() vers getQrCodeBase64ForPdf()
+ * - ✅ Enrichissement de la section dossier avec date_soumission
+ * - ✅ Gestion de la relation personnes() manquante
+ * - ✅ Fallbacks robustes pour toutes les variables
  * 
  * Améliorations Étape 1.1 :
  * - Variables dynamiques avancées (dirigeants, fondateurs, adhérents)
@@ -44,16 +50,16 @@ class DocumentGenerationService
 {
     protected QRCodeService $qrCodeService;
     protected DocumentNumberingService $numberingService;
-    protected ImageHelperService $imageHelper;  // ⭐ NOUVEAU
+    protected ImageHelperService $imageHelper;
 
     public function __construct(
         QRCodeService $qrCodeService,
         DocumentNumberingService $numberingService,
-        ImageHelperService $imageHelper  // ⭐ NOUVEAU
+        ImageHelperService $imageHelper
     ) {
         $this->qrCodeService = $qrCodeService;
         $this->numberingService = $numberingService;
-        $this->imageHelper = $imageHelper;  // ⭐ NOUVEAU
+        $this->imageHelper = $imageHelper;
     }
 
     /**
@@ -78,12 +84,16 @@ class DocumentGenerationService
                 $data['organisation_id']
             );
 
-            // 3. Générer token QR code
-            $qrToken = $this->qrCodeService->generateToken();
-            $qrUrl = $this->qrCodeService->getVerificationUrl($qrToken);
+            // 3. ✅ CORRIGÉ : Générer QR code avec URL basée sur numeroDocument
+            $qrCode = $this->qrCodeService->generateForDocument($numeroDocument, [
+                'organisation_id' => $data['organisation_id'],
+                'dossier_id' => $data['dossier_id'] ?? null,
+                'template_id' => $template->id,
+                'type_document' => $template->type_document,
+            ]);
 
             // 4. Préparer les variables (VERSION AMÉLIORÉE)
-            $variables = $this->prepareVariables($data, $numeroDocument, $qrUrl);
+            $variables = $this->prepareVariables($data, $numeroDocument, $qrCode);
 
             // 5. Valider les variables requises
             $this->validateRequiredVariables($template, $variables);
@@ -99,18 +109,18 @@ class DocumentGenerationService
                 'organisation_id' => $data['organisation_id'],
                 'numero_document' => $numeroDocument,
                 'type_document' => $template->type_document,
-                'qr_code_token' => $qrToken,
-                'qr_code_url' => $qrUrl,
+                'qr_code_token' => $qrCode->code,
+                'qr_code_url' => $qrCode->verification_url,
                 'hash_verification' => $hash,
                 'variables_data' => $variables,
-                'generated_by' => Auth::id(),
+                'generated_by' => Auth::id() ?? 1,
                 'generated_at' => now(),
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent(),
             ]);
 
             // 8. Générer le HTML avec variables
-            $html = $this->renderTemplate($template, $variables);
+            $html = $this->renderTemplate($template, $variables, $qrCode);
 
             // 9. Générer le PDF en mémoire
             $pdf = $this->generatePDF($html, $template);
@@ -161,8 +171,11 @@ class DocumentGenerationService
             throw new \Exception("Le template Blade '{$template->template_path}' n'existe plus.");
         }
 
+        // Récupérer le QR code
+        $qrCode = \App\Models\QrCode::where('code', $generation->qr_code_token)->first();
+
         // Générer le HTML avec les variables sauvegardées
-        $html = $this->renderTemplate($template, $generation->variables_data);
+        $html = $this->renderTemplate($template, $generation->variables_data, $qrCode);
 
         // Générer le PDF
         $pdf = $this->generatePDF($html, $template);
@@ -183,13 +196,14 @@ class DocumentGenerationService
      * Préparer les variables pour le template
      * 
      * ⭐ VERSION AMÉLIORÉE avec variables dynamiques avancées
+     * ✅ CORRIGÉ : Gestion robuste de la relation personnes()
      * 
      * @param array $data Données brutes
      * @param string $numeroDocument Numéro du document
-     * @param string $qrUrl URL du QR code
+     * @param \App\Models\QrCode $qrCode QR code généré
      * @return array Variables préparées
      */
-    protected function prepareVariables(array $data, string $numeroDocument, string $qrUrl): array
+    protected function prepareVariables(array $data, string $numeroDocument, $qrCode): array
     {
         // Charger l'organisation avec toutes ses relations
         $organisation = Organisation::with([
@@ -216,7 +230,7 @@ class DocumentGenerationService
                 'type' => $organisation->organisationType->nom ?? 'Organisation',
                 'type_code' => $organisation->organisationType->code ?? 'organisation',
                 'numero_recepisse' => $organisation->numero_recepisse ?? 'En cours',
-                'date_creation' => $organisation->date_creation ? $organisation->date_creation->format('d/m/Y') : 'N/A',
+                'date_creation' => $this->formatDateSafe($organisation->date_creation) ?? 'N/A',
                 'objet' => $organisation->objet ?? 'Non spécifié',
                 
                 // Adresse complète
@@ -239,15 +253,9 @@ class DocumentGenerationService
             ],
 
             // ========================================
-            // DIRIGEANTS (Bureau Exécutif)
+            // ✅ DIRIGEANTS (Bureau Exécutif) - AVEC GESTION RELATION MANQUANTE
             // ========================================
-            'dirigeants' => [
-                'president' => $this->getPersonneByRole($organisation, 'president'),
-                'vice_president' => $this->getPersonneByRole($organisation, 'vice_president'),
-                'secretaire_general' => $this->getPersonneByRole($organisation, 'secretaire_general'),
-                'tresorier' => $this->getPersonneByRole($organisation, 'tresorier'),
-                'liste_complete' => $this->getDirigeantsComplets($organisation),
-            ],
+            'dirigeants' => $this->getDirigeantsSecure($organisation),
 
             // ========================================
             // FONDATEURS
@@ -289,9 +297,9 @@ class DocumentGenerationService
             ],
 
             // ========================================
-            // MANDATAIRE (Représentant légal)
+            // ✅ MANDATAIRE (Représentant légal) - AVEC GESTION RELATION MANQUANTE
             // ========================================
-            'mandataire' => $this->getMandataire($organisation),
+            'mandataire' => $this->getMandataireSecure($organisation),
 
             // ========================================
             // DOCUMENT (Métadonnées)
@@ -302,19 +310,33 @@ class DocumentGenerationService
                 'date_generation_longue' => $this->formatDateLongue(now()),
                 'heure_generation' => now()->format('H:i'),
                 'annee' => now()->year,
-                'qr_code_url' => $qrUrl,
+                'qr_code_url' => $qrCode->verification_url,
+                'qr_code_token' => $qrCode->code,
             ],
 
             // ========================================
-            // DOSSIER (si fourni)
+            // ✅ DOSSIER (ENRICHI avec date_soumission)
             // ========================================
             'dossier' => $dossier ? [
                 'id' => $dossier->id,
                 'numero_dossier' => $dossier->numero_dossier,
-                'date_depot' => $dossier->date_depot ? $dossier->date_depot->format('d/m/Y') : 'N/A',
+                'date_depot' => $this->formatDateSafe($dossier->date_depot),
+                'date_soumission' => $this->formatDateSafe($dossier->submitted_at) ?? now()->format('d/m/Y'),
+                'date_soumission_longue' => $dossier->submitted_at ? $this->formatDateLongue($dossier->submitted_at) : $this->formatDateLongue(now()),
                 'statut' => $dossier->statut_label ?? 'En cours',
-                'operation_type' => $dossier->operationType->nom ?? 'Opération',
-            ] : null,
+                'statut_code' => $dossier->statut ?? 'en_cours',
+                'type_operation' => $dossier->type_operation ?? 'creation',
+                'phase' => $dossier->phase ?? 1,
+            ] : [
+                // Fallback si pas de dossier
+                'numero_dossier' => 'DRAFT-' . time(),
+                'date_soumission' => now()->format('d/m/Y'),
+                'date_soumission_longue' => $this->formatDateLongue(now()),
+                'statut' => 'Brouillon',
+                'statut_code' => 'brouillon',
+                'type_operation' => 'creation',
+                'phase' => 1,
+            ],
 
             // ========================================
             // CONSTANTES MINISTÉRIELLES
@@ -375,28 +397,160 @@ class DocumentGenerationService
     }
 
     /**
+     * ✅ NOUVEAU : Obtenir les dirigeants de manière sécurisée
+     * Gère le cas où la relation personnes() n'existe pas
+     */
+    protected function getDirigeantsSecure(Organisation $organisation): array
+    {
+        try {
+            // Vérifier si la méthode personnes existe
+            if (!method_exists($organisation, 'personnes')) {
+                Log::warning('Relation personnes() manquante sur Organisation', [
+                    'organisation_id' => $organisation->id
+                ]);
+                
+                return [
+                    'president' => null,
+                    'vice_president' => null,
+                    'secretaire_general' => null,
+                    'tresorier' => null,
+                    'liste_complete' => [],
+                ];
+            }
+
+            return [
+                'president' => $this->getPersonneByRole($organisation, 'president'),
+                'vice_president' => $this->getPersonneByRole($organisation, 'vice_president'),
+                'secretaire_general' => $this->getPersonneByRole($organisation, 'secretaire_general'),
+                'tresorier' => $this->getPersonneByRole($organisation, 'tresorier'),
+                'liste_complete' => $this->getDirigeantsComplets($organisation),
+            ];
+        } catch (\Exception $e) {
+            Log::error('Erreur récupération dirigeants', [
+                'organisation_id' => $organisation->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'president' => null,
+                'vice_president' => null,
+                'secretaire_general' => null,
+                'tresorier' => null,
+                'liste_complete' => [],
+            ];
+        }
+    }
+
+    /**
+     * ✅ NOUVEAU : Obtenir le mandataire de manière sécurisée
+     * Gère le cas où la relation personnes() n'existe pas
+     */
+    protected function getMandataireSecure(Organisation $organisation): ?array
+    {
+        try {
+            if (!method_exists($organisation, 'personnes')) {
+                Log::warning('Relation personnes() manquante pour mandataire', [
+                    'organisation_id' => $organisation->id
+                ]);
+                
+                // Fallback : utiliser le premier fondateur
+                if ($organisation->fondateurs->isNotEmpty()) {
+                    $fondateur = $organisation->fondateurs->first();
+                    return [
+                        'nom' => $fondateur->nom,
+                        'prenom' => $fondateur->prenom,
+                        'nom_complet' => trim($fondateur->prenom . ' ' . $fondateur->nom),
+                        'nip' => $fondateur->nip ?? '',
+                        'email' => '',
+                        'telephone' => '',
+                        'role' => 'Représentant légal',
+                    ];
+                }
+                
+                return null;
+            }
+
+            return $this->getMandataire($organisation);
+        } catch (\Exception $e) {
+            Log::error('Erreur récupération mandataire', [
+                'organisation_id' => $organisation->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * ✅ HELPER : Récupérer les personnes de manière sécurisée
+     * Gère le cas où personnes() retourne Query Builder OU Collection
+     * 
+     * @param Organisation $organisation
+     * @return \Illuminate\Support\Collection Collection de personnes
+     */
+    protected function getPersonnesCollection(Organisation $organisation): \Illuminate\Support\Collection
+    {
+        try {
+            if (!method_exists($organisation, 'personnes')) {
+                return collect([]);
+            }
+
+            $result = $organisation->personnes();
+            
+            // Si c'est un Query Builder, récupérer les résultats
+            if ($result instanceof \Illuminate\Database\Eloquent\Builder || 
+                $result instanceof \Illuminate\Database\Eloquent\Relations\Relation) {
+                return $result->get();
+            }
+            
+            // Si c'est déjà une Collection, la retourner
+            if ($result instanceof \Illuminate\Support\Collection) {
+                return $result;
+            }
+            
+            // Sinon, convertir en collection
+            return collect($result);
+            
+        } catch (\Exception $e) {
+            Log::error('Erreur getPersonnesCollection', [
+                'organisation_id' => $organisation->id,
+                'error' => $e->getMessage()
+            ]);
+            return collect([]);
+        }
+    }
+
+    /**
      * Obtenir une personne par son rôle dans l'organisation
      */
     protected function getPersonneByRole(Organisation $organisation, string $role): ?array
     {
-        $personne = $organisation->personnes()
-            ->where('role', $role)
-            ->where('is_active', true)
-            ->first();
+        try {
+            // Utiliser le helper pour récupérer les personnes
+            $personnes = $this->getPersonnesCollection($organisation);
+            
+            // Filtrer et récupérer la première personne correspondante
+            $personne = $personnes
+                ->where('role', $role)
+                ->where('is_active', true)
+                ->first();
 
-        if (!$personne) {
+            if (!$personne) {
+                return null;
+            }
+
+            return [
+                'nom' => $personne->nom,
+                'prenom' => $personne->prenom,
+                'nom_complet' => trim($personne->prenom . ' ' . $personne->nom),
+                'nip' => $personne->nip ?? '',
+                'email' => $personne->email ?? '',
+                'telephone' => $personne->telephone ?? '',
+                'role' => $personne->role_label ?? ucfirst(str_replace('_', ' ', $role)),
+            ];
+        } catch (\Exception $e) {
             return null;
         }
-
-        return [
-            'nom' => $personne->nom,
-            'prenom' => $personne->prenom,
-            'nom_complet' => trim($personne->prenom . ' ' . $personne->nom),
-            'nip' => $personne->nip ?? '',
-            'email' => $personne->email ?? '',
-            'telephone' => $personne->telephone ?? '',
-            'role' => $personne->role_label ?? ucfirst(str_replace('_', ' ', $role)),
-        ];
     }
 
     /**
@@ -404,19 +558,33 @@ class DocumentGenerationService
      */
     protected function getDirigeantsComplets(Organisation $organisation): array
     {
-        return $organisation->personnes()
-            ->where('is_active', true)
-            ->whereIn('role', ['president', 'vice_president', 'secretaire_general', 'tresorier', 'membre_bureau'])
-            ->orderByRaw("FIELD(role, 'president', 'vice_president', 'secretaire_general', 'tresorier', 'membre_bureau')")
-            ->get()
-            ->map(function($personne) {
-                return [
-                    'nom_complet' => trim($personne->prenom . ' ' . $personne->nom),
-                    'role' => $personne->role_label ?? 'Membre',
-                    'nip' => $personne->nip ?? '',
-                ];
-            })
-            ->toArray();
+        try {
+            // Utiliser le helper pour récupérer les personnes
+            $personnes = $this->getPersonnesCollection($organisation);
+            
+            // Filtrer les dirigeants
+            return $personnes
+                ->where('is_active', true)
+                ->whereIn('role', ['president', 'vice_president', 'secretaire_general', 'tresorier'])
+                ->map(function($personne) {
+                    return [
+                        'nom' => $personne->nom,
+                        'prenom' => $personne->prenom,
+                        'nom_complet' => trim($personne->prenom . ' ' . $personne->nom),
+                        'role' => $personne->role_label ?? ucfirst(str_replace('_', ' ', $personne->role)),
+                        'nip' => $personne->nip ?? '',
+                    ];
+                })
+                ->values()
+                ->toArray();
+        } catch (\Exception $e) {
+            Log::error('Erreur getDirigeantsComplets', [
+                'organisation_id' => $organisation->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return [];
+        }
     }
 
     /**
@@ -424,34 +592,44 @@ class DocumentGenerationService
      */
     protected function getMandataire(Organisation $organisation): ?array
     {
-        // Le mandataire est généralement le Président ou le Secrétaire Général
-        $mandataire = $organisation->personnes()
-            ->where('is_mandataire', true)
-            ->where('is_active', true)
-            ->first();
-
-        if (!$mandataire) {
-            // Fallback sur le président
-            $mandataire = $organisation->personnes()
-                ->where('role', 'president')
+        try {
+            // Utiliser le helper pour récupérer les personnes
+            $personnes = $this->getPersonnesCollection($organisation);
+            
+            // Chercher un mandataire désigné
+            $mandataire = $personnes
+                ->where('is_mandataire', true)
                 ->where('is_active', true)
                 ->first();
-        }
 
-        if (!$mandataire) {
+            // Sinon, prendre le président
+            if (!$mandataire) {
+                $mandataire = $personnes
+                    ->where('role', 'president')
+                    ->where('is_active', true)
+                    ->first();
+            }
+
+            if (!$mandataire) {
+                return null;
+            }
+
+            return [
+                'nom' => $mandataire->nom,
+                'prenom' => $mandataire->prenom,
+                'nom_complet' => trim($mandataire->prenom . ' ' . $mandataire->nom),
+                'nip' => $mandataire->nip ?? '',
+                'email' => $mandataire->email ?? '',
+                'telephone' => $mandataire->telephone ?? '',
+                'role' => $mandataire->is_mandataire ? 'Représentant légal' : 'Représentant légal',
+            ];
+        } catch (\Exception $e) {
+            Log::error('Erreur getMandataire', [
+                'organisation_id' => $organisation->id,
+                'error' => $e->getMessage()
+            ]);
             return null;
         }
-
-        return [
-            'nom' => $mandataire->nom,
-            'prenom' => $mandataire->prenom,
-            'nom_complet' => trim($mandataire->prenom . ' ' . $mandataire->nom),
-            'nip' => $mandataire->nip ?? '',
-            'email' => $mandataire->email ?? '',
-            'telephone' => $mandataire->telephone ?? '',
-            'role' => $mandataire->role_label ?? 'Mandataire',
-            'qualite' => $mandataire->qualite ?? 'Représentant légal',
-        ];
     }
 
     /**
@@ -476,21 +654,70 @@ class DocumentGenerationService
     }
 
     /**
-     * Formater une date en format long français
+     * ✅ HELPER : Formater une date de manière sécurisée (format court)
+     * Gère string, Carbon, DateTime
+     * 
+     * @param mixed $date Date à formater
+     * @param string $format Format de sortie
+     * @return string|null Date formatée ou null
      */
-    protected function formatDateLongue(\DateTime $date): string
+    protected function formatDateSafe($date, string $format = 'd/m/Y'): ?string
     {
-        $mois = [
-            1 => 'janvier', 2 => 'février', 3 => 'mars', 4 => 'avril',
-            5 => 'mai', 6 => 'juin', 7 => 'juillet', 8 => 'août',
-            9 => 'septembre', 10 => 'octobre', 11 => 'novembre', 12 => 'décembre'
-        ];
+        try {
+            if (empty($date)) {
+                return null;
+            }
 
-        $jour = $date->format('j');
-        $moisNum = (int) $date->format('n');
-        $annee = $date->format('Y');
+            // Si c'est déjà une string formatée, vérifier si c'est une date valide
+            if (is_string($date)) {
+                // Tenter de parser la date
+                $dateObj = \Carbon\Carbon::parse($date);
+                return $dateObj->format($format);
+            }
 
-        return "le {$jour} {$mois[$moisNum]} {$annee}";
+            // Si c'est un objet Carbon ou DateTime
+            if ($date instanceof \Carbon\Carbon || $date instanceof \DateTime) {
+                return $date->format($format);
+            }
+
+            return null;
+        } catch (\Exception $e) {
+            Log::debug('Erreur formatDateSafe', [
+                'date' => $date,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Formater une date en format long français
+     * ✅ MODIFIÉ : Accepte string, Carbon, DateTime
+     */
+    protected function formatDateLongue($date): string
+    {
+        try {
+            // Convertir en objet Carbon si nécessaire
+            if (is_string($date)) {
+                $date = \Carbon\Carbon::parse($date);
+            } elseif (!($date instanceof \Carbon\Carbon || $date instanceof \DateTime)) {
+                $date = now();
+            }
+
+            $mois = [
+                1 => 'janvier', 2 => 'février', 3 => 'mars', 4 => 'avril',
+                5 => 'mai', 6 => 'juin', 7 => 'juillet', 8 => 'août',
+                9 => 'septembre', 10 => 'octobre', 11 => 'novembre', 12 => 'décembre'
+            ];
+
+            $jour = $date->format('j');
+            $moisNum = (int) $date->format('n');
+            $annee = $date->format('Y');
+
+            return "le {$jour} {$mois[$moisNum]} {$annee}";
+        } catch (\Exception $e) {
+            return "le " . now()->format('j') . " " . now()->format('F') . " " . now()->format('Y');
+        }
     }
 
     /**
@@ -522,18 +749,25 @@ class DocumentGenerationService
     }
 
     /**
-     * Rendre le template HTML avec variables
+     * ✅ CORRIGÉ : Rendre le template HTML avec variables
+     * Utilise getQrCodeBase64ForPdf() au lieu de generateSVG()
      * 
      * @param DocumentTemplate $template Template
      * @param array $variables Variables
+     * @param \App\Models\QrCode|null $qrCode QR code généré
      * @return string HTML généré
      */
-    protected function renderTemplate(DocumentTemplate $template, array $variables): string
+    protected function renderTemplate(DocumentTemplate $template, array $variables, $qrCode = null): string
     {
-        // Générer le QR code SVG
-        $qrCodeSvg = $template->has_qr_code 
-            ? $this->qrCodeService->generateSVG($variables['document']['qr_code_url'])
-            : '';
+        // ✅ CORRECTION : Utiliser getQrCodeBase64ForPdf() au lieu de generateSVG()
+        $qrCodeSvg = '';
+        if ($template->has_qr_code) {
+            if ($qrCode) {
+                $qrCodeSvg = $this->qrCodeService->getQrCodeBase64ForPdf($qrCode);
+            } elseif (!empty($variables['document']['qr_code_url'])) {
+                $qrCodeSvg = $this->qrCodeService->getQrCodeBase64ForPdf(null, $variables['document']['qr_code_url']);
+            }
+        }
 
         // ========================================
         // ÉTAPE 1.2 : Générer le CSS du watermark
@@ -569,20 +803,20 @@ class DocumentGenerationService
             'has_signature' => $template->has_signature,
             'has_watermark' => $template->has_watermark,
             'watermark_css' => $watermarkCss,
-            'background_css' => $backgroundCss,  // ⭐ NOUVEAU
-            'has_background' => !empty($backgroundCss),  // ⭐ NOUVEAU
+            'background_css' => $backgroundCss,
+            'has_background' => !empty($backgroundCss),
             'signature_path' => $template->getSignatureFullPath(),
         ])->render();
 
         // ========================================
         // ÉTAPE 1.2 : Injecter le CSS watermark dans le HTML
         // ========================================
-        if ($template->has_watermark && !empty($watermarkCss)) {
+        if (!empty($watermarkCss)) {
             $html = $this->injectWatermarkCss($html, $watermarkCss);
         }
 
         // ========================================
-        // ⭐ ÉTAPE 1.3 : Injecter le background CSS dans le HTML
+        // ⭐ ÉTAPE 1.3 : Injecter le CSS background dans le HTML
         // ========================================
         if (!empty($backgroundCss)) {
             $html = $this->injectBackgroundCss($html, $backgroundCss);
@@ -592,9 +826,9 @@ class DocumentGenerationService
     }
 
     /**
-     * Générer le PDF en mémoire
+     * Générer le PDF à partir du HTML
      * 
-     * @param string $html HTML du document
+     * @param string $html HTML à convertir
      * @param DocumentTemplate $template Template
      * @return \Barryvdh\DomPDF\PDF
      */

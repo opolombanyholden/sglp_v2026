@@ -79,6 +79,43 @@ class QrCodeService
     }
 
     /**
+     * Générer un QR Code SVG brut (non encodé)
+     * 
+     * @param string $url URL à encoder dans le QR code
+     * @return string SVG brut
+     */
+    public function generateSVG(string $url): string
+    {
+        try {
+            if (!class_exists('\SimpleSoftwareIO\QrCode\Facades\QrCode')) {
+                Log::warning('Bibliothèque QR Code non disponible');
+                return $this->getPlaceholderSvg('TEMP-CODE');
+            }
+
+            $svg = QrCodeGenerator::format('svg')
+                ->size(150)
+                ->margin(2)
+                ->color(0, 0, 0)
+                ->backgroundColor(255, 255, 255)
+                ->errorCorrection('H')
+                ->generate($url);
+
+            // Nettoyer le XML header
+            $svg = str_replace('<?xml version="1.0" encoding="UTF-8"?>', '', $svg);
+            
+            return trim($svg);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur génération SVG QR Code', [
+                'url' => $url,
+                'error' => $e->getMessage()
+            ]);
+            return $this->getPlaceholderSvg('ERROR');
+        }
+    }
+
+
+    /**
      * ✅ NOUVEAU : Obtenir le QR code en base64 pour intégration PDF
      * 
      * Méthode flexible qui :
@@ -147,12 +184,21 @@ class QrCodeService
      * @param array $data Données du document
      * @return QrCode QR code créé
      */
-    public function generateForDocument(string $documentNumero, array $data): QrCode
+   public function generateForDocument(string $documentNumero, array $data): QrCode
     {
         try {
-            // Générer token et URL
+            // Générer token (pour référence interne uniquement)
             $code = $this->generateToken();
-            $verificationUrl = $this->getVerificationUrl($code);
+            
+            // ✅ CORRECTION : URL utilise le numéro de document
+            // Format : /annuaire/verify/{numero_document}
+            $verificationUrl = url("/annuaire/verify/{$documentNumero}");
+
+            Log::info('URL de vérification générée', [
+                'document_numero' => $documentNumero,
+                'url' => $verificationUrl,
+                'token' => $code
+            ]);
 
             // Préparer les données de vérification
             $donneesVerification = [
@@ -178,7 +224,7 @@ class QrCodeService
             $qrCode = QrCode::create([
                 'code' => $code,
                 'type' => 'document_verification',
-                'verifiable_type' => null, // Pas d'entité liée directement
+                'verifiable_type' => null,
                 'verifiable_id' => null,
                 'document_numero' => $documentNumero,
                 'donnees_verification' => $donneesVerification,
@@ -186,7 +232,7 @@ class QrCodeService
                 'svg_content' => $svgContent,
                 'png_base64' => $pngBase64,
                 'file_path' => $qrFilePath,
-                'verification_url' => $verificationUrl,
+                'verification_url' => $verificationUrl, // ✅ URL avec numero_document
                 'nombre_verifications' => 0,
                 'expire_at' => now()->addYears(5),
                 'is_active' => true
@@ -195,7 +241,8 @@ class QrCodeService
             Log::info('QR Code généré pour document', [
                 'qr_code_id' => $qrCode->id,
                 'code' => $code,
-                'document_numero' => $documentNumero
+                'document_numero' => $documentNumero,
+                'verification_url' => $verificationUrl
             ]);
 
             return $qrCode;
