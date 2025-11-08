@@ -571,7 +571,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::prefix('document-verifications')->name('document-verifications.')->group(function () {
         
         // Liste de toutes les vérifications (Admin)
-        Route::get('/', [PublicDocVerificationController::class, 'index'])
+        Route::get('/', [PublicDocVerificationController::class, 'adminIndex'])
             ->name('index');
         
         // Historique des vÃ©rifications d'un document spécifique (Admin)
