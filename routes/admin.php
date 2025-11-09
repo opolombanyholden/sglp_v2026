@@ -27,21 +27,22 @@ use App\Http\Controllers\Admin\RolesController;
 use App\Http\Controllers\Admin\PermissionsController;
 use App\Http\Controllers\Admin\PermissionMatrixController;
 use App\Http\Controllers\Admin\ValidationEntityController;
-use App\Http\Controllers\Admin\WorkflowStepController; // ✅ NOUVEAU - 02/11/2025
+use App\Http\Controllers\Admin\WorkflowStepController;
 
 
 
 /*
 |--------------------------------------------------------------------------
-| Routes Administration - SGLP/PNGDI - VERSION CORRIGÃ‰E
+| Routes Administration - SGLP/PNGDI - VERSION CORRIGÉE v2.0
 |--------------------------------------------------------------------------
-| Routes pour l'interface d'administration complÃ¨te
+| Routes pour l'interface d'administration complète
 | Middleware : auth, verified, admin
-| âœ… Version corrigÃ©e sans doublons de noms de routes
-| âœ… Compatible PHP 8.3 et Laravel 9
-| âœ… MODULE TYPES D'ORGANISATIONS AJOUTÃ‰
-| âœ… MODULE DOCUMENTS - ROUTES COMPLÃˆTES (21/01/2025)
-| âŒ ROUTES PUBLIQUES ET API SUPPRIMÃ‰ES (maintenant dans web.php et api.php)
+| ✅ Version corrigée sans doublons de noms de routes
+| ✅ Compatible PHP 8.3 et Laravel 9
+| ✅ MODULE TYPES D'ORGANISATIONS AJOUTÉ
+| ✅ MODULE DOCUMENTS - ROUTES COMPLÈTES (21/01/2025)
+| ✅ MODULE ROLES - ROUTES COMPLÈTES CORRIGÉES (08/11/2025)
+| ❌ ROUTES PUBLIQUES ET API SUPPRIMÉES (maintenant dans web.php et api.php)
 |--------------------------------------------------------------------------
 */
 
@@ -49,7 +50,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
     
     /*
     |--------------------------------------------------------------------------
-    | ðŸ  DASHBOARD PRINCIPAL
+    | 🏠 DASHBOARD PRINCIPAL
     |--------------------------------------------------------------------------
     */
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
@@ -57,7 +58,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
     
     /*
     |--------------------------------------------------------------------------
-    | ðŸ“Š ANALYTICS ET RAPPORTS - SECTION COMPLÃˆTE
+    | 📊 ANALYTICS ET RAPPORTS - SECTION COMPLÈTE
     |--------------------------------------------------------------------------
     */
     Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
@@ -65,7 +66,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
     Route::get('/exports', [AnalyticsController::class, 'exports'])->name('exports.index');
     Route::get('/activity-logs', [AnalyticsController::class, 'activityLogs'])->name('activity-logs.index');
 
-    // ðŸ“¤ EXPORTS - Routes complÃ¨tes
+    // 📤 EXPORTS - Routes complètes
     Route::prefix('exports')->name('exports.')->group(function () {
         Route::get('/', [AnalyticsController::class, 'exports'])->name('index');
         Route::get('/global', [AnalyticsController::class, 'exportGlobal'])->name('global');
@@ -73,7 +74,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::get('/users', [AnalyticsController::class, 'exportUsers'])->name('users');
         Route::get('/organisations', [AnalyticsController::class, 'exportOrganisations'])->name('organisations');
         
-        // Exports spÃ©cialisÃ©s
+        // Exports spécialisés
         Route::post('/dossiers-en-attente', [AnalyticsController::class, 'dossiersEnAttente'])->name('dossiers-en-attente');
         Route::post('/dossiers-agent/{agentId}', [AnalyticsController::class, 'dossiersAgent'])->name('dossiers-agent');
         Route::post('/organisations-par-type', [AnalyticsController::class, 'organisationsParType'])->name('organisations-par-type');
@@ -85,7 +86,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
              ->where('format', 'excel|pdf|csv|json');
     });
 
-    // ðŸ“Š REPORTS - Routes complÃ¨tes  
+    // 📊 REPORTS - Routes complètes  
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [AnalyticsController::class, 'reports'])->name('index');
         Route::get('/monthly', [AnalyticsController::class, 'monthlyReport'])->name('monthly');
@@ -93,7 +94,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::get('/custom', [AnalyticsController::class, 'customReport'])->name('custom');
     });
 
-    // ðŸ“ˆ ACTIVITY LOGS - Routes complÃ¨tes
+    // 📈 ACTIVITY LOGS - Routes complètes
     Route::prefix('activity-logs')->name('activity-logs.')->group(function () {
         Route::get('/', [AnalyticsController::class, 'activityLogs'])->name('index');
         Route::get('/search', [AnalyticsController::class, 'searchLogs'])->name('search');
@@ -103,7 +104,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ“„ WORKFLOW DES DOSSIERS - ROUTES CORRIGÃ‰ES
+    | 📄 WORKFLOW DES DOSSIERS - ROUTES CORRIGÉES
     |--------------------------------------------------------------------------
     */
     Route::prefix('workflow')->name('workflow.')->group(function () {
@@ -128,14 +129,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ¢ GESTION DES ORGANISATIONS - ROUTE CORRIGÃ‰E
+    | 🏢 GESTION DES ORGANISATIONS - ROUTE CORRIGÉE
     |--------------------------------------------------------------------------
     */
     Route::get('/organisations', [DossierController::class, 'index'])->name('organisations.index');
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ”” NOTIFICATIONS - ROUTES CORRIGÃ‰ES (SANS CONFLIT)
+    | 🔔 NOTIFICATIONS - ROUTES CORRIGÉES (SANS CONFLIT)
     |--------------------------------------------------------------------------
     */
     Route::prefix('notifications')->name('notifications.')->group(function () {
@@ -147,7 +148,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
-    | âš™ï¸ PARAMÃˆTRES SYSTÃˆME - ROUTES CORRIGÃ‰ES (SANS CONFLIT)
+    | ⚙️ PARAMÈTRES SYSTÈME - ROUTES CORRIGÉES (SANS CONFLIT)
     |--------------------------------------------------------------------------
     */
     Route::prefix('settings')->name('settings.')->group(function () {
@@ -165,7 +166,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ“„ GESTION DES DOSSIERS - ROUTES ADMINISTRATEUR
+    | 📄 GESTION DES DOSSIERS - ROUTES ADMINISTRATEUR
     |--------------------------------------------------------------------------
     */
     Route::prefix('dossiers')->name('dossiers.')->group(function () {
@@ -184,7 +185,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::post('/{dossier}/archiver', [DossierController::class, 'archiver'])->name('archiver');
         Route::post('/{dossier}/restaurer', [DossierController::class, 'restaurer'])->name('restaurer');
         
-        // Historique et traÃ§abilitÃ©
+        // Historique et traçabilité
         Route::get('/{dossier}/historique', [DossierController::class, 'historique'])->name('historique');
         Route::get('/{dossier}/logs', [DossierController::class, 'logs'])->name('logs');
         
@@ -195,7 +196,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ‘¥ GESTION DES UTILISATEURS - ROUTES COMPLÃˆTES
+    | 👥 GESTION DES UTILISATEURS - ROUTES COMPLÈTES
     |--------------------------------------------------------------------------
     */
     Route::prefix('users')->name('users.')->group(function () {
@@ -207,7 +208,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
         Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
         
-        // Gestion du statut et des rÃ´les
+        // Gestion du statut et des rôles
         Route::patch('/{user}/toggle-status', [UserManagementController::class, 'toggleStatus'])->name('toggle-status');
         Route::post('/{user}/assign-role', [UserManagementController::class, 'assignRole'])->name('assign-role');
         Route::post('/{user}/reset-password', [UserManagementController::class, 'resetPassword'])->name('reset-password');
@@ -220,23 +221,54 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ” GESTION DES RÃ”LES ET PERMISSIONS - ROUTES CORRIGÃ‰ES
+    | 🔐 GESTION DES RÔLES - ROUTES COMPLÈTES CORRIGÉES ✅ v2.0
+    |--------------------------------------------------------------------------
+    | ✅ CORRECTION MAJEURE : Toutes les routes manquantes ajoutées
+    | ✅ Route duplicate ajoutée (ligne 267)
+    | ✅ Routes toggle-status, permissions, bulk-operations, export, init-system ajoutées
+    | ✅ Ordre optimisé : routes fixes avant routes avec paramètres
+    | ✅ 17 routes au total pour gestion complète des rôles
     |--------------------------------------------------------------------------
     */
     Route::prefix('roles')->name('roles.')->group(function () {
+        
+        // ========== ROUTES SANS PARAMÈTRES EN PREMIER ==========
         Route::get('/', [RolesController::class, 'index'])->name('index');
-        Route::get('/search', [RolesController::class, 'search'])->name('search');
         Route::get('/create', [RolesController::class, 'create'])->name('create');
         Route::post('/', [RolesController::class, 'store'])->name('store');
-        Route::get('/{role}', [RolesController::class, 'show'])->name('show');
-        Route::get('/{role}/edit', [RolesController::class, 'edit'])->name('edit');
-        Route::put('/{role}', [RolesController::class, 'update'])->name('update');
-        Route::delete('/{role}', [RolesController::class, 'destroy'])->name('destroy');
         
-        // Gestion des permissions
-        Route::post('/{role}/permissions', [RolesController::class, 'syncPermissions'])->name('permissions.sync');
+        // Routes de recherche et export (AVANT les routes avec {id})
+        Route::get('/search', [RolesController::class, 'search'])->name('search');
+        Route::get('/export', [RolesController::class, 'export'])->name('export');
+        
+        // Routes d'action système
+        Route::post('/init-system', [RolesController::class, 'initSystemRoles'])->name('init-system');
+        Route::post('/validate-name', [RolesController::class, 'validateName'])->name('validate-name');
+        Route::post('/bulk-operations', [RolesController::class, 'bulkOperations'])->name('bulk-operations');
+        
+        // ========== ROUTES AVEC PARAMÈTRES {id} ==========
+        Route::get('/{id}', [RolesController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [RolesController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [RolesController::class, 'update'])->name('update');
+        Route::delete('/{id}', [RolesController::class, 'destroy'])->name('destroy');
+        
+        // ✅ CORRECTION CRITIQUE : Route duplicate ajoutée
+        Route::post('/{id}/duplicate', [RolesController::class, 'duplicate'])->name('duplicate');
+        
+        // Gestion du statut
+        Route::patch('/{id}/toggle-status', [RolesController::class, 'toggleStatus'])->name('toggle-status');
+        
+        // Gestion des permissions d'un rôle
+        Route::get('/{id}/permissions', [RolesController::class, 'permissions'])->name('permissions');
+        Route::put('/{id}/permissions', [RolesController::class, 'updatePermissions'])->name('permissions.update');
+        Route::post('/{id}/permissions/sync', [RolesController::class, 'syncPermissions'])->name('permissions.sync');
     });
 
+    /*
+    |--------------------------------------------------------------------------
+    | 🔑 GESTION DES PERMISSIONS - ROUTES COMPLÈTES
+    |--------------------------------------------------------------------------
+    */
     Route::prefix('permissions')->name('permissions.')->group(function () {
         Route::get('/', [PermissionsController::class, 'index'])->name('index');
         Route::get('/export', [PermissionsController::class, 'export'])->name('export');
@@ -247,60 +279,29 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::delete('/{permission}', [PermissionsController::class, 'destroy'])->name('destroy');
     });
 
-    // Matrice des permissions
-    Route::get('/permission-matrix', [PermissionMatrixController::class, 'index'])->name('permission-matrix.index');
-    Route::post('/permission-matrix/update', [PermissionMatrixController::class, 'update'])->name('permission-matrix.update');
-
     /*
     |--------------------------------------------------------------------------
-    | ðŸ“š GESTION DU CONTENU - ROUTES CORRIGÃ‰ES (SANS CONFLIT)
+    | 📊 MATRICE DES PERMISSIONS - ROUTES
     |--------------------------------------------------------------------------
     */
-    Route::prefix('content')->name('content.')->group(function () {
-        // ActualitÃ©s
-        Route::resource('actualites', ContentController::class)->parameters([
-            'actualites' => 'actualite'
-        ]);
-        
-        // Documents publics
-        Route::prefix('documents')->name('documents.')->group(function () {
-            Route::get('/', [ContentController::class, 'documents'])->name('index');
-            Route::get('/create', [ContentController::class, 'createDocument'])->name('create');
-            Route::post('/', [ContentController::class, 'storeDocument'])->name('store');
-            Route::get('/{document}/edit', [ContentController::class, 'editDocument'])->name('edit');
-            Route::put('/{document}', [ContentController::class, 'updateDocument'])->name('update');
-            Route::delete('/{document}', [ContentController::class, 'destroyDocument'])->name('destroy');
-        });
-        
-        // Pages statiques
-        Route::prefix('pages')->name('pages.')->group(function () {
-            Route::get('/', [ContentController::class, 'pages'])->name('index');
-            Route::get('/{page}/edit', [ContentController::class, 'editPage'])->name('edit');
-            Route::put('/{page}', [ContentController::class, 'updatePage'])->name('update');
-        });
-    });
+    Route::get('/permissions-matrix', [PermissionMatrixController::class, 'index'])->name('permissions-matrix.index');
+    Route::post('/permissions-matrix/update', [PermissionMatrixController::class, 'update'])->name('permissions-matrix.update');
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ“‹ RÃ‰FÃ‰RENTIELS - ROUTES CORRIGÃ‰ES (SANS CONFLIT)
+    | 📚 RÉFÉRENTIELS - ROUTES COMPLÈTES
     |--------------------------------------------------------------------------
     */
     Route::prefix('referentiels')->name('referentiels.')->group(function () {
-        Route::get('/', [ReferentielController::class, 'index'])->name('index');
-        
         // Types d'organisations
-        Route::prefix('organisation-types')->name('organisation-types.')->group(function () {
-            Route::get('/', [OrganisationTypeController::class, 'index'])->name('index');
-            Route::get('/create', [OrganisationTypeController::class, 'create'])->name('create');
-            Route::post('/', [OrganisationTypeController::class, 'store'])->name('store');
-            Route::get('/{organisationType}', [OrganisationTypeController::class, 'show'])->name('show');
-            Route::get('/{organisationType}/edit', [OrganisationTypeController::class, 'edit'])->name('edit');
-            Route::put('/{organisationType}', [OrganisationTypeController::class, 'update'])->name('update');
-            Route::delete('/{organisationType}', [OrganisationTypeController::class, 'destroy'])->name('destroy');
-            Route::patch('/{organisationType}/toggle-status', [OrganisationTypeController::class, 'toggleStatus'])->name('toggle-status');
-            Route::get('/export', [OrganisationTypeController::class, 'export'])->name('export');
-            Route::post('/bulk-action', [OrganisationTypeController::class, 'bulkAction'])->name('bulk-action');
-        });
+        Route::get('/types-organisations', [OrganisationTypeController::class, 'index'])->name('types-organisations');
+        Route::get('/types-organisations/create', [OrganisationTypeController::class, 'create'])->name('types-organisations.create');
+        Route::post('/types-organisations', [OrganisationTypeController::class, 'store'])->name('types-organisations.store');
+        Route::get('/types-organisations/{id}', [OrganisationTypeController::class, 'show'])->name('types-organisations.show');
+        Route::get('/types-organisations/{id}/edit', [OrganisationTypeController::class, 'edit'])->name('types-organisations.edit');
+        Route::put('/types-organisations/{id}', [OrganisationTypeController::class, 'update'])->name('types-organisations.update');
+        Route::delete('/types-organisations/{id}', [OrganisationTypeController::class, 'destroy'])->name('types-organisations.destroy');
+        Route::patch('/types-organisations/{id}/toggle-status', [OrganisationTypeController::class, 'toggleStatus'])->name('types-organisations.toggle-status');
         
         // Types de documents
         Route::prefix('document-types')->name('document-types.')->group(function () {
@@ -313,39 +314,47 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
             Route::delete('/{documentType}', [DocumentTypeController::class, 'destroy'])->name('destroy');
             Route::patch('/{documentType}/toggle-status', [DocumentTypeController::class, 'toggleStatus'])->name('toggle-status');
         });
+        
+        // Base NIP
+        Route::prefix('nip-database')->name('nip-database.')->group(function () {
+            Route::get('/', [NipDatabaseController::class, 'index'])->name('index');
+            Route::get('/import', [NipDatabaseController::class, 'import'])->name('import');
+            Route::post('/import', [NipDatabaseController::class, 'processImport'])->name('import.process');
+            Route::get('/export', [NipDatabaseController::class, 'export'])->name('export');
+            Route::post('/validate', [NipDatabaseController::class, 'validate'])->name('validate');
+            Route::get('/statistics', [NipDatabaseController::class, 'statistics'])->name('statistics');
+        });
     });
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ—„ï¸ BASE DE DONNÃ‰ES NIP - ROUTES COMPLÃˆTES
+    | 📝 GESTION DU CONTENU - ROUTES COMPLÈTES
     |--------------------------------------------------------------------------
     */
-    Route::prefix('nip-database')->name('nip-database.')->group(function () {
-        Route::get('/', [NipDatabaseController::class, 'index'])->name('index');
-        Route::get('/create', [NipDatabaseController::class, 'create'])->name('create');
-        Route::post('/', [NipDatabaseController::class, 'store'])->name('store');
-        Route::get('/{nip}', [NipDatabaseController::class, 'show'])->name('show');
-        Route::get('/{nip}/edit', [NipDatabaseController::class, 'edit'])->name('edit');
-        Route::put('/{nip}', [NipDatabaseController::class, 'update'])->name('update');
-        Route::delete('/{nip}', [NipDatabaseController::class, 'destroy'])->name('destroy');
+    Route::prefix('content')->name('content.')->group(function () {
+        Route::get('/pages', [ContentController::class, 'pages'])->name('pages');
+        Route::get('/pages/create', [ContentController::class, 'createPage'])->name('pages.create');
+        Route::post('/pages', [ContentController::class, 'storePage'])->name('pages.store');
+        Route::get('/pages/{page}/edit', [ContentController::class, 'editPage'])->name('pages.edit');
+        Route::put('/pages/{page}', [ContentController::class, 'updatePage'])->name('pages.update');
+        Route::delete('/pages/{page}', [ContentController::class, 'destroyPage'])->name('pages.destroy');
         
-        // Recherche et vÃ©rification
-        Route::post('/verify', [NipDatabaseController::class, 'verify'])->name('verify');
-        Route::post('/search', [NipDatabaseController::class, 'search'])->name('search');
+        Route::get('/actualites', [ContentController::class, 'actualites'])->name('actualites');
+        Route::get('/actualites/create', [ContentController::class, 'createActualite'])->name('actualites.create');
+        Route::post('/actualites', [ContentController::class, 'storeActualite'])->name('actualites.store');
+        Route::get('/actualites/{actualite}/edit', [ContentController::class, 'editActualite'])->name('actualites.edit');
+        Route::put('/actualites/{actualite}', [ContentController::class, 'updateActualite'])->name('actualites.update');
+        Route::delete('/actualites/{actualite}', [ContentController::class, 'destroyActualite'])->name('actualites.destroy');
         
-        // Import et export
-        Route::get('/import', [NipDatabaseController::class, 'import'])->name('import');
-        Route::post('/import', [NipDatabaseController::class, 'processImport'])->name('import.process');
-        Route::get('/export', [NipDatabaseController::class, 'export'])->name('export');
-        Route::get('/template', [NipDatabaseController::class, 'template'])->name('template');
-        
-        // Statistiques
-        Route::get('/stats', [NipDatabaseController::class, 'stats'])->name('stats');
+        Route::get('/faq', [ContentController::class, 'faq'])->name('faq');
+        Route::post('/faq', [ContentController::class, 'storeFaq'])->name('faq.store');
+        Route::put('/faq/{faq}', [ContentController::class, 'updateFaq'])->name('faq.update');
+        Route::delete('/faq/{faq}', [ContentController::class, 'destroyFaq'])->name('faq.destroy');
     });
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸŒ geolocalisation - HIÃ‰RARCHIE GÃ‰OGRAPHIQUE COMPLÃˆTE
+    | 🗺️ GÉOLOCALISATION - ROUTES COMPLÈTES
     |--------------------------------------------------------------------------
     */
     Route::prefix('geolocalisation')->name('geolocalisation.')->group(function () {
@@ -363,9 +372,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
             Route::patch('/{province}/toggle-status', [ProvinceController::class, 'toggleStatus'])->name('toggle-status');
             Route::post('/bulk-action', [ProvinceController::class, 'bulkAction'])->name('bulk-action');
             Route::get('/{province}/departements', [ProvinceController::class, 'departements'])->name('departements');
+            Route::get('/{province}/map', [ProvinceController::class, 'map'])->name('map');
         });
 
-        // DÃ‰PARTEMENTS
+        // DÉPARTEMENTS
         Route::prefix('departements')->name('departements.')->group(function () {
             Route::get('/', [DepartementController::class, 'index'])->name('index');
             Route::get('/create', [DepartementController::class, 'create'])->name('create');
@@ -381,7 +391,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
             Route::get('/by-province/{province}', [DepartementController::class, 'byProvince'])->name('by-province');
         });
 
-        // COMMUNES ET VILLES
+        // COMMUNES/VILLES
         Route::prefix('communes-villes')->name('communes-villes.')->group(function () {
             Route::get('/', [CommuneVilleController::class, 'index'])->name('index');
             Route::get('/create', [CommuneVilleController::class, 'create'])->name('create');
@@ -393,8 +403,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
             Route::get('/export', [CommuneVilleController::class, 'export'])->name('export');
             Route::patch('/{communeVille}/toggle-status', [CommuneVilleController::class, 'toggleStatus'])->name('toggle-status');
             Route::post('/bulk-action', [CommuneVilleController::class, 'bulkAction'])->name('bulk-action');
-            
-            // Relations hiÃ©rarchiques
             Route::get('/{communeVille}/arrondissements', [CommuneVilleController::class, 'arrondissements'])->name('arrondissements');
             Route::get('/{communeVille}/cantons', [CommuneVilleController::class, 'cantons'])->name('cantons');
             Route::get('/by-departement/{departement}', [CommuneVilleController::class, 'byDepartement'])->name('by-departement');
@@ -452,7 +460,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
             Route::get('/by-canton/{canton}', [RegroupementController::class, 'byCanton'])->name('by-canton');
         });
 
-        // LOCALITÃ‰S
+        // LOCALITÉS
         Route::prefix('localites')->name('localites.')->group(function () {
             Route::get('/', [LocaliteController::class, 'index'])->name('index');
             Route::get('/create', [LocaliteController::class, 'create'])->name('create');
@@ -465,11 +473,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
             Route::patch('/{localite}/toggle-status', [LocaliteController::class, 'toggleStatus'])->name('toggle-status');
             Route::post('/bulk-action', [LocaliteController::class, 'bulkAction'])->name('bulk-action');
             
-            // Filtres par type de localitÃ©
+            // Filtres par type de localité
             Route::get('/quartiers', [LocaliteController::class, 'quartiers'])->name('quartiers');
             Route::get('/villages', [LocaliteController::class, 'villages'])->name('villages');
             
-            // Relations hiÃ©rarchiques
+            // Relations hiérarchiques
             Route::get('/by-arrondissement/{arrondissement}', [LocaliteController::class, 'byArrondissement'])->name('by-arrondissement');
             Route::get('/by-regroupement/{regroupement}', [LocaliteController::class, 'byRegroupement'])->name('by-regroupement');
             Route::get('/by-commune/{commune}', [LocaliteController::class, 'byCommune'])->name('by-commune');
@@ -480,12 +488,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
 /*
 |--------------------------------------------------------------------------
-| ðŸ“„ MODULE GÃ‰NÃ‰RATION DE DOCUMENTS - VERSION COMPLÃˆTE
+| 📄 MODULE GÉNÉRATION DE DOCUMENTS - VERSION COMPLÈTE
 |--------------------------------------------------------------------------
-| Routes pour la gestion des templates de documents et des documents gÃ©nÃ©rÃ©s
-| âœ… AjoutÃ© le : 21/01/2025
-| âœ… Toutes les routes admin uniquement (26 routes)
-| âŒ Routes publiques et API dÃ©placÃ©es vers web.php et api.php
+| Routes pour la gestion des templates de documents et des documents générés
+| ✅ Ajouté le : 21/01/2025
+| ✅ Toutes les routes admin uniquement (26 routes)
+| ❌ Routes publiques et API déplacées vers web.php et api.php
 |--------------------------------------------------------------------------
 */
 
@@ -493,7 +501,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     
     /*
     |--------------------------------------------------------------------------
-    | ðŸ“ GESTION DES TEMPLATES DE DOCUMENTS (10 routes)
+    | 📝 GESTION DES TEMPLATES DE DOCUMENTS (10 routes)
     |--------------------------------------------------------------------------
     */
     Route::prefix('document-templates')->name('document-templates.')->group(function () {
@@ -507,50 +515,50 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         Route::put('/{documentTemplate}', [DocumentTemplateController::class, 'update'])->name('update');
         Route::delete('/{documentTemplate}', [DocumentTemplateController::class, 'destroy'])->name('destroy');
         
-        // PrÃ©visualisation d'un template
+        // Prévisualisation d'un template
         Route::get('/{documentTemplate}/preview', [DocumentTemplateController::class, 'preview'])->name('preview');
         Route::get('/{documentTemplate}/preview-pdf', [DocumentTemplateController::class, 'previewPdf'])->name('preview-pdf');
         
-        // AJAX : Charger les workflow steps selon organisation/opÃ©ration
+        // AJAX : Charger les workflow steps selon organisation/opération
         Route::get('/ajax/workflow-steps', [DocumentTemplateController::class, 'getWorkflowSteps'])->name('ajax.workflow-steps');
     });
 
     /*
     |--------------------------------------------------------------------------
-    | ðŸ“‹ GESTION DES DOCUMENTS GÃ‰NÃ‰RÃ‰S (16 routes)
+    | 📋 GESTION DES DOCUMENTS GÉNÉRÉS (16 routes)
     |--------------------------------------------------------------------------
     */
     Route::prefix('documents')->name('documents.')->group(function () {
         
-        // Liste et historique des documents gÃ©nÃ©rÃ©s
+        // Liste et historique des documents générés
         Route::get('/', [GeneratedDocumentController::class, 'index'])->name('index');
         
-        // Formulaire de gÃ©nÃ©ration manuelle
+        // Formulaire de génération manuelle
         Route::get('/create', [GeneratedDocumentController::class, 'create'])->name('create');
         
-        // CrÃ©er/GÃ©nÃ©rer un document
+        // Créer/Générer un document
         Route::post('/', [GeneratedDocumentController::class, 'store'])->name('store');
         Route::post('/generate', [GeneratedDocumentController::class, 'generate'])->name('generate');
         
-        // Voir les dÃ©tails d'un document gÃ©nÃ©rÃ©
+        // Voir les détails d'un document généré
         Route::get('/{generation}', [GeneratedDocumentController::class, 'show'])->name('show');
         
-        // TÃ©lÃ©charger un document
+        // Télécharger un document
         Route::get('/{generation}/download', [GeneratedDocumentController::class, 'download'])->name('download');
         
-        // RÃ©gÃ©nÃ©rer un document
+        // Régénérer un document
         Route::post('/{generation}/regenerate', [GeneratedDocumentController::class, 'regenerate'])->name('regenerate');
         
         // Invalider un document
         Route::put('/{generation}/invalidate', [GeneratedDocumentController::class, 'invalidate'])->name('invalidate');
         
-        // RÃ©activer un document invalidÃ©
+        // Réactiver un document invalidé
         Route::put('/{generation}/reactivate', [GeneratedDocumentController::class, 'reactivate'])->name('reactivate');
         
         // Supprimer un document
         Route::delete('/{generation}', [GeneratedDocumentController::class, 'destroy'])->name('destroy');
         
-        // Actions groupÃ©es
+        // Actions groupées
         Route::post('/bulk-download', [GeneratedDocumentController::class, 'bulkDownload'])->name('bulk-download');
         Route::post('/bulk-invalidate', [GeneratedDocumentController::class, 'bulkInvalidate'])->name('bulk-invalidate');
         Route::post('/bulk-delete', [GeneratedDocumentController::class, 'bulkDelete'])->name('bulk-delete');
@@ -565,7 +573,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     
     /*
     |--------------------------------------------------------------------------
-    | ðŸ” GESTION DES VÃ‰RIFICATIONS (Admin uniquement - 2 routes)
+    | 🔍 GESTION DES VÉRIFICATIONS (Admin uniquement - 3 routes)
     |--------------------------------------------------------------------------
     */
     Route::prefix('document-verifications')->name('document-verifications.')->group(function () {
@@ -574,18 +582,20 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
         Route::get('/', [PublicDocVerificationController::class, 'adminIndex'])
             ->name('index');
         
-        // Historique des vÃ©rifications d'un document spécifique (Admin)
+        // Historique des vérifications d'un document spécifique (Admin)
         Route::get('/{generation}/verifications', [PublicDocVerificationController::class, 'documentVerifications'])
             ->name('history');
         
-        // Export CSV des vÃ©rifications (Admin)
+        // Export CSV des vérifications (Admin)
         Route::get('/export/verifications', [PublicDocVerificationController::class, 'exportVerifications'])
             ->name('export');
     });
 
-    // ============================================================================
-    // ROUTES VALIDATION ENTITIES - Gestion des entités de validation
-    // ============================================================================
+    /*
+    |--------------------------------------------------------------------------
+    | ✅ VALIDATION ENTITIES - Gestion des entités de validation (8 routes)
+    |--------------------------------------------------------------------------
+    */
     Route::prefix('validation-entities')->name('validation-entities.')->group(function () {
         Route::get('/', [ValidationEntityController::class, 'index'])->name('index');
         Route::get('/create', [ValidationEntityController::class, 'create'])->name('create');
@@ -599,11 +609,11 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 
     /*
     |--------------------------------------------------------------------------
-    | ⚙️ MODULE WORKFLOW STEPS - GESTION DES ÉTAPES DE WORKFLOW ⭐ NOUVEAU
+    | ⚙️ MODULE WORKFLOW STEPS - GESTION DES ÉTAPES DE WORKFLOW (19 routes)
     |--------------------------------------------------------------------------
     | Gestion complète des étapes du workflow de validation
     | ✅ Ajouté le : 02/11/2025
-    | ✅ 12 routes (7 CRUD + 5 custom)
+    | ✅ 19 routes (7 CRUD + 12 custom)
     | 
     | Fonctionnalités :
     | - CRUD complet des étapes
