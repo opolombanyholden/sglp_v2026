@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Créer un Template de Document')
 
@@ -113,8 +113,9 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        {{-- Type d'organisation (pleine largeur) --}}
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-12 mb-3">
                                 <label for="organisation_type_id" class="form-label">
                                     Type d'organisation <span class="text-danger">*</span>
                                 </label>
@@ -122,7 +123,7 @@
                                         id="organisation_type_id" 
                                         name="organisation_type_id"
                                         required>
-                                    <option value="">Sélectionner...</option>
+                                    <option value="">Sélectionner un type d'organisation...</option>
                                     @foreach($organisationTypes as $type)
                                         <option value="{{ $type->id }}" 
                                             {{ old('organisation_type_id') == $type->id ? 'selected' : '' }}>
@@ -134,39 +135,42 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
+                        </div>
 
-                            <div class="col-md-4 mb-3">
+                        {{-- Type d'opération et Étape workflow (2 colonnes) --}}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
                                 <label for="operation_type_id" class="form-label">
                                     Type d'opération
                                 </label>
                                 <select class="form-select @error('operation_type_id') is-invalid @enderror" 
                                         id="operation_type_id" 
                                         name="operation_type_id">
-                                    <option value="">Tous les types</option>
+                                    <option value="">Tous les types d'opération</option>
                                     @foreach($operationTypes as $type)
                                         <option value="{{ $type->id }}" 
                                             {{ old('operation_type_id') == $type->id ? 'selected' : '' }}>
-                                            {{ $type->nom }}
+                                            {{ $type->libelle }}
                                         </option>
                                     @endforeach
                                 </select>
-                                <small class="form-text text-muted">Optionnel</small>
+                                <small class="form-text text-muted">Optionnel - laissez vide pour tous les types</small>
                                 @error('operation_type_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
 
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="workflow_step_id" class="form-label">
                                     Étape du workflow
                                 </label>
                                 <select class="form-select @error('workflow_step_id') is-invalid @enderror" 
                                         id="workflow_step_id" 
                                         name="workflow_step_id">
-                                    <option value="">Aucune étape</option>
+                                    <option value="">Toutes les étapes</option>
                                     {{-- Les options seront chargées dynamiquement --}}
                                 </select>
-                                <small class="form-text text-muted">Optionnel</small>
+                                <small class="form-text text-muted">Sélectionnez d'abord un type d'organisation</small>
                                 @error('workflow_step_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -420,32 +424,71 @@ const stepSelect = document.getElementById('workflow_step_id');
 
 function loadWorkflowSteps() {
     const orgTypeId = orgTypeSelect.value;
-    const opTypeId = opTypeSelect.value;
+    const opTypeId = opTypeSelect.value || '';
 
     if (!orgTypeId) {
-        stepSelect.innerHTML = '<option value="">Aucune étape</option>';
+        stepSelect.innerHTML = '<option value="">Sélectionnez d\'abord un type d\'organisation</option>';
+        stepSelect.disabled = true;
         return;
     }
 
+    // Activer le select et afficher un message de chargement
+    stepSelect.disabled = false;
+    stepSelect.innerHTML = '<option value="">⏳ Chargement des étapes...</option>';
+
     // Appel AJAX pour charger les steps
-    fetch(`{{ route('admin.document-templates.ajax.workflow-steps') }}?organisation_type_id=${orgTypeId}&operation_type_id=${opTypeId}`)
-        .then(response => response.json())
-        .then(steps => {
-            stepSelect.innerHTML = '<option value="">Aucune étape</option>';
-            steps.forEach(step => {
+    const url = '{{ route("admin.document-templates.ajax.workflow-steps") }}';
+    fetch(`${url}?organisation_type_id=${orgTypeId}&operation_type_id=${opTypeId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Erreur réseau');
+            }
+            return response.json();
+        })
+        .then(data => {
+            stepSelect.innerHTML = '<option value="">Toutes les étapes</option>';
+            
+            if (data.success && data.steps && data.steps.length > 0) {
+                data.steps.forEach(step => {
+                    const option = document.createElement('option');
+                    option.value = step.id;
+                    option.textContent = `Étape ${step.numero_passage} - ${step.libelle}`;
+                    stepSelect.appendChild(option);
+                });
+            } else {
+                // Aucune étape trouvée
                 const option = document.createElement('option');
-                option.value = step.id;
-                option.textContent = `Étape ${step.numero_passage} - ${step.libelle}`;
+                option.value = '';
+                option.textContent = 'Aucune étape configurée';
                 stepSelect.appendChild(option);
-            });
+            }
         })
         .catch(error => {
             console.error('Erreur chargement workflow steps:', error);
+            stepSelect.innerHTML = '<option value="">❌ Erreur de chargement</option>';
+            
+            // Afficher un message à l'utilisateur
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-warning alert-dismissible fade show mt-2';
+            alertDiv.innerHTML = `
+                <i class="fas fa-exclamation-triangle"></i> 
+                Impossible de charger les étapes du workflow. 
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            stepSelect.parentElement.appendChild(alertDiv);
         });
 }
 
+// Événements de changement
 orgTypeSelect.addEventListener('change', loadWorkflowSteps);
 opTypeSelect.addEventListener('change', loadWorkflowSteps);
+
+// ✅ NOUVEAU : Charger les étapes au chargement de la page si une organisation est déjà sélectionnée
+document.addEventListener('DOMContentLoaded', function() {
+    if (orgTypeSelect.value) {
+        loadWorkflowSteps();
+    }
+});
 
 // Validation côté client
 document.getElementById('templateForm').addEventListener('submit', function(e) {

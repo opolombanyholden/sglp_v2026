@@ -23,7 +23,7 @@ use Illuminate\Support\Str;
  * - Confessions religieuses
  * 
  * Projet : SGLP
- * CORRECTION : Utilisation des scopes appropriés et colonnes correctes
+ * CORRECTION : Middleware admin au lieu de can:manage-document-templates
  */
 class DocumentTemplateController extends Controller
 {
@@ -76,7 +76,7 @@ class DocumentTemplateController extends Controller
 
         // Données pour les filtres
         $organisationTypes = OrganisationType::orderBy('nom')->get();
-        $typesDocument = $this->getTypesDocument();
+        $typesDocument = DocumentTemplate::getTypesDocument();
 
         // Statistiques
         $stats = [
@@ -98,10 +98,9 @@ class DocumentTemplateController extends Controller
      */
     public function create()
     {
-        // ✅ CORRECTION : Utilisation du scope ordered() au lieu de orderBy('nom')
         $organisationTypes = OrganisationType::orderBy('nom')->get();
-        $operationTypes = OperationType::ordered()->get();
-        $typesDocument = $this->getTypesDocument();
+        $operationTypes = OperationType::orderBy('nom')->get();
+        $typesDocument = DocumentTemplate::getTypesDocument();
 
         return view('admin.document-templates.create', compact(
             'organisationTypes',
@@ -182,11 +181,10 @@ class DocumentTemplateController extends Controller
      */
     public function edit(DocumentTemplate $documentTemplate)
     {
-        // ✅ CORRECTION : Utilisation du scope ordered() au lieu de orderBy('nom')
         $organisationTypes = OrganisationType::orderBy('nom')->get();
-        $operationTypes = OperationType::ordered()->get();
+        $operationTypes = OperationType::orderBy('nom')->get();
         $workflowSteps = WorkflowStep::orderBy('numero_passage')->get();
-        $typesDocument = $this->getTypesDocument();
+        $typesDocument = DocumentTemplate::getTypesDocument();
 
         return view('admin.document-templates.edit', compact(
             'documentTemplate',
@@ -331,60 +329,30 @@ class DocumentTemplateController extends Controller
      * AJAX : Charger les workflow steps selon organisation/opération
      */
     public function getWorkflowSteps(Request $request)
-{
-    try {
-        $organisationTypeId = $request->get('organisation_type_id');
-        $operationTypeId = $request->get('operation_type_id');
+    {
+        try {
+            $query = WorkflowStep::query();
 
-        if (!$organisationTypeId) {
+            if ($request->filled('organisation_type_id')) {
+                $query->where('organisation_type_id', $request->organisation_type_id);
+            }
+
+            if ($request->filled('operation_type_id')) {
+                $query->where('operation_type_id', $request->operation_type_id);
+            }
+
+            $steps = $query->orderBy('numero_passage')->get();
+
+            return response()->json([
+                'success' => true,
+                'steps' => $steps
+            ]);
+
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Type d\'organisation requis',
-                'steps' => []
-            ], 400);
+                'message' => 'Erreur lors du chargement des étapes'
+            ], 500);
         }
-
-        $query = WorkflowStep::where('organisation_type_id', $organisationTypeId)
-            ->where('is_active', 1);
-
-        if ($operationTypeId) {
-            $query->where('operation_type_id', $operationTypeId);
-        }
-
-        $steps = $query->orderBy('numero_passage')
-            ->get(['id', 'libelle', 'numero_passage']);
-
-        return response()->json([
-            'success' => true,
-            'steps' => $steps
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('Erreur getWorkflowSteps: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du chargement des étapes',
-            'steps' => []
-        ], 500);
-    }
-}
-
-
-    /**
-     * Obtenir la liste des types de documents disponibles
-     * 
-     * @return array
-     */
-    private function getTypesDocument(): array
-    {
-        return [
-            'recepisse_provisoire' => 'Récépissé provisoire',
-            'recepisse_definitif' => 'Récépissé définitif',
-            'certificat_enregistrement' => 'Certificat d\'enregistrement',
-            'attestation' => 'Attestation',
-            'notification_rejet' => 'Notification de rejet',
-            'autre' => 'Autre document',
-        ];
     }
 }
