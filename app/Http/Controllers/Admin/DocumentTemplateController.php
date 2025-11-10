@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 /**
  * CONTROLLER - GESTION DES TEMPLATES DE DOCUMENTS
@@ -304,19 +305,25 @@ class DocumentTemplateController extends Controller
      * Générer le PDF de prévisualisation
      */
     public function previewPdf(DocumentTemplate $documentTemplate)
-    {
-        try {
-            $testData = $this->templateService->generateTestData($documentTemplate);
-            $pdf = $this->templateService->generatePreviewPdf($documentTemplate, $testData);
+{
+    try {
+        $testData = $this->templateService->generateTestData($documentTemplate);
+        $pdf = $this->templateService->generatePreviewPdf($documentTemplate, $testData);
 
-            return response($pdf)
-                ->header('Content-Type', 'application/pdf')
-                ->header('Content-Disposition', 'attachment; filename="preview_' . $documentTemplate->code . '.pdf"');
+        // ✅ Utiliser download() au lieu de response()
+        $filename = 'preview_' . $documentTemplate->code . '_' . date('YmdHis') . '.pdf';
+        return $pdf->download($filename);
 
-        } catch (\Exception $e) {
-            return back()->with('error', 'Erreur lors de la génération du PDF : ' . $e->getMessage());
-        }
+    } catch (\Exception $e) {
+        Log::error('Erreur génération PDF preview: ' . $e->getMessage());
+        
+        // ✅ Retourner JSON en cas d'erreur
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors de la génération du PDF : ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * AJAX : Charger les workflow steps selon organisation/opération

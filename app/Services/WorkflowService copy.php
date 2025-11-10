@@ -9,30 +9,12 @@ use App\Models\DossierOperation;
 use App\Models\DossierLock;
 use App\Models\User;
 use App\Models\Organisation;
-use App\Models\OrganisationType;
-use App\Models\OperationType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Exception;
 
 class WorkflowService
 {
-    /**
-     * ✅ NOUVELLE MÉTHODE - Convertir code organisation en ID
-     */
-    protected function getOrganisationTypeId(string $code): ?int
-    {
-        return OrganisationType::where('code', $code)->value('id');
-    }
-    
-    /**
-     * ✅ NOUVELLE MÉTHODE - Convertir code opération en ID
-     */
-    protected function getOperationTypeId(string $code): ?int
-    {
-        return OperationType::where('code', $code)->value('id');
-    }
-    
     /**
      * ✅ CORRECTION PRINCIPALE - Méthode corrigée initializeWorkflow()
      */
@@ -109,7 +91,7 @@ class WorkflowService
     }
     
     /**
-     * ✅ MÉTHODE CORRIGÉE - Obtenir la première étape du workflow
+     * ⭐ MÉTHODE CORRIGÉE - Obtenir la première étape du workflow
      */
     protected function getFirstWorkflowStep(Dossier $dossier): ?WorkflowStep
     {
@@ -117,36 +99,20 @@ class WorkflowService
         $typeOperation = $dossier->type_operation ?? 'creation';
         $typeOrganisation = $organisation->type ?? 'association';
         
-        // ✅ Convertir codes en IDs
-        $organisationTypeId = $this->getOrganisationTypeId($typeOrganisation);
-        $operationTypeId = $this->getOperationTypeId($typeOperation);
-        
-        if (!$organisationTypeId || !$operationTypeId) {
-            return null;
-        }
-        
-        return WorkflowStep::where('organisation_type_id', $organisationTypeId)
-            ->where('operation_type_id', $operationTypeId)
+        return WorkflowStep::where('type_organisation', $typeOrganisation)
+            ->where('type_operation', $typeOperation)
             ->where('is_active', true)
             ->orderBy('numero_passage', 'asc')
             ->first();
     }
     
     /**
-     * ✅ MÉTHODE CORRIGÉE - Obtenir toutes les étapes du workflow
+     * ⭐ NOUVELLE MÉTHODE - Obtenir toutes les étapes du workflow
      */
     public function getWorkflowSteps(string $typeOrganisation, string $typeOperation = 'creation'): array
     {
-        // ✅ Convertir codes en IDs
-        $organisationTypeId = $this->getOrganisationTypeId($typeOrganisation);
-        $operationTypeId = $this->getOperationTypeId($typeOperation);
-        
-        if (!$organisationTypeId || !$operationTypeId) {
-            return [];
-        }
-        
-        return WorkflowStep::where('organisation_type_id', $organisationTypeId)
-            ->where('operation_type_id', $operationTypeId)
+        return WorkflowStep::where('type_organisation', $typeOrganisation)
+            ->where('type_operation', $typeOperation)
             ->where('is_active', true)
             ->orderBy('numero_passage', 'asc')
             ->get()
@@ -154,43 +120,23 @@ class WorkflowService
     }
     
     /**
-     * ✅ MÉTHODE CORRIGÉE - Vérifier si le workflow est configuré
+     * ⭐ NOUVELLE MÉTHODE - Vérifier si le workflow est configuré
      */
     public function hasWorkflowConfigured(string $typeOrganisation, string $typeOperation = 'creation'): bool
     {
-        // ✅ Convertir codes en IDs
-        $organisationTypeId = $this->getOrganisationTypeId($typeOrganisation);
-        $operationTypeId = $this->getOperationTypeId($typeOperation);
-        
-        if (!$organisationTypeId || !$operationTypeId) {
-            return false;
-        }
-        
-        return WorkflowStep::where('organisation_type_id', $organisationTypeId)
-            ->where('operation_type_id', $operationTypeId)
+        return WorkflowStep::where('type_organisation', $typeOrganisation)
+            ->where('type_operation', $typeOperation)
             ->where('is_active', true)
             ->exists();
     }
     
     /**
-     * ✅ MÉTHODE CORRIGÉE - Créer un workflow par défaut si inexistant
+     * ⭐ NOUVELLE MÉTHODE - Créer un workflow par défaut si inexistant
      */
     public function createDefaultWorkflow(string $typeOrganisation, string $typeOperation = 'creation'): bool
     {
         if ($this->hasWorkflowConfigured($typeOrganisation, $typeOperation)) {
             return true; // Déjà configuré
-        }
-        
-        // ✅ Convertir codes en IDs
-        $organisationTypeId = $this->getOrganisationTypeId($typeOrganisation);
-        $operationTypeId = $this->getOperationTypeId($typeOperation);
-        
-        if (!$organisationTypeId || !$operationTypeId) {
-            \Log::error('Impossible de créer workflow: type organisation ou opération introuvable', [
-                'type_organisation' => $typeOrganisation,
-                'type_operation' => $typeOperation
-            ]);
-            return false;
         }
         
         try {
@@ -227,8 +173,8 @@ class WorkflowService
                     'code' => $stepData['code'] . '_' . $typeOrganisation,
                     'libelle' => $stepData['libelle'],
                     'description' => $stepData['description'],
-                    'organisation_type_id' => $organisationTypeId,  // ✅ FK
-                    'operation_type_id' => $operationTypeId,        // ✅ FK
+                    'type_organisation' => $typeOrganisation,
+                    'type_operation' => $typeOperation,
                     'numero_passage' => $stepData['numero_passage'],
                     'is_active' => true,
                     'permet_rejet' => true,
@@ -274,139 +220,35 @@ class WorkflowService
                 return true;
             }
             
-            // Passer à l'étape suivante
-            $dossier->update([
-                'current_step_id' => $nextStep->id
-            ]);
-            
-            // Créer une nouvelle validation en attente
-            DossierValidation::create([
-                'dossier_id' => $dossier->id,
-                'workflow_step_id' => $nextStep->id,
-                'validation_entity_id' => $this->getDefaultValidationEntityId(),
-                'decision' => 'en_attente',
-                'assigned_at' => now()
-            ]);
-            
-            // Enregistrer l'opération
-            $this->recordOperation($dossier, 'step_forward', [
-                'from_step' => $dossier->currentStep->libelle ?? 'Inconnue',
-                'to_step' => $nextStep->libelle
-            ]);
-            
-            DB::commit();
-            return true;
-            
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-    
-    /**
-     * Rejeter un dossier
-     */
-    public function rejectDossier(Dossier $dossier, string $motif, array $data = []): bool
-    {
-        DB::beginTransaction();
-        
-        try {
-            // Mettre à jour le statut
-            $dossier->update([
-                'statut' => Dossier::STATUT_REJETE,
-                'motif_rejet' => $motif,
-                'validated_at' => now()
-            ]);
-            
-            // Enregistrer l'opération
-            $this->recordOperation($dossier, 'rejected', array_merge($data, ['motif' => $motif]));
-            
-            // TODO: Notification à l'utilisateur
-            
-            DB::commit();
-            return true;
-            
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-    
-    /**
-     * Verrouiller un dossier pour traitement
-     */
-    public function lockDossier(Dossier $dossier, User $user, int $durationMinutes = 30): bool
-    {
-        DB::beginTransaction();
-        
-        try {
-            // Vérifier si le dossier est déjà verrouillé
-            $existingLock = $dossier->activeLock;
-            if ($existingLock && $existingLock->user_id !== $user->id) {
-                throw new Exception('Le dossier est déjà verrouillé par un autre utilisateur');
-            }
-            
-            // Créer le verrou
-            DossierLock::create([
-                'dossier_id' => $dossier->id,
-                'user_id' => $user->id,
-                'locked_at' => now(),
-                'expires_at' => now()->addMinutes($durationMinutes),
-                'is_active' => true
-            ]);
-            
-            // Mettre à jour le dossier
-            $dossier->update([
-                'locked_by' => $user->id,
-                'locked_at' => now()
-            ]);
-            
-            // Enregistrer l'opération
-            $this->recordOperation($dossier, 'locked', [
-                'locked_by' => $user->name,
-                'duration_minutes' => $durationMinutes
-            ]);
-            
-            DB::commit();
-            return true;
-            
-        } catch (Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-    
-    /**
-     * Déverrouiller un dossier
-     */
-    public function unlockDossier(Dossier $dossier, User $user = null): bool
-    {
-        DB::beginTransaction();
-        
-        try {
-            // Désactiver le verrou actif
-            $lock = $dossier->activeLock;
-            if ($lock) {
-                // Vérifier que c'est le même utilisateur ou un admin
-                if ($user && $lock->user_id !== $user->id && !$user->isAdmin()) {
-                    throw new Exception('Vous ne pouvez pas déverrouiller ce dossier');
-                }
-                
-                $lock->update([
-                    'is_active' => false
+            // Créer la validation pour l'étape actuelle si elle existe
+            if ($dossier->current_step_id) {
+                DossierValidation::create([
+                    'dossier_id' => $dossier->id,
+                    'workflow_step_id' => $dossier->current_step_id,
+                    'validation_entity_id' => $this->getDefaultValidationEntityId(),
+                    'decision' => 'approuve',
+                    'validated_by' => Auth::id(),
+                    'decided_at' => now(),
+                    'commentaire' => $data['commentaire'] ?? null,
+                    'reference' => $data['reference'] ?? null,
+                    'visa' => $data['visa'] ?? null
                 ]);
             }
             
             // Mettre à jour le dossier
             $dossier->update([
-                'locked_by' => null,
-                'locked_at' => null
+                'current_step_id' => $nextStep->id,
+                'statut' => Dossier::STATUT_EN_COURS
             ]);
             
             // Enregistrer l'opération
-            $this->recordOperation($dossier, 'unlocked', [
-                'unlocked_by' => $user ? $user->name : 'Système'
-            ]);
+            $this->recordOperation($dossier, 'step_forward', array_merge($data, [
+                'from_step' => $dossier->currentStep->libelle ?? 'Début',
+                'to_step' => $nextStep->libelle
+            ]));
+            
+            // Déverrouiller le dossier
+            $this->unlockDossier($dossier);
             
             DB::commit();
             return true;
@@ -418,14 +260,172 @@ class WorkflowService
     }
     
     /**
-     * Assigner un dossier à un agent
+     * Rejeter le dossier et le renvoyer à l'étape précédente ou à l'opérateur
      */
-    public function assignDossier(Dossier $dossier, User $agent, User $manager): bool
+    public function rejectDossier(Dossier $dossier, string $motif, array $data = []): bool
     {
+        if (empty($motif)) {
+            throw new Exception('Un motif de rejet est obligatoire');
+        }
+        
         DB::beginTransaction();
         
         try {
-            // Mettre à jour le dossier
+            // Créer la validation de rejet
+            if ($dossier->current_step_id) {
+                DossierValidation::create([
+                    'dossier_id' => $dossier->id,
+                    'workflow_step_id' => $dossier->current_step_id,
+                    'validation_entity_id' => $this->getDefaultValidationEntityId(),
+                    'decision' => 'rejete',
+                    'validated_by' => Auth::id(),
+                    'decided_at' => now(),
+                    'commentaire' => $motif,
+                    'motif_rejet' => $motif
+                ]);
+            }
+            
+            // Déterminer l'étape de retour
+            $previousStep = $dossier->getPreviousStep();
+            
+            if ($previousStep) {
+                // Retour à l'étape précédente
+                $dossier->update([
+                    'current_step_id' => $previousStep->id,
+                    'statut' => Dossier::STATUT_EN_COURS
+                ]);
+            } else {
+                // Retour à l'opérateur
+                $dossier->update([
+                    'current_step_id' => null,
+                    'statut' => Dossier::STATUT_REJETE,
+                    'motif_rejet' => $motif
+                ]);
+            }
+            
+            // Enregistrer l'opération
+            $this->recordOperation($dossier, 'rejected', array_merge($data, [
+                'motif' => $motif,
+                'rejected_at_step' => $dossier->currentStep->libelle ?? 'Inconnu'
+            ]));
+            
+            // Déverrouiller le dossier
+            $this->unlockDossier($dossier);
+            
+            DB::commit();
+            return true;
+            
+        } catch (Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+    
+    /**
+     * ✅ MÉTHODE CORRIGÉE - Verrouiller un dossier pour traitement
+     */
+    public function lockDossier(Dossier $dossier, User $user): DossierLock
+    {
+        // Vérifier si le dossier est déjà verrouillé
+        if ($dossier->isLocked() && !$dossier->isLockedBy($user->id)) {
+            $lockedBy = $dossier->getLockedByUser();
+            throw new Exception(sprintf(
+                'Ce dossier est actuellement en cours de traitement par %s',
+                $lockedBy ? $lockedBy->name : 'un autre utilisateur'
+            ));
+        }
+        
+        // Si déjà verrouillé par le même utilisateur, retourner le verrou existant
+        if ($dossier->isLockedBy($user->id)) {
+            $existingLock = $dossier->lock;
+            if ($existingLock && $existingLock->is_active) {
+                return $existingLock;
+            }
+        }
+        
+        // Créer un nouveau verrou
+        $lock = DossierLock::create([
+            'dossier_id' => $dossier->id,
+            'locked_by' => $user->id,
+            'workflow_step_id' => $dossier->current_step_id,
+            'session_id' => session()->getId(),
+            'locked_at' => now(),
+            'expires_at' => now()->addMinutes(30), // Expiration après 30 minutes
+            'is_active' => true,
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent()
+        ]);
+        
+        // Enregistrer l'opération
+        $this->recordOperation($dossier, 'locked', [
+            'locked_by' => $user->name
+        ]);
+        
+        return $lock;
+    }
+    
+    /**
+     * ✅ MÉTHODE CORRIGÉE - Déverrouiller un dossier
+     */
+    public function unlockDossier(Dossier $dossier): bool
+    {
+        $lock = $dossier->lock;
+        
+        if ($lock && $lock->is_active) {
+            $lock->update([
+                'is_active' => false
+            ]);
+            
+            // Enregistrer l'opération
+            $this->recordOperation($dossier, 'unlocked');
+            
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Obtenir le prochain dossier à traiter (FIFO)
+     */
+    public function getNextDossierToProcess(User $user): ?Dossier
+    {
+        // Obtenir les entités de validation de l'utilisateur
+        $validationEntities = $user->validationEntities()->pluck('id');
+        
+        if ($validationEntities->isEmpty()) {
+            return null;
+        }
+        
+        // Chercher le prochain dossier non verrouillé
+        return Dossier::whereIn('statut', [Dossier::STATUT_SOUMIS, Dossier::STATUT_EN_COURS])
+            ->whereHas('currentStep', function ($query) use ($validationEntities) {
+                $query->whereIn('validation_entity_id', $validationEntities);
+            })
+            ->whereDoesntHave('lock', function ($query) {
+                $query->where('is_active', true);
+            })
+            ->orderBy('submitted_at', 'asc')
+            ->first();
+    }
+    
+    /**
+     * Attribuer un dossier spécifique à un agent (réservé aux managers)
+     */
+    public function assignDossierToAgent(Dossier $dossier, User $agent, User $manager): bool
+    {
+        // Vérifier que le manager a les droits
+        if (!$manager->hasRole(['admin', 'manager'])) {
+            throw new Exception('Seuls les managers peuvent attribuer des dossiers');
+        }
+        
+        DB::beginTransaction();
+        
+        try {
+            // Verrouiller le dossier pour l'agent
+            $this->lockDossier($dossier, $agent);
+            
+            // Mettre à jour l'assignation
             $dossier->update([
                 'assigned_to' => $agent->id
             ]);

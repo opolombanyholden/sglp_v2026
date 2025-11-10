@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class WorkflowStep extends Model
 {
@@ -109,13 +110,19 @@ class WorkflowStep extends Model
     }
 
     /**
-     * Relations
+     * Relation : Type d'organisation
      */
-    public function entities(): BelongsToMany
+    public function organisationType(): BelongsTo
     {
-        return $this->belongsToMany(ValidationEntity::class, 'workflow_step_entities')
-            ->withPivot(['ordre', 'is_optional'])
-            ->withTimestamps();
+        return $this->belongsTo(OrganisationType::class, 'organisation_type_id');
+    }
+
+    /**
+     * Relation : Type d'opération
+     */
+    public function operationType(): BelongsTo
+    {
+        return $this->belongsTo(OperationType::class, 'operation_type_id');
     }
 
     public function validations(): HasMany
@@ -136,14 +143,14 @@ class WorkflowStep extends Model
         return $query->where('is_active', true);
     }
 
-    public function scopeForOrganisationType($query, $type)
+    public function scopeForOrganisationType($query, $typeId)
     {
-        return $query->where('type_organisation', $type);
+        return $query->where('organisation_type_id', $typeId);
     }
 
-    public function scopeForOperation($query, $operation)
+    public function scopeForOperation($query, $operationId)
     {
-        return $query->where('type_operation', $operation);
+        return $query->where('operation_type_id', $operationId);
     }
 
     public function scopeOrdered($query)
