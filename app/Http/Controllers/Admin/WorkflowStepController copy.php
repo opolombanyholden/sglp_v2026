@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use App\Models\OrganisationType;
+use App\Models\OperationType;
 
 /**
  * ============================================================================
@@ -16,21 +18,19 @@ use Illuminate\Support\Str;
  * 
  * Contrôleur pour gérer les étapes du workflow de validation SGLP
  * 
- * Version 2.0 - Mise à jour complète
- * Date: 02/11/2025
+ * Version 2.1 - Correction migration ENUM vers FK
+ * Date: 11/11/2025
  * 
- * CORRECTIFS VERSION 2.0 :
- * ✅ Correction noms colonnes (est_actif → is_active)
- * ✅ Ajout champs manquants (code, type_operation, etc.)
- * ✅ Implémentation méthodes helpers avec vraies données
- * ✅ Validation complète avec toutes les règles
- * ✅ Nouvelles fonctionnalités (duplicate, export, stats avancées)
- * ✅ Gestion erreurs améliorée
- * ✅ Transactions DB pour cohérence
- * ✅ Logs détaillés pour audit
+ * CORRECTIFS VERSION 2.1 :
+ * ✅ Migration complète ENUM → FK (organisation_type_id, operation_type_id)
+ * ✅ Jointures avec organisation_types et operation_types partout
+ * ✅ Récupération dynamique des types depuis la DB
+ * ✅ Conversion code → ID pour tous filtres et requêtes
+ * ✅ Enrichissement des résultats avec noms lisibles
+ * ✅ Suppression de tous les arrays hardcodés
  * 
  * @package App\Http\Controllers\Admin
- * @version 2.0
+ * @version 2.1
  */
 class WorkflowStepController extends Controller
 {
@@ -38,6 +38,48 @@ class WorkflowStepController extends Controller
      * Nom de la table
      */
     protected $table = 'workflow_steps';
+    
+    /**
+     * ========================================================================
+     * HELPERS - CONVERSION CODE ↔ ID
+     * ========================================================================
+     */
+    
+    /**
+     * Convertir code organisation en ID
+     */
+    protected function getOrganisationTypeId(string $code): ?int
+    {
+        return OrganisationType::where('code', $code)->value('id');
+    }
+
+    /**
+     * Convertir code opération en ID
+     */
+    protected function getOperationTypeId(string $code): ?int
+    {
+        return OperationType::where('code', $code)->value('id');
+    }
+
+    /**
+     * Récupérer tous les types d'organisations depuis la DB
+     */
+    private function getTypesOrganisations(): array
+    {
+        return OrganisationType::orderBy('nom')
+            ->pluck('nom', 'code')
+            ->toArray();
+    }
+
+    /**
+     * Récupérer tous les types d'opérations depuis la DB
+     */
+    private function getTypesOperations(): array
+    {
+        return OperationType::orderBy('libelle')
+            ->pluck('libelle', 'code')
+            ->toArray();
+    }
 
     /**
      * ========================================================================
@@ -45,71 +87,73 @@ class WorkflowStepController extends Controller
      * ========================================================================
      */
     public function index(Request $request)
-    {
-        try {
-            // Récupération des filtres
-            $search = $request->input('search');
-            $typeOrganisation = $request->input('type_organisation');
-            $typeOperation = $request->input('type_operation');
-            $statut = $request->input('statut');
-            $perPage = $request->input('per_page', 15);
+{
+    try {
+        // Récupération des filtres
+        $search = $request->input('search');
+        $typeOrganisation = $request->input('type_organisation');
+        $typeOperation = $request->input('type_operation');
+        $statut = $request->input('statut');
+        $perPage = $request->input('per_page', 15);
 
-            // Construction de la requête
-            $query = DB::table($this->table);
+        // ✅ Construction de la requête AVEC JOINTURES CORRIGÉES
+        $query = DB::table($this->table . ' as ws')
+            ->leftJoin('organisation_types as ot', function($join) {
+                $join->on('ws.organisation_type_id', '=', 'ot.id');
+            })
+            ->leftJoin('operation_types as opt', function($join) {
+                $join->on('ws.operation_type_id', '=', 'opt.id');
+            })
+            ->select(
+                'ws.*',
+                DB::raw('ot.code as type_organisation'),
+                DB::raw('ot.nom as type_organisation_nom'),
+                DB::raw('opt.code as type_operation'),
+                DB::raw('opt.nom as type_operation_nom')
+            );
 
-            // Filtre recherche
-            if ($search) {
-                $query->where(function($q) use ($search) {
-                    $q->where('libelle', 'LIKE', "%{$search}%")
-                      ->orWhere('description', 'LIKE', "%{$search}%")
-                      ->orWhere('code', 'LIKE', "%{$search}%");
-                });
+        // Filtre recherche
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('ws.libelle', 'LIKE', "%{$search}%")
+                  ->orWhere('ws.description', 'LIKE', "%{$search}%")
+                  ->orWhere('ws.code', 'LIKE', "%{$search}%")
+                  ->orWhere('ot.nom', 'LIKE', "%{$search}%")
+                  ->orWhere('opt.nom', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // ✅ Filtre type organisation avec conversion code → ID
+        if ($typeOrganisation && $typeOrganisation !== 'all') {
+            $orgTypeId = $this->getOrganisationTypeId($typeOrganisation);
+            if ($orgTypeId) {
+                $query->where('ws.organisation_type_id', $orgTypeId);
             }
+        }
 
-            // Filtre type organisation
-            if ($typeOrganisation && $typeOrganisation !== 'all') {
-                $query->where('type_organisation', $typeOrganisation);
+        // ✅ Filtre type opération avec conversion code → ID
+        if ($typeOperation && $typeOperation !== 'all') {
+            $opTypeId = $this->getOperationTypeId($typeOperation);
+            if ($opTypeId) {
+                $query->where('ws.operation_type_id', $opTypeId);
             }
+        }
 
-            // Filtre type opération
-            if ($typeOperation && $typeOperation !== 'all') {
-                $query->where('type_operation', $typeOperation);
-            }
+        // Filtre statut
+        if ($statut !== null && $statut !== '') {
+            $query->where('ws.is_active', $statut);
+        }
 
-            // Filtre statut
-            if ($statut !== null && $statut !== '') {
-                $query->where('is_active', $statut);
-            }
+        // ✅ Tri
+        $query->orderBy('ot.nom', 'asc')
+              ->orderBy('opt.nom', 'asc')
+              ->orderBy('ws.numero_passage', 'asc');
 
-            // Tri par type_organisation puis numero_passage
-            $query->orderBy('type_organisation', 'asc')
-                  ->orderBy('type_operation', 'asc')
-                  ->orderBy('numero_passage', 'asc');
-
-            // Requête AJAX pour JSON
-            if ($request->expectsJson()) {
-                $steps = $query->get();
-                
-                // Enrichir avec statistiques
-                foreach ($steps as $step) {
-                    $step->entities_count = $this->getEntitiesCount($step->id);
-                    $step->avg_processing_time = $this->getAvgProcessingTime($step->id);
-                    $step->dossiers_en_cours = $this->getDossiersEnCoursCount($step->id);
-                    $step->total_dossiers_traites = $this->getTotalDossiersPassesByStep($step->id);
-                    $step->taux_approbation = $this->getTauxApprobation($step->id);
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'data' => $steps,
-                    'total' => count($steps)
-                ]);
-            }
-
-            // Pagination pour la vue
-            $steps = $query->paginate($perPage);
-
-            // Enrichir avec statistiques pour la vue
+        // Requête AJAX pour JSON
+        if ($request->expectsJson()) {
+            $steps = $query->get();
+            
+            // Enrichir avec statistiques
             foreach ($steps as $step) {
                 $step->entities_count = $this->getEntitiesCount($step->id);
                 $step->avg_processing_time = $this->getAvgProcessingTime($step->id);
@@ -118,41 +162,60 @@ class WorkflowStepController extends Controller
                 $step->taux_approbation = $this->getTauxApprobation($step->id);
             }
 
-            // Statistiques globales
-            $stats = [
-                'total_steps' => DB::table($this->table)->count(),
-                'active_steps' => DB::table($this->table)->where('is_active', 1)->count(),
-                'inactive_steps' => DB::table($this->table)->where('is_active', 0)->count(),
-                'avg_step_duration' => $this->getGlobalAvgDuration(),
-                'steps_par_type' => $this->getStepsCountByType()
-            ];
-
-            // Types pour les filtres
-            $typesOrganisations = $this->getTypesOrganisations();
-            $typesOperations = $this->getTypesOperations();
-
-            return view('admin.workflow-steps.index', compact(
-                'steps', 
-                'stats', 
-                'typesOrganisations', 
-                'typesOperations'
-            ));
-
-        } catch (\Exception $e) {
-            Log::error('Erreur WorkflowStepController@index : ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            return response()->json([
+                'success' => true,
+                'data' => $steps,
+                'total' => count($steps)
             ]);
-            
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Erreur lors du chargement des étapes'
-                ], 500);
-            }
-
-            return back()->with('error', 'Erreur lors du chargement des étapes : ' . $e->getMessage());
         }
+
+        // Pagination pour la vue
+        $steps = $query->paginate($perPage);
+
+        // Enrichir avec statistiques pour la vue
+        foreach ($steps as $step) {
+            $step->entities_count = $this->getEntitiesCount($step->id);
+            $step->avg_processing_time = $this->getAvgProcessingTime($step->id);
+            $step->dossiers_en_cours = $this->getDossiersEnCoursCount($step->id);
+            $step->total_dossiers_traites = $this->getTotalDossiersPassesByStep($step->id);
+            $step->taux_approbation = $this->getTauxApprobation($step->id);
+        }
+
+        // Statistiques globales
+        $stats = [
+            'total_steps' => DB::table($this->table)->count(),
+            'active_steps' => DB::table($this->table)->where('is_active', 1)->count(),
+            'inactive_steps' => DB::table($this->table)->where('is_active', 0)->count(),
+            'avg_step_duration' => $this->getGlobalAvgDuration(),
+            'steps_par_type' => $this->getStepsCountByType()
+        ];
+
+        // Types pour les filtres
+        $typesOrganisations = $this->getTypesOrganisations();
+        $typesOperations = $this->getTypesOperations();
+
+        return view('admin.workflow-steps.index', compact(
+            'steps', 
+            'stats', 
+            'typesOrganisations', 
+            'typesOperations'
+        ));
+
+    } catch (\Exception $e) {
+        Log::error('Erreur WorkflowStepController@index : ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des étapes'
+            ], 500);
+        }
+
+        return back()->with('error', 'Erreur lors du chargement des étapes : ' . $e->getMessage());
     }
+}
 
     /**
      * ========================================================================
@@ -238,10 +301,18 @@ class WorkflowStepController extends Controller
                     ->withInput();
             }
 
-            // Vérifier unicité de numero_passage pour ce type_organisation + type_operation
+            // ✅ Convertir codes en IDs
+            $orgTypeId = $this->getOrganisationTypeId($request->input('type_organisation'));
+            $opTypeId = $this->getOperationTypeId($request->input('type_operation'));
+
+            if (!$orgTypeId || !$opTypeId) {
+                throw new \Exception('Type organisation ou opération invalide');
+            }
+
+            // ✅ Vérifier unicité de numero_passage pour ce type_organisation + type_operation avec FK
             $existingStep = DB::table($this->table)
-                ->where('type_organisation', $request->input('type_organisation'))
-                ->where('type_operation', $request->input('type_operation'))
+                ->where('organisation_type_id', $orgTypeId)
+                ->where('operation_type_id', $opTypeId)
                 ->where('numero_passage', $request->input('numero_passage'))
                 ->exists();
 
@@ -258,14 +329,14 @@ class WorkflowStepController extends Controller
                     ->withInput();
             }
 
-            // Préparer les données
+            // ✅ Préparer les données avec FK
             $data = [
                 'code' => strtoupper($request->input('code')),
                 'libelle' => $request->input('libelle'),
                 'description' => $request->input('description'),
                 'numero_passage' => $request->input('numero_passage'),
-                'type_organisation' => $request->input('type_organisation'),
-                'type_operation' => $request->input('type_operation'),
+                'organisation_type_id' => $orgTypeId,
+                'operation_type_id' => $opTypeId,
                 'champs_requis' => $request->input('champs_requis', '[]'),
                 'delai_traitement' => $request->input('delai_traitement', 48),
                 'permet_rejet' => $request->input('permet_rejet', 1),
@@ -302,8 +373,8 @@ class WorkflowStepController extends Controller
                 'step_id' => $stepId,
                 'code' => $data['code'],
                 'libelle' => $data['libelle'],
-                'type_organisation' => $data['type_organisation'],
-                'type_operation' => $data['type_operation'],
+                'organisation_type_id' => $orgTypeId,
+                'operation_type_id' => $opTypeId,
                 'user_id' => auth()->id()
             ]);
 
@@ -347,95 +418,133 @@ class WorkflowStepController extends Controller
      * SHOW - AFFICHER LES DÉTAILS D'UNE ÉTAPE
      * ========================================================================
      */
-    public function show($id)
-    {
-        try {
-            // Récupérer l'étape
-            $step = DB::table($this->table)->where('id', $id)->first();
+public function show($id)
+{
+    try {
+        // ✅ Récupérer l'étape avec jointures CORRIGÉES
+        $step = DB::table($this->table . ' as ws')
+            ->leftJoin('organisation_types as ot', function($join) {
+                $join->on('ws.organisation_type_id', '=', 'ot.id');
+            })
+            ->leftJoin('operation_types as opt', function($join) {
+                $join->on('ws.operation_type_id', '=', 'opt.id');
+            })
+            ->where('ws.id', $id)
+            ->select(
+                'ws.*',
+                DB::raw('ot.code as type_organisation'),
+                DB::raw('ot.nom as type_organisation_nom'),
+                DB::raw('opt.code as type_operation'),
+                DB::raw('opt.nom as type_operation_nom')
+            )
+            ->first();
 
-            if (!$step) {
-                return back()->with('error', 'Étape non trouvée');
-            }
-
-            // Récupérer les entités assignées
-            $entities = DB::table('workflow_step_entities as wse')
-                ->join('validation_entities as ve', 've.id', '=', 'wse.validation_entity_id')
-                ->where('wse.workflow_step_id', $id)
-                ->select('ve.*', 'wse.ordre', 'wse.is_optional')
-                ->orderBy('wse.ordre', 'asc')
-                ->get();
-
-            // Statistiques détaillées
-            $stats = [
-                'entities_count' => count($entities),
-                'avg_processing_time' => $this->getAvgProcessingTime($id),
-                'dossiers_en_cours' => $this->getDossiersEnCoursCount($id),
-                'total_dossiers_traites' => $this->getTotalDossiersPassesByStep($id),
-                'taux_approbation' => $this->getTauxApprobation($id),
-                'delai_moyen_reel' => $this->getDelaiMoyenReel($id),
-                'dossiers_en_retard' => $this->getDossiersEnRetard($id)
-            ];
-
-            // Dossiers récents
-            $recentDossiers = $this->getRecentDossiersForStep($id, 5);
-
-            return view('admin.workflow-steps.show', compact(
-                'step', 
-                'entities', 
-                'stats', 
-                'recentDossiers'
-            ));
-
-        } catch (\Exception $e) {
-            Log::error('Erreur WorkflowStepController@show : ' . $e->getMessage());
-            return back()->with('error', 'Erreur lors de l\'affichage de l\'étape : ' . $e->getMessage());
+        if (!$step) {
+            return back()->with('error', 'Étape non trouvée');
         }
+
+        // Récupérer les entités assignées
+        $entities = DB::table('workflow_step_entities as wse')
+            ->join('validation_entities as ve', 've.id', '=', 'wse.validation_entity_id')
+            ->where('wse.workflow_step_id', $id)
+            ->select('ve.*', 'wse.ordre', 'wse.is_optional')
+            ->orderBy('wse.ordre', 'asc')
+            ->get();
+
+        // Statistiques détaillées
+        $stats = [
+            'entities_count' => count($entities),
+            'avg_processing_time' => $this->getAvgProcessingTime($id),
+            'dossiers_en_cours' => $this->getDossiersEnCoursCount($id),
+            'total_dossiers_traites' => $this->getTotalDossiersPassesByStep($id),
+            'taux_approbation' => $this->getTauxApprobation($id),
+            'delai_moyen_reel' => $this->getDelaiMoyenReel($id),
+            'dossiers_en_retard' => $this->getDossiersEnRetard($id)
+        ];
+
+        // Dossiers récents
+        $recentDossiers = $this->getRecentDossiersForStep($id, 5);
+
+        return view('admin.workflow-steps.show', compact(
+            'step', 
+            'entities', 
+            'stats', 
+            'recentDossiers'
+        ));
+
+    } catch (\Exception $e) {
+        Log::error('Erreur WorkflowStepController@show : ' . $e->getMessage());
+        return back()->with('error', 'Erreur lors de l\'affichage des détails : ' . $e->getMessage());
     }
+}
 
     /**
      * ========================================================================
      * EDIT - AFFICHER LE FORMULAIRE D'ÉDITION
      * ========================================================================
      */
-    public function edit($id)
-    {
-        try {
-            // Récupérer l'étape
-            $step = DB::table($this->table)->where('id', $id)->first();
+public function edit($id)
+{
+    try {
+        // ✅ Récupérer l'étape avec jointures CORRIGÉES
+        $step = DB::table($this->table . ' as ws')
+            ->leftJoin('organisation_types as ot', function($join) {
+                $join->on('ws.organisation_type_id', '=', 'ot.id');
+            })
+            ->leftJoin('operation_types as opt', function($join) {
+                $join->on('ws.operation_type_id', '=', 'opt.id');
+            })
+            ->where('ws.id', $id)
+            ->select(
+                'ws.*',
+                DB::raw('ot.code as type_organisation'),
+                DB::raw('ot.nom as type_organisation_nom'),
+                DB::raw('opt.code as type_operation'),
+                DB::raw('opt.nom as type_operation_nom')
+            )
+            ->first();
 
-            if (!$step) {
-                return back()->with('error', 'Étape non trouvée');
-            }
-
-            // Types d'organisations et opérations
-            $typesOrganisations = $this->getTypesOrganisations();
-            $typesOperations = $this->getTypesOperations();
-
-            // Entités disponibles
-            $entitiesDisponibles = DB::table('validation_entities')
-                ->where('is_active', 1)
-                ->orderBy('nom', 'asc')
-                ->get();
-
-            // Entités déjà assignées
-            $entitiesAssignees = DB::table('workflow_step_entities')
-                ->where('workflow_step_id', $id)
-                ->pluck('validation_entity_id')
-                ->toArray();
-
-            return view('admin.workflow-steps.edit', compact(
-                'step',
-                'typesOrganisations',
-                'typesOperations',
-                'entitiesDisponibles',
-                'entitiesAssignees'
-            ));
-
-        } catch (\Exception $e) {
-            Log::error('Erreur WorkflowStepController@edit : ' . $e->getMessage());
-            return back()->with('error', 'Erreur lors de l\'affichage du formulaire : ' . $e->getMessage());
+        if (!$step) {
+            return back()->with('error', 'Étape non trouvée');
         }
+
+        // Types d'organisations disponibles
+        $typesOrganisations = $this->getTypesOrganisations();
+
+        // Types d'opérations disponibles
+        $typesOperations = $this->getTypesOperations();
+
+        // Récupérer les entités assignées
+        $assignedEntities = DB::table('workflow_step_entities as wse')
+            ->join('validation_entities as ve', 've.id', '=', 'wse.validation_entity_id')
+            ->where('wse.workflow_step_id', $id)
+            ->select('ve.*', 'wse.ordre', 'wse.is_optional')
+            ->orderBy('wse.ordre', 'asc')
+            ->get();
+
+        // Liste de toutes les entités disponibles
+        $entitiesDisponibles = DB::table('validation_entities')
+            ->where('is_active', 1)
+            ->orderBy('nom', 'asc')
+            ->get();
+
+        return view('admin.workflow-steps.edit', compact(
+            'step',
+            'typesOrganisations',
+            'typesOperations',
+            'assignedEntities',
+            'entitiesDisponibles'
+        ));
+
+    } catch (\Exception $e) {
+        Log::error('Erreur WorkflowStepController@edit : ' . $e->getMessage());
+        return back()->with('error', 'Erreur lors de l\'affichage du formulaire : ' . $e->getMessage());
     }
+}
+
+
+
+
 
     /**
      * ========================================================================
@@ -447,16 +556,10 @@ class WorkflowStepController extends Controller
         DB::beginTransaction();
         
         try {
-            // Vérifier que l'étape existe
+            // Récupérer l'étape existante
             $step = DB::table($this->table)->where('id', $id)->first();
             
             if (!$step) {
-                if ($request->expectsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Étape non trouvée'
-                    ], 404);
-                }
                 return back()->with('error', 'Étape non trouvée');
             }
 
@@ -475,6 +578,11 @@ class WorkflowStepController extends Controller
                 'genere_document' => 'nullable|boolean',
                 'template_document' => 'nullable|string|max:255',
                 'is_active' => 'nullable|boolean'
+            ], [
+                'code.required' => 'Le code est obligatoire',
+                'code.unique' => 'Ce code existe déjà',
+                'libelle.required' => 'Le libellé est obligatoire',
+                'numero_passage.required' => 'Le numéro de passage est obligatoire'
             ]);
 
             if ($validator->fails()) {
@@ -491,10 +599,18 @@ class WorkflowStepController extends Controller
                     ->withInput();
             }
 
-            // Vérifier unicité numero_passage (sauf pour l'étape actuelle)
+            // ✅ Convertir codes en IDs
+            $orgTypeId = $this->getOrganisationTypeId($request->input('type_organisation'));
+            $opTypeId = $this->getOperationTypeId($request->input('type_operation'));
+
+            if (!$orgTypeId || !$opTypeId) {
+                throw new \Exception('Type organisation ou opération invalide');
+            }
+
+            // ✅ Vérifier unicité numero_passage avec FK (sauf pour l'étape actuelle)
             $existingStep = DB::table($this->table)
-                ->where('type_organisation', $request->input('type_organisation'))
-                ->where('type_operation', $request->input('type_operation'))
+                ->where('organisation_type_id', $orgTypeId)
+                ->where('operation_type_id', $opTypeId)
                 ->where('numero_passage', $request->input('numero_passage'))
                 ->where('id', '!=', $id)
                 ->exists();
@@ -512,14 +628,14 @@ class WorkflowStepController extends Controller
                     ->withInput();
             }
 
-            // Préparer les données de mise à jour
+            // ✅ Préparer les données de mise à jour avec FK
             $data = [
                 'code' => strtoupper($request->input('code')),
                 'libelle' => $request->input('libelle'),
                 'description' => $request->input('description'),
                 'numero_passage' => $request->input('numero_passage'),
-                'type_organisation' => $request->input('type_organisation'),
-                'type_operation' => $request->input('type_operation'),
+                'organisation_type_id' => $orgTypeId,
+                'operation_type_id' => $opTypeId,
                 'champs_requis' => $request->input('champs_requis', '[]'),
                 'delai_traitement' => $request->input('delai_traitement', 48),
                 'permet_rejet' => $request->input('permet_rejet', 1),
@@ -763,14 +879,8 @@ class WorkflowStepController extends Controller
 
     /**
      * ========================================================================
-     * REORDER - RÉORGANISER L'ORDRE DES ÉTAPES (AJAX DRAG & DROP)
-     * ========================================================================
-     */
-    /**
-     * ========================================================================
      * REORDER - RÉORGANISER L'ORDRE DES ÉTAPES (SUPPORTE 2 FORMATS)
      * ========================================================================
-     * Gère à la fois le format ancien (DataTables) et nouveau (Timeline)
      */
     public function reorder(Request $request)
     {
@@ -856,12 +966,20 @@ class WorkflowStepController extends Controller
         DB::beginTransaction();
         
         try {
+            // ✅ Convertir codes en IDs
+            $orgTypeId = $this->getOrganisationTypeId($validated['type_organisation']);
+            $opTypeId = $this->getOperationTypeId($validated['type_operation']);
+
+            if (!$orgTypeId || !$opTypeId) {
+                throw new \Exception('Type organisation ou opération invalide');
+            }
+
             // Mettre à jour le numero_passage de chaque étape selon l'ordre dans step_ids
             foreach ($validated['step_ids'] as $index => $stepId) {
                 DB::table($this->table)
                     ->where('id', $stepId)
-                    ->where('type_organisation', $validated['type_organisation'])
-                    ->where('type_operation', $validated['type_operation'])
+                    ->where('organisation_type_id', $orgTypeId)
+                    ->where('operation_type_id', $opTypeId)
                     ->update([
                         'numero_passage' => $index + 1,
                         'updated_at' => now()
@@ -920,8 +1038,8 @@ class WorkflowStepController extends Controller
                 'libelle' => $sourceStep->libelle . ' (Copie)',
                 'description' => $sourceStep->description,
                 'numero_passage' => DB::table($this->table)->max('numero_passage') + 1,
-                'type_organisation' => $sourceStep->type_organisation,
-                'type_operation' => $sourceStep->type_operation,
+                'organisation_type_id' => $sourceStep->organisation_type_id,
+                'operation_type_id' => $sourceStep->operation_type_id,
                 'champs_requis' => $sourceStep->champs_requis,
                 'delai_traitement' => $sourceStep->delai_traitement,
                 'permet_rejet' => $sourceStep->permet_rejet,
@@ -978,122 +1096,160 @@ class WorkflowStepController extends Controller
      * EXPORT - EXPORTER LES CONFIGURATIONS
      * ========================================================================
      */
-    public function export(Request $request)
-    {
-        try {
-            $typeOrganisation = $request->input('type_organisation');
-            $typeOperation = $request->input('type_operation');
+public function export(Request $request)
+{
+    try {
+        $typeOrganisation = $request->input('type_organisation');
+        $typeOperation = $request->input('type_operation');
 
-            // Récupérer les étapes
-            $query = DB::table($this->table);
+        // ✅ Récupérer les étapes avec jointures CORRIGÉES
+        $query = DB::table($this->table . ' as ws')
+            ->leftJoin('organisation_types as ot', function($join) {
+                $join->on('ws.organisation_type_id', '=', 'ot.id');
+            })
+            ->leftJoin('operation_types as opt', function($join) {
+                $join->on('ws.operation_type_id', '=', 'opt.id');
+            })
+            ->select(
+                'ws.*',
+                DB::raw('ot.code as type_organisation'),
+                DB::raw('ot.nom as type_organisation_nom'),
+                DB::raw('opt.code as type_operation'),
+                DB::raw('opt.nom as type_operation_nom')
+            );
 
-            if ($typeOrganisation) {
-                $query->where('type_organisation', $typeOrganisation);
+        // ✅ Convertir codes en IDs pour filtres
+        if ($typeOrganisation) {
+            $orgTypeId = $this->getOrganisationTypeId($typeOrganisation);
+            if ($orgTypeId) {
+                $query->where('ws.organisation_type_id', $orgTypeId);
             }
-
-            if ($typeOperation) {
-                $query->where('type_operation', $typeOperation);
-            }
-
-            $steps = $query->orderBy('numero_passage', 'asc')->get();
-
-            // Enrichir avec les entités
-            foreach ($steps as $step) {
-                $step->entities = DB::table('workflow_step_entities as wse')
-                    ->join('validation_entities as ve', 've.id', '=', 'wse.validation_entity_id')
-                    ->where('wse.workflow_step_id', $step->id)
-                    ->select('ve.code', 've.nom', 'wse.ordre', 'wse.is_optional')
-                    ->orderBy('wse.ordre', 'asc')
-                    ->get();
-            }
-
-            // Préparer le JSON
-            $export = [
-                'exported_at' => now()->toDateTimeString(),
-                'exported_by' => auth()->user()->name ?? 'Système',
-                'filters' => [
-                    'type_organisation' => $typeOrganisation,
-                    'type_operation' => $typeOperation
-                ],
-                'steps_count' => count($steps),
-                'steps' => $steps
-            ];
-
-            // Générer le fichier JSON
-            $filename = 'workflow_steps_export_' . date('Ymd_His') . '.json';
-            $json = json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-
-            return response($json)
-                ->header('Content-Type', 'application/json')
-                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-
-        } catch (\Exception $e) {
-            Log::error('Erreur WorkflowStepController@export : ' . $e->getMessage());
-            return back()->with('error', 'Erreur lors de l\'export : ' . $e->getMessage());
         }
+
+        if ($typeOperation) {
+            $opTypeId = $this->getOperationTypeId($typeOperation);
+            if ($opTypeId) {
+                $query->where('ws.operation_type_id', $opTypeId);
+            }
+        }
+
+        $steps = $query->orderBy('ws.numero_passage', 'asc')->get();
+
+        // Enrichir avec les entités
+        foreach ($steps as $step) {
+            $step->entities = DB::table('workflow_step_entities as wse')
+                ->join('validation_entities as ve', 've.id', '=', 'wse.validation_entity_id')
+                ->where('wse.workflow_step_id', $step->id)
+                ->select('ve.code', 've.nom', 'wse.ordre', 'wse.is_optional')
+                ->orderBy('wse.ordre', 'asc')
+                ->get();
+        }
+
+        // Préparer le JSON
+        $export = [
+            'exported_at' => now()->toDateTimeString(),
+            'exported_by' => auth()->user()->name ?? 'Système',
+            'filters' => [
+                'type_organisation' => $typeOrganisation,
+                'type_operation' => $typeOperation
+            ],
+            'steps_count' => count($steps),
+            'steps' => $steps
+        ];
+
+        // Générer le fichier JSON
+        $filename = 'workflow_steps_export_' . date('Ymd_His') . '.json';
+        $json = json_encode($export, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+        return response($json)
+            ->header('Content-Type', 'application/json')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+
+    } catch (\Exception $e) {
+        Log::error('Erreur WorkflowStepController@export : ' . $e->getMessage());
+        return back()->with('error', 'Erreur lors de l\'export : ' . $e->getMessage());
     }
+}
+
 
     /**
      * ========================================================================
      * STATISTICS - STATISTIQUES DÉTAILLÉES D'UNE ÉTAPE (AJAX)
      * ========================================================================
      */
-    public function statistics($id)
-    {
-        try {
-            // Vérifier que l'étape existe
-            $step = DB::table($this->table)->where('id', $id)->first();
-            
-            if (!$step) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Étape non trouvée'
-                ], 404);
-            }
-
-            // Statistiques complètes
-            $stats = [
-                'step_info' => [
-                    'code' => $step->code,
-                    'libelle' => $step->libelle,
-                    'type_organisation' => $step->type_organisation,
-                    'type_operation' => $step->type_operation,
-                    'numero_passage' => $step->numero_passage
-                ],
-                'dossiers' => [
-                    'en_cours' => $this->getDossiersEnCoursCount($id),
-                    'total_traites' => $this->getTotalDossiersPassesByStep($id),
-                    'en_retard' => $this->getDossiersEnRetard($id)
-                ],
-                'performance' => [
-                    'delai_prevu' => $step->delai_traitement . ' heures',
-                    'delai_moyen_reel' => $this->getDelaiMoyenReel($id),
-                    'taux_respect_delai' => $this->getTauxRespectDelai($id)
-                ],
-                'validation' => [
-                    'taux_approbation' => $this->getTauxApprobation($id),
-                    'nombre_rejets' => $this->getNombreRejets($id)
-                ],
-                'entities' => [
-                    'count' => $this->getEntitiesCount($id),
-                    'list' => $this->getEntitiesList($id)
-                ]
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $stats
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Erreur WorkflowStepController@statistics : ' . $e->getMessage());
-            
+public function statistics($id)
+{
+    try {
+        // ✅ Vérifier que l'étape existe avec jointures CORRIGÉES
+        $step = DB::table($this->table . ' as ws')
+            ->leftJoin('organisation_types as ot', function($join) {
+                $join->on('ws.organisation_type_id', '=', 'ot.id');
+            })
+            ->leftJoin('operation_types as opt', function($join) {
+                $join->on('ws.operation_type_id', '=', 'opt.id');
+            })
+            ->where('ws.id', $id)
+            ->select(
+                'ws.*',
+                DB::raw('ot.code as type_organisation'),
+                DB::raw('ot.nom as type_organisation_nom'),
+                DB::raw('opt.code as type_operation'),
+                DB::raw('opt.nom as type_operation_nom')
+            )
+            ->first();
+        
+        if (!$step) {
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors du calcul des statistiques'
-            ], 500);
+                'message' => 'Étape non trouvée'
+            ], 404);
         }
+
+        // Statistiques complètes
+        $stats = [
+            'step_info' => [
+                'code' => $step->code,
+                'libelle' => $step->libelle,
+                'type_organisation' => $step->type_organisation_nom,
+                'type_operation' => $step->type_operation_nom,
+                'numero_passage' => $step->numero_passage
+            ],
+            'dossiers' => [
+                'en_cours' => $this->getDossiersEnCoursCount($id),
+                'total_traites' => $this->getTotalDossiersPassesByStep($id),
+                'en_retard' => $this->getDossiersEnRetard($id)
+            ],
+            'performance' => [
+                'delai_prevu' => $step->delai_traitement . ' heures',
+                'delai_moyen_reel' => $this->getDelaiMoyenReel($id),
+                'taux_respect_delai' => $this->getTauxRespectDelai($id)
+            ],
+            'validation' => [
+                'taux_approbation' => $this->getTauxApprobation($id),
+                'nombre_rejets' => $this->getNombreRejets($id)
+            ],
+            'entities' => [
+                'count' => $this->getEntitiesCount($id),
+                'list' => $this->getEntitiesList($id)
+            ]
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Erreur WorkflowStepController@statistics : ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Erreur lors du calcul des statistiques'
+        ], 500);
     }
+}
+
+
 
     // ========================================================================
     // MÉTHODES PRIVÉES - HELPERS (IMPLÉMENTÉES)
@@ -1319,119 +1475,100 @@ class WorkflowStepController extends Controller
     }
 
     /**
-     * Compte des steps par type
+     * ✅ Compte des steps par type (CORRIGÉ avec FK)
      */
     private function getStepsCountByType()
     {
-        return DB::table($this->table)
-            ->select('type_organisation', DB::raw('count(*) as count'))
-            ->where('is_active', 1)
-            ->groupBy('type_organisation')
+        $counts = DB::table($this->table . ' as ws')
+            ->join('organisation_types as ot', 'ws.organisation_type_id', '=', 'ot.id')
+            ->select('ot.code', DB::raw('count(*) as count'))
+            ->where('ws.is_active', 1)
+            ->groupBy('ot.code')
             ->get()
-            ->pluck('count', 'type_organisation')
+            ->pluck('count', 'code')
             ->toArray();
+        
+        return $counts;
     }
 
     /**
-     * Types d'organisations disponibles
+     * ========================================================================
+     * CONFIGURE - MATRICE ÉTAPES × ENTITÉS
+     * ========================================================================
      */
-    private function getTypesOrganisations()
-    {
-        return [
-            'association' => 'Association',
-            'ong' => 'ONG',
-            'parti_politique' => 'Parti Politique',
-            'confession_religieuse' => 'Confession Religieuse'
-        ];
+public function configure(Request $request)
+{
+    // Filtres
+    $typeOrganisation = $request->get('type_organisation', 'association');
+    $typeOperation = $request->get('type_operation', 'creation');
+    
+    // ✅ Convertir codes en IDs
+    $orgTypeId = $this->getOrganisationTypeId($typeOrganisation);
+    $opTypeId = $this->getOperationTypeId($typeOperation);
+
+    if (!$orgTypeId || !$opTypeId) {
+        return back()->with('error', 'Type organisation ou opération invalide');
     }
 
-    /**
-     * Types d'opérations disponibles
-     */
-    private function getTypesOperations()
-    {
-        return [
-            'creation' => 'Création',
-            'modification' => 'Modification',
-            'cessation' => 'Cessation',
-            'ajout_adherent' => 'Ajout Adhérent',
-            'retrait_adherent' => 'Retrait Adhérent',
-            'declaration_activite' => 'Déclaration Activité',
-            'changement_statutaire' => 'Changement Statutaire'
+    // ✅ Récupérer toutes les étapes pour ce contexte avec jointures CORRIGÉES
+    $steps = DB::table('workflow_steps as ws')
+        ->leftJoin('organisation_types as ot', function($join) {
+            $join->on('ws.organisation_type_id', '=', 'ot.id');
+        })
+        ->leftJoin('operation_types as opt', function($join) {
+            $join->on('ws.operation_type_id', '=', 'opt.id');
+        })
+        ->where('ws.organisation_type_id', $orgTypeId)
+        ->where('ws.operation_type_id', $opTypeId)
+        ->select('ws.*', DB::raw('ot.nom as type_organisation_nom'), DB::raw('opt.nom as type_operation_nom'))
+        ->orderBy('ws.numero_passage')
+        ->get();
+    
+    // Récupérer toutes les entités actives
+    $entities = DB::table('validation_entities')
+        ->where('is_active', 1)
+        ->orderBy('type')
+        ->orderBy('nom')
+        ->get();
+    
+    // ✅ Récupérer les assignations existantes
+    $assignments = DB::table('workflow_step_entities as wse')
+        ->join('workflow_steps as ws', 'wse.workflow_step_id', '=', 'ws.id')
+        ->where('ws.organisation_type_id', $orgTypeId)
+        ->where('ws.operation_type_id', $opTypeId)
+        ->select('wse.*')
+        ->get()
+        ->groupBy('workflow_step_id');
+    
+    // Construire la matrice
+    $matrix = [];
+    foreach ($steps as $step) {
+        $stepAssignments = $assignments->get($step->id, collect());
+        $matrix[$step->id] = [
+            'step' => $step,
+            'entities' => $stepAssignments->pluck('validation_entity_id')->toArray(),
+            'details' => $stepAssignments->keyBy('validation_entity_id')
         ];
     }
+    
+    // ✅ Types pour les filtres (depuis DB)
+    $typesOrganisation = $this->getTypesOrganisations();
+    $typesOperation = $this->getTypesOperations();
+    
+    return view('admin.workflow-steps.configure', compact(
+        'steps',
+        'entities',
+        'matrix',
+        'typeOrganisation',
+        'typeOperation',
+        'typesOrganisation',
+        'typesOperation'
+    ));
+}
 
-    /**
-     * Afficher la matrice de configuration Étapes × Entités
-     */
-    public function configure(Request $request)
-    {
-        // Filtres
-        $typeOrganisation = $request->get('type_organisation', 'association');
-        $typeOperation = $request->get('type_operation', 'creation');
-        
-        // Récupérer toutes les étapes pour ce contexte
-        $steps = DB::table('workflow_steps')
-            ->where('type_organisation', $typeOrganisation)
-            ->where('type_operation', $typeOperation)
-            ->orderBy('numero_passage')
-            ->get();
-        
-        // Récupérer toutes les entités actives
-        $entities = DB::table('validation_entities')
-            ->where('is_active', 1)
-            ->orderBy('type')
-            ->orderBy('nom')
-            ->get();
-        
-        // Récupérer les assignations existantes
-        $assignments = DB::table('workflow_step_entities as wse')
-            ->join('workflow_steps as ws', 'wse.workflow_step_id', '=', 'ws.id')
-            ->where('ws.type_organisation', $typeOrganisation)
-            ->where('ws.type_operation', $typeOperation)
-            ->select('wse.*')
-            ->get()
-            ->groupBy('workflow_step_id');
-        
-        // Construire la matrice
-        $matrix = [];
-        foreach ($steps as $step) {
-            $stepAssignments = $assignments->get($step->id, collect());
-            $matrix[$step->id] = [
-                'step' => $step,
-                'entities' => $stepAssignments->pluck('validation_entity_id')->toArray(),
-                'details' => $stepAssignments->keyBy('validation_entity_id')
-            ];
-        }
-        
-        // Types d'organisations et opérations pour les filtres
-        $typesOrganisation = [
-            'association' => 'Association',
-            'ong' => 'ONG',
-            'parti_politique' => 'Parti Politique',
-            'confession_religieuse' => 'Confession Religieuse'
-        ];
-        
-        $typesOperation = [
-            'creation' => 'Création',
-            'modification' => 'Modification',
-            'cessation' => 'Cessation',
-            'ajout_adherent' => 'Ajout Adhérent',
-            'retrait_adherent' => 'Retrait Adhérent',
-            'declaration_activite' => 'Déclaration d\'Activité',
-            'changement_statutaire' => 'Changement Statutaire'
-        ];
-        
-        return view('admin.workflow-steps.configure', compact(
-            'steps',
-            'entities',
-            'matrix',
-            'typeOrganisation',
-            'typeOperation',
-            'typesOrganisation',
-            'typesOperation'
-        ));
-    }
+
+
+
 
     /**
      * Sauvegarder la configuration de la matrice
@@ -1447,10 +1584,18 @@ class WorkflowStepController extends Controller
         DB::beginTransaction();
         
         try {
+            // ✅ Convertir codes en IDs
+            $orgTypeId = $this->getOrganisationTypeId($validated['type_organisation']);
+            $opTypeId = $this->getOperationTypeId($validated['type_operation']);
+
+            if (!$orgTypeId || !$opTypeId) {
+                throw new \Exception('Type organisation ou opération invalide');
+            }
+
             // Récupérer tous les steps pour ce contexte
             $stepIds = DB::table('workflow_steps')
-                ->where('type_organisation', $validated['type_organisation'])
-                ->where('type_operation', $validated['type_operation'])
+                ->where('organisation_type_id', $orgTypeId)
+                ->where('operation_type_id', $opTypeId)
                 ->pluck('id')
                 ->toArray();
             
@@ -1494,57 +1639,64 @@ class WorkflowStepController extends Controller
     }
 
     /**
-     * Afficher la timeline de réorganisation
+     * ========================================================================
+     * TIMELINE - RÉORGANISATION DRAG & DROP
+     * ========================================================================
      */
-    public function timeline(Request $request)
-    {
-        // Filtres
-        $typeOrganisation = $request->get('type_organisation', 'association');
-        $typeOperation = $request->get('type_operation', 'creation');
-        
-        // Récupérer les étapes avec leurs entités
-        $steps = DB::table('workflow_steps as ws')
-            ->where('ws.type_organisation', $typeOrganisation)
-            ->where('ws.type_operation', $typeOperation)
-            ->orderBy('ws.numero_passage')
-            ->get();
-        
-        // Pour chaque étape, récupérer ses entités
-        foreach ($steps as $step) {
-            $step->entities = DB::table('workflow_step_entities as wse')
-                ->join('validation_entities as ve', 'wse.validation_entity_id', '=', 've.id')
-                ->where('wse.workflow_step_id', $step->id)
-                ->select('ve.id', 've.nom', 've.code', 've.type', 'wse.ordre', 'wse.is_optional')
-                ->orderBy('wse.ordre')
-                ->get();
-        }
-        
-        // Types pour les filtres
-        $typesOrganisation = [
-            'association' => 'Association',
-            'ong' => 'ONG',
-            'parti_politique' => 'Parti Politique',
-            'confession_religieuse' => 'Confession Religieuse'
-        ];
-        
-        $typesOperation = [
-            'creation' => 'Création',
-            'modification' => 'Modification',
-            'cessation' => 'Cessation',
-            'ajout_adherent' => 'Ajout Adhérent',
-            'retrait_adherent' => 'Retrait Adhérent',
-            'declaration_activite' => 'Déclaration d\'Activité',
-            'changement_statutaire' => 'Changement Statutaire'
-        ];
-        
-        return view('admin.workflow-steps.timeline', compact(
-            'steps',
-            'typeOrganisation',
-            'typeOperation',
-            'typesOrganisation',
-            'typesOperation'
-        ));
+public function timeline(Request $request)
+{
+    // Filtres
+    $typeOrganisation = $request->get('type_organisation', 'association');
+    $typeOperation = $request->get('type_operation', 'creation');
+    
+    // ✅ Convertir codes en IDs
+    $orgTypeId = $this->getOrganisationTypeId($typeOrganisation);
+    $opTypeId = $this->getOperationTypeId($typeOperation);
+
+    if (!$orgTypeId || !$opTypeId) {
+        return back()->with('error', 'Type organisation ou opération invalide');
     }
+
+    // ✅ Récupérer les étapes avec leurs entités et noms lisibles - CORRIGÉ
+    $steps = DB::table('workflow_steps as ws')
+        ->leftJoin('organisation_types as ot', function($join) {
+            $join->on('ws.organisation_type_id', '=', 'ot.id');
+        })
+        ->leftJoin('operation_types as opt', function($join) {
+            $join->on('ws.operation_type_id', '=', 'opt.id');
+        })
+        ->where('ws.organisation_type_id', $orgTypeId)
+        ->where('ws.operation_type_id', $opTypeId)
+        ->select('ws.*', DB::raw('ot.nom as type_organisation_nom'), DB::raw('opt.nom as type_operation_nom'))
+        ->orderBy('ws.numero_passage')
+        ->get();
+    
+    // Pour chaque étape, récupérer ses entités
+    foreach ($steps as $step) {
+        $step->entities = DB::table('workflow_step_entities as wse')
+            ->join('validation_entities as ve', 'wse.validation_entity_id', '=', 've.id')
+            ->where('wse.workflow_step_id', $step->id)
+            ->select('ve.id', 've.nom', 've.code', 've.type', 'wse.ordre', 'wse.is_optional')
+            ->orderBy('wse.ordre')
+            ->get();
+    }
+    
+    // ✅ Types pour les filtres (depuis DB)
+    $typesOrganisation = $this->getTypesOrganisations();
+    $typesOperation = $this->getTypesOperations();
+    
+    return view('admin.workflow-steps.timeline', compact(
+        'steps',
+        'typeOrganisation',
+        'typeOperation',
+        'typesOrganisation',
+        'typesOperation'
+    ));
+}
+
+
+
+
 
     /**
      * Assigner une entité à une étape (AJAX)
@@ -1673,5 +1825,4 @@ class WorkflowStepController extends Controller
             ], 500);
         }
     }
-
 }

@@ -1068,6 +1068,57 @@
                     </div>
                 </div>
 
+
+                <!-- ✅ CONFIGURATION WORKFLOW - NOUVELLE SECTION -->
+                <div class="nav-section">
+                    <div class="nav-section-header" onclick="toggleSection('workflow-config')">
+                        <div class="nav-section-title-content">
+                            <i class="nav-section-icon fas fa-project-diagram"></i>
+                            <span class="nav-section-title">Configuration Workflow</span>
+                        </div>
+                        <i class="nav-section-toggle fas fa-chevron-down"></i>
+                    </div>
+                    <div class="nav-subsection" id="section-workflow-config">
+                        <ul class="nav-list">
+                            @if(Route::has('admin.workflow-steps.index'))
+                            <li class="nav-item">
+                                <a href="{{ route('admin.workflow-steps.index') }}" class="nav-link-custom {{ request()->routeIs('admin.workflow-steps.*') && !request()->routeIs('admin.workflow-steps.timeline') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-stream"></i>
+                                    <span class="nav-text">Étapes Workflow</span>
+                                </a>
+                            </li>
+                            @endif
+                            
+                            @if(Route::has('admin.workflow-steps.timeline'))
+                            <li class="nav-item">
+                                <a href="{{ route('admin.workflow-steps.timeline') }}" class="nav-link-custom {{ request()->routeIs('admin.workflow-steps.timeline') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-sitemap"></i>
+                                    <span class="nav-text">Timeline Workflow</span>
+                                </a>
+                            </li>
+                            @endif
+                            
+                            @if(Route::has('admin.validation-entities.index'))
+                            <li class="nav-item">
+                                <a href="{{ route('admin.validation-entities.index') }}" class="nav-link-custom {{ request()->routeIs('admin.validation-entities.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-shield-check"></i>
+                                    <span class="nav-text">Entités de Validation</span>
+                                </a>
+                            </li>
+                            @endif
+                            
+                            @if(Route::has('admin.workflow.templates'))
+                            <li class="nav-item">
+                                <a href="{{ route('admin.workflow.templates') }}" class="nav-link-custom {{ request()->routeIs('admin.workflow.templates') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-layer-group"></i>
+                                    <span class="nav-text">Templates Workflow</span>
+                                </a>
+                            </li>
+                            @endif
+                        </ul>
+                    </div>
+                </div>
+
                 <!-- ✅ CONFIGURATION - ACCORDÉON CORRIGÉ -->
 <div class="nav-section">
     <div class="nav-section-header" onclick="toggleSection('config')">
