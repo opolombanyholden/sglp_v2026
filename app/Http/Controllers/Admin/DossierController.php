@@ -673,7 +673,10 @@ class DossierController extends Controller
             // ========== INFORMATIONS DÉCLARANT DEPUIS JSON ==========
             $declarant = null;
             if (!empty($dossier->donnees_supplementaires)) {
-                $donneesSupplementaires = json_decode($dossier->donnees_supplementaires, true);
+                // donnees_supplementaires est déjà un array grâce au cast du modèle
+                $donneesSupplementaires = is_array($dossier->donnees_supplementaires) 
+                    ? $dossier->donnees_supplementaires 
+                    : json_decode($dossier->donnees_supplementaires, true);
                 $declarant = $donneesSupplementaires['demandeur'] ?? null;
             }
 
@@ -738,8 +741,11 @@ class DossierController extends Controller
             // Nom de fichier sécurisé
             $filename = $this->sanitizeFilename("accuse_reception_{$dossier->numero_dossier}") . "_" . now()->format('Ymd') . ".pdf";
             
-            // CORRECTION : Log avec backslash (pas d'import nécessaire)
-            $declarant = json_decode($dossier->donnees_supplementaires, true)['demandeur'] ?? [];
+            // CORRECTION : donnees_supplementaires est déjà un array
+            $donneesSupp = is_array($dossier->donnees_supplementaires) 
+                ? $dossier->donnees_supplementaires 
+                : json_decode($dossier->donnees_supplementaires, true);
+            $declarant = $donneesSupp['demandeur'] ?? [];
             \Log::info("Génération accusé PDF pour dossier {$dossier->id}", [
                 'dossier_numero' => $dossier->numero_dossier,
                 'organisation' => $dossier->organisation->nom ?? 'Inconnue',
@@ -1135,9 +1141,19 @@ public function attribuer(Request $request, $id)
 
         $dossier->update([
             'assigned_to' => $agent->id,
-            'statut' => 'en_cours',
-            'assigned_at' => now()
+            'statut' => 'en_cours'
         ]);
+
+        // Enregistrer l'opération d'assignation (pour tracer la date)
+        if (method_exists($dossier, 'operations')) {
+            $dossier->operations()->create([
+                'type_operation' => 'assignation',
+                'user_id' => auth()->id(),
+                'description' => "Dossier assigné à {$agent->name}",
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -1435,9 +1451,19 @@ public function assign(Request $request, $id)
         // Assignation simple
         $dossier->update([
             'assigned_to' => $agent->id,
-            'statut' => 'en_cours',
-            'assigned_at' => now()
+            'statut' => 'en_cours'
         ]);
+
+        // Enregistrer l'opération d'assignation (pour tracer la date)
+        if (method_exists($dossier, 'operations')) {
+            $dossier->operations()->create([
+                'type_operation' => 'assignation',
+                'user_id' => auth()->id(),
+                'description' => "Dossier assigné à {$agent->name}",
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
+            ]);
+        }
 
         // Ajouter un commentaire si fourni ET si la relation existe
         if ($request->filled('commentaire') && method_exists($dossier, 'operations')) {
@@ -2389,8 +2415,11 @@ private function calculateHighPriorityCountArchitecture()
             // Nom de fichier sécurisé
             $filename = $this->sanitizeFilename("recepisse_provisoire_{$dossier->organisation->nom}_{$dossier->numero_dossier}") . "_" . now()->format('Ymd') . ".pdf";
             
-            // CORRECTION : Log avec backslash
-            $declarant = json_decode($dossier->donnees_supplementaires, true)['demandeur'] ?? [];
+            // CORRECTION : donnees_supplementaires est déjà un array
+            $donneesSupp = is_array($dossier->donnees_supplementaires) 
+                ? $dossier->donnees_supplementaires 
+                : json_decode($dossier->donnees_supplementaires, true);
+            $declarant = $donneesSupp['demandeur'] ?? [];
             \Log::info("Génération récépissé provisoire PDF pour dossier {$dossier->id}", [
                 'dossier_numero' => $dossier->numero_dossier,
                 'organisation' => $dossier->organisation->nom ?? 'Inconnue',

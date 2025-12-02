@@ -26,38 +26,14 @@ class Dossier extends Model
         'current_step_id',
         'is_active',
         'metadata',
-        'donnees_supplementaires',
-        // Champs d'assignation
-        'assigned_to',
-        // Champs de priorité FIFO
-        'priorite_niveau',
-        'priorite_urgente',
-        'ordre_traitement',
-        'priorite_justification',
-        'priorite_assignee_par',
-        'priorite_assignee_at',
-        'instructions_agent',
-        // Champs de verrouillage
-        'is_locked',
-        'locked_at',
-        'locked_by',
-        // Autres
-        'has_anomalies_majeures'
+        'donnees_supplementaires'
     ];
 
     protected $casts = [
         'date_soumission' => 'datetime',
         'date_traitement' => 'datetime',
-        'submitted_at' => 'datetime',
-        'validated_at' => 'datetime',
-        'priorite_assignee_at' => 'datetime',
-        'locked_at' => 'datetime',
         'is_active' => 'boolean',
-        'is_locked' => 'boolean',
-        'priorite_urgente' => 'boolean',
-        'has_anomalies_majeures' => 'boolean',
-        'metadata' => 'array',
-        'donnees_supplementaires' => 'array'
+        'metadata' => 'array'
     ];
 
     // Constantes pour les types d'opération
@@ -180,23 +156,6 @@ class Dossier extends Model
     {
         return $this->belongsTo(User::class, 'assigned_to');
     }
-
-    /**
-     * Utilisateur qui a verrouillé le dossier
-     */
-    public function lockedBy()
-    {
-        return $this->belongsTo(User::class, 'locked_by');
-    }
-
-    /**
-     * Utilisateur qui a assigné la priorité
-     */
-    public function prioriteAssigneePar()
-    {
-        return $this->belongsTo(User::class, 'priorite_assignee_par');
-    }
-
     /**
      * ✅ CORRECTION PRINCIPALE - Relation avec les adhérents via organisation
      * 

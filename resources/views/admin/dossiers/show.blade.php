@@ -195,80 +195,109 @@
                         
                         <div class="row">
                             <div class="col-md-8">
-                                <!-- Hiérarchie selon le type de zone -->
+                                <!-- Hiérarchie géographique avec labels -->
                                 <div class="mb-2">
-                                    {{-- Province (toujours) --}}
-                                    <strong class="text-primary">
-                                        {{ $org->province ?? ($org->provinceRef->nom ?? 'N/D') }}
-                                    </strong>
+                                    {{-- Province --}}
+                                    <div class="mb-1">
+                                        <strong class="text-muted">Province :</strong>
+                                        <span class="text-primary fw-bold">
+                                            {{ $org->provinceRef->nom ?? $org->province ?? 'N/D' }}
+                                        </span>
+                                    </div>
                                     
-                                    {{-- Département (toujours) --}}
+                                    {{-- Département --}}
                                     @if($org->departement || $org->departementRef)
-                                        <span class="text-muted mx-1">›</span>
-                                        {{ $org->departement ?? ($org->departementRef->nom ?? '') }}
+                                    <div class="mb-1">
+                                        <strong class="text-muted">Département :</strong>
+                                        <span>{{ $org->departementRef->nom ?? $org->departement ?? '' }}</span>
+                                    </div>
                                     @endif
                                     
                                     @if($isUrbaine)
-                                        {{-- ZONE URBAINE : Commune/Ville → Arrondissement → Quartier --}}
+                                        {{-- ZONE URBAINE --}}
                                         @if($org->ville_commune || $org->communeVilleRef)
-                                            <span class="text-muted mx-1">›</span>
-                                            {{ $org->ville_commune ?? ($org->communeVilleRef->nom ?? '') }}
+                                        <div class="mb-1">
+                                            <strong class="text-muted">Commune/Ville :</strong>
+                                            <span>{{ $org->communeVilleRef->nom ?? $org->ville_commune ?? '' }}</span>
+                                        </div>
                                         @endif
+                                        
                                         @if($org->arrondissement || $org->arrondissementRef)
-                                            <span class="text-muted mx-1">›</span>
-                                            {{ $org->arrondissement ?? ($org->arrondissementRef->nom ?? '') }}
+                                        <div class="mb-1">
+                                            <strong class="text-muted">Arrondissement :</strong>
+                                            <span>{{ $org->arrondissementRef->nom ?? $org->arrondissement ?? '' }}</span>
+                                        </div>
                                         @endif
+                                        
                                         @if($org->quartier || ($org->localiteRef && $org->localiteRef->type === 'quartier'))
-                                            <span class="text-muted mx-1">›</span>
-                                            <strong>{{ $org->quartier ?? ($org->localiteRef->nom ?? '') }}</strong>
+                                        <div class="mb-1">
+                                            <strong class="text-muted">Quartier :</strong>
+                                            <span class="fw-bold">{{ $org->localiteRef->nom ?? $org->quartier ?? '' }}</span>
+                                        </div>
                                         @endif
                                     @else
-                                        {{-- ZONE RURALE : Canton → Regroupement → Village --}}
+                                        {{-- ZONE RURALE --}}
                                         @if($org->canton || $org->cantonRef)
-                                            <span class="text-muted mx-1">›</span>
-                                            {{ $org->canton ?? ($org->cantonRef->nom ?? '') }}
+                                        <div class="mb-1">
+                                            <strong class="text-muted">Canton :</strong>
+                                            <span>{{ $org->cantonRef->nom ?? $org->canton ?? '' }}</span>
+                                        </div>
                                         @endif
+                                        
                                         @if($org->regroupement || $org->regroupementRef)
-                                            <span class="text-muted mx-1">›</span>
-                                            {{ $org->regroupement ?? ($org->regroupementRef->nom ?? '') }}
+                                        <div class="mb-1">
+                                            <strong class="text-muted">Regroupement :</strong>
+                                            <span>{{ $org->regroupementRef->nom ?? $org->regroupement ?? '' }}</span>
+                                        </div>
                                         @endif
+                                        
                                         @if($org->village || ($org->localiteRef && $org->localiteRef->type === 'village'))
-                                            <span class="text-muted mx-1">›</span>
-                                            <strong>{{ $org->village ?? ($org->localiteRef->nom ?? '') }}</strong>
+                                        <div class="mb-1">
+                                            <strong class="text-muted">Village :</strong>
+                                            <span class="fw-bold">{{ $org->localiteRef->nom ?? $org->village ?? '' }}</span>
+                                        </div>
                                         @endif
                                     @endif
                                     
-                                    {{-- Lieu-dit (commun) --}}
+                                    {{-- Lieu-dit --}}
                                     @if($org->lieu_dit)
-                                        <span class="text-muted mx-1">›</span>
+                                    <div class="mb-1">
+                                        <strong class="text-muted">Lieu-dit :</strong>
                                         <em>{{ $org->lieu_dit }}</em>
+                                    </div>
                                     @endif
                                 </div>
                                 
                                 <!-- Siège social -->
                                 @if($org->siege_social)
                                     <div class="small text-muted">
-                                        <i class="fas fa-building me-1"></i> {{ $org->siege_social }}
+                                        <i class="fas fa-building me-1"></i> <strong>Siège social :</strong> {{ $org->siege_social }}
                                     </div>
                                 @endif
                                 
                                 <!-- Préfecture si disponible -->
                                 @if($org->prefecture)
                                     <div class="small text-muted mt-1">
-                                        <i class="fas fa-university me-1"></i> Préfecture : {{ $org->prefecture }}
+                                        <i class="fas fa-university me-1"></i> <strong>Préfecture :</strong> {{ $org->prefecture }}
                                         @if($org->sous_prefecture)
-                                            / Sous-Préf. : {{ $org->sous_prefecture }}
+                                            / <strong>Sous-Préfecture :</strong> {{ $org->sous_prefecture }}
                                         @endif
                                     </div>
                                 @endif
                             </div>
                             
                             <div class="col-md-4 text-md-end">
+                                <!-- Type de zone -->
+                                <span class="badge {{ $isUrbaine ? 'bg-info' : 'bg-success' }} mb-2">
+                                    <i class="fas {{ $isUrbaine ? 'fa-city' : 'fa-tree' }} me-1"></i>
+                                    Zone {{ ucfirst($zoneType) }}
+                                </span>
+                                <br>
                                 <!-- GPS -->
                                 @if($org->latitude && $org->longitude)
                                     <a href="https://www.google.com/maps?q={{ $org->latitude }},{{ $org->longitude }}" 
                                        target="_blank" class="btn btn-sm btn-outline-secondary">
-                                        <i class="fas fa-map me-1"></i> Carte
+                                        <i class="fas fa-map me-1"></i> Voir sur la carte
                                     </a>
                                 @endif
                             </div>
@@ -288,7 +317,10 @@
 
             <!-- ========== INFORMATIONS DU DEMANDEUR ========== -->
             @php
-                $donnees = json_decode($dossier->donnees_supplementaires, true);
+                // donnees_supplementaires est déjà un array grâce au cast du modèle
+                $donnees = is_array($dossier->donnees_supplementaires) 
+                    ? $dossier->donnees_supplementaires 
+                    : json_decode($dossier->donnees_supplementaires, true);
                 $demandeur = $donnees['demandeur'] ?? null;
                 $geoloc = $donnees['geolocalisation'] ?? null;
             @endphp
@@ -588,7 +620,7 @@
                                     <h6 class="mb-1">Dossier créé</h6>
                                     <small class="text-muted">
                                         {{ \Carbon\Carbon::parse($dossier->created_at)->format('d/m/Y à H:i') }}
-                                        par {{ $dossier->user->name ?? 'Système' }}
+                                        par {{ $dossier->organisation->user->name ?? 'Opérateur' }}
                                     </small>
                                 </div>
                                 <p class="mb-0">Le dossier a été créé et soumis pour traitement.</p>
@@ -635,7 +667,11 @@
                                 <div class="timeline-header">
                                     <h6 class="mb-1">Dossier assigné</h6>
                                     <small class="text-muted">
-                                        {{ $dossier->assigned_at ? \Carbon\Carbon::parse($dossier->assigned_at)->format('d/m/Y à H:i') : 'Date non renseignée' }}
+                                        @php
+                                            $assignOpTimeline = $dossier->operations ? $dossier->operations->where('type_operation', 'assignation')->sortByDesc('created_at')->first() : null;
+                                            $assignDateTimeline = $assignOpTimeline ? $assignOpTimeline->created_at : $dossier->updated_at;
+                                        @endphp
+                                        {{ \Carbon\Carbon::parse($assignDateTimeline)->format('d/m/Y à H:i') }}
                                     </small>
                                 </div>
                                 <p class="mb-0">
@@ -680,103 +716,241 @@
                     </h6>
                 </div>
                 <div class="card-body">
+                    @php
+                        // Labels traduits pour les statuts
+                        $statutLabels = [
+                            'brouillon' => 'Brouillon',
+                            'soumis' => 'Soumis',
+                            'en_cours' => 'En cours de traitement',
+                            'approuve' => 'Approuvé',
+                            'rejete' => 'Rejeté'
+                        ];
+                        $statutLabel = $statutLabels[$dossier->statut] ?? ucfirst($dossier->statut);
+                        
+                        // Labels et couleurs pour les priorités
+                        $prioriteLabels = [
+                            'normale' => ['label' => 'Normale', 'color' => 'secondary', 'icon' => 'minus'],
+                            'moyenne' => ['label' => 'Moyenne', 'color' => 'info', 'icon' => 'arrow-up'],
+                            'haute' => ['label' => 'Haute', 'color' => 'warning', 'icon' => 'exclamation-triangle'],
+                            'urgente' => ['label' => 'Urgente', 'color' => 'danger', 'icon' => 'exclamation-circle']
+                        ];
+                        $prioriteNiveau = $dossier->priorite_niveau ?? 'normale';
+                        $prioriteConfig = $prioriteLabels[$prioriteNiveau] ?? $prioriteLabels['normale'];
+                    @endphp
+                    
+                    <!-- Badge Statut -->
                     <div class="text-center mb-3">
                         <div class="status-badge-large bg-{{ $statusConfig['bg'] }} text-white">
                             <i class="fas fa-{{ $statusConfig['icon'] }} fa-2x mb-2"></i>
-                            <h5 class="mb-0">{{ ucfirst($dossier->statut) }}</h5>
+                            <h5 class="mb-0">{{ $statutLabel }}</h5>
                         </div>
                     </div>
                     
-                    @if($dossier->assigned_to && $dossier->assignedAgent)
-                    <div class="alert alert-info">
-                        <h6 class="alert-heading">
-                            <i class="fas fa-user-check"></i> Agent Assigné
-                        </h6>
-                        <strong>{{ $dossier->assignedAgent->name }}</strong><br>
-                        <small>{{ $dossier->assignedAgent->email }}</small>
-                        @if($dossier->assigned_at)
-                            <hr class="my-2">
-                            <small class="text-muted">
-                                Assigné le {{ \Carbon\Carbon::parse($dossier->assigned_at)->format('d/m/Y à H:i') }}
-                            </small>
+                    <!-- Informations d'Assignation -->
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-2">
+                            <i class="fas fa-user-cog me-1"></i> Assignation
+                        </label>
+                        @if($dossier->assigned_to && $dossier->assignedAgent)
+                            <div class="alert alert-info mb-0 py-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle bg-primary text-white me-2" style="width: 35px; height: 35px; font-size: 12px;">
+                                        {{ strtoupper(substr($dossier->assignedAgent->name ?? 'NA', 0, 2)) }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ $dossier->assignedAgent->name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ $dossier->assignedAgent->email }}</small>
+                                    </div>
+                                </div>
+                                @php
+                                    // Récupérer la date d'assignation depuis les opérations ou la dernière validation
+                                    $assignedDate = null;
+                                    
+                                    // Option 1: Champ assigned_at direct (si existe)
+                                    if (!empty($dossier->assigned_at)) {
+                                        $assignedDate = \Carbon\Carbon::parse($dossier->assigned_at);
+                                    }
+                                    // Option 2: Dernière opération d'assignation
+                                    elseif ($dossier->operations) {
+                                        $assignOp = $dossier->operations->where('type_operation', 'assignation')->sortByDesc('created_at')->first();
+                                        if ($assignOp) {
+                                            $assignedDate = \Carbon\Carbon::parse($assignOp->created_at);
+                                        }
+                                    }
+                                    // Option 3: Dernière validation assignée
+                                    elseif ($dossier->validations) {
+                                        $lastValidation = $dossier->validations->whereNotNull('assigned_at')->sortByDesc('assigned_at')->first();
+                                        if ($lastValidation) {
+                                            $assignedDate = \Carbon\Carbon::parse($lastValidation->assigned_at);
+                                        }
+                                    }
+                                    // Option 4: Date de mise à jour du statut en_cours
+                                    if (!$assignedDate && $dossier->statut === 'en_cours') {
+                                        $assignedDate = \Carbon\Carbon::parse($dossier->updated_at);
+                                    }
+                                @endphp
+                                
+                                @if($assignedDate)
+                                    @php
+                                        $dureeAssignation = $assignedDate->diffForHumans();
+                                        $joursAssignation = $assignedDate->diffInDays(now());
+                                    @endphp
+                                    <hr class="my-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <small>
+                                            <i class="fas fa-calendar-check me-1"></i>
+                                            {{ $assignedDate->format('d/m/Y à H:i') }}
+                                        </small>
+                                        <span class="badge {{ $joursAssignation > 5 ? 'bg-warning' : 'bg-light text-dark' }}">
+                                            {{ $dureeAssignation }}
+                                        </span>
+                                    </div>
+                                @endif
+                            </div>
+                        @else
+                            <div class="alert alert-warning mb-0 py-2">
+                                <i class="fas fa-exclamation-triangle me-1"></i>
+                                <strong>Non assigné</strong>
+                                <br>
+                                <small>Ce dossier n'est pas encore assigné à un agent.</small>
+                            </div>
                         @endif
                     </div>
-                    @else
-                    <div class="alert alert-warning">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Non assigné</strong><br>
-                        Ce dossier n'est pas encore assigné à un agent.
+
+                    <!-- Priorité -->
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-2">
+                            <i class="fas fa-flag me-1"></i> Priorité
+                        </label>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <span class="badge bg-{{ $prioriteConfig['color'] }} px-3 py-2">
+                                <i class="fas fa-{{ $prioriteConfig['icon'] }} me-1"></i>
+                                {{ $prioriteConfig['label'] }}
+                            </span>
+                            @if($dossier->priorite_urgente)
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-bolt"></i> URGENT
+                                </span>
+                            @endif
+                        </div>
+                        @if($dossier->priorite_justification)
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    {{ $dossier->priorite_justification }}
+                                </small>
+                            </div>
+                        @endif
+                        @if($dossier->priorite_assignee_at)
+                            <div class="mt-1">
+                                <small class="text-muted">
+                                    Définie le {{ \Carbon\Carbon::parse($dossier->priorite_assignee_at)->format('d/m/Y') }}
+                                </small>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Position dans la file d'attente -->
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-2">
+                            <i class="fas fa-list-ol me-1"></i> File d'attente
+                        </label>
+                        @if($dossier->ordre_traitement)
+                            <div class="d-flex align-items-center">
+                                <div class="position-badge bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 45px; height: 45px; font-weight: bold; font-size: 1.2rem;">
+                                    #{{ $dossier->ordre_traitement }}
+                                </div>
+                                <div>
+                                    <strong>Position {{ $dossier->ordre_traitement }}</strong>
+                                    <br>
+                                    <small class="text-muted">dans la file de traitement</small>
+                                </div>
+                            </div>
+                        @else
+                            <div class="text-muted">
+                                <i class="fas fa-minus-circle me-1"></i>
+                                <small>Pas encore dans la file d'attente</small>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Instructions pour l'agent -->
+                    @if($dossier->instructions_agent)
+                    <div class="mb-3">
+                        <label class="text-muted small d-block mb-2">
+                            <i class="fas fa-sticky-note me-1"></i> Instructions
+                        </label>
+                        <div class="alert alert-light border mb-0 py-2">
+                            <small>{{ $dossier->instructions_agent }}</small>
+                        </div>
                     </div>
                     @endif
 
-                    <!-- Priorité calculée -->
-                    <div class="mb-3">
-                        <label class="text-muted small">Priorité</label>
-                        <div>
-                            @php
-                                $isPriority = false;
-                                if ($dossier->organisation && $dossier->organisation->type === 'parti_politique') {
-                                    $isPriority = true;
-                                    $reason = 'Parti politique';
-                                } elseif (\Carbon\Carbon::parse($dossier->created_at)->diffInDays(now()) > 7) {
-                                    $isPriority = true;
-                                    $reason = 'Délai > 7 jours';
-                                } else {
-                                    $reason = 'Normale';
-                                }
-                            @endphp
-                            
-                            @if($isPriority)
-                                <span class="badge badge-danger">
-                                    <i class="fas fa-exclamation-triangle"></i> Haute
-                                </span>
-                                <br><small class="text-muted">{{ $reason }}</small>
-                            @else
-                                <span class="badge badge-secondary">Normale</span>
-                            @endif
-                        </div>
-                    </div>
-
                     <!-- Actions rapides -->
                     @if($dossier->statut === 'soumis')
-                    <div class="d-grid gap-2">
+                    <div class="d-grid gap-2 mt-3">
                         <button type="button" class="btn btn-success btn-sm" onclick="assignerDossier()">
-                            <i class="fas fa-user-check"></i> Assigner
+                            <i class="fas fa-user-check"></i> Assigner à un agent
                         </button>
                     </div>
                     @endif
                 </div>
             </div>
 
-            <!-- Informations du demandeur -->
+            <!-- Informations du demandeur (Opérateur) -->
             <div class="card mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-user me-2"></i>Demandeur
+                        <i class="fas fa-user me-2"></i>Demandeur (Opérateur)
                     </h6>
                 </div>
                 <div class="card-body">
-                    @if($dossier->user)
+                    @php
+                        // Le demandeur est l'utilisateur qui a créé l'organisation (opérateur)
+                        $demandeur = $dossier->organisation->user ?? null;
+                    @endphp
+                    
+                    @if($demandeur)
                         <div class="d-flex align-items-center mb-3">
                             <div class="avatar-circle bg-primary text-white me-3">
-                                {{ strtoupper(substr($dossier->user->name, 0, 2)) }}
+                                {{ strtoupper(substr($demandeur->name ?? 'ND', 0, 2)) }}
                             </div>
                             <div>
-                                <strong>{{ $dossier->user->name }}</strong><br>
-                                <small class="text-muted">{{ $dossier->user->email }}</small>
+                                <strong>{{ $demandeur->name ?? 'N/D' }}</strong><br>
+                                <small class="text-muted">{{ $demandeur->email ?? 'Email non disponible' }}</small>
                             </div>
                         </div>
                         
-                        @if($dossier->user->phone)
+                        @if($demandeur->phone ?? null)
                         <div class="mb-2">
                             <i class="fas fa-phone text-muted me-2"></i>
-                            <span>{{ $dossier->user->phone }}</span>
+                            <span>{{ $demandeur->phone }}</span>
+                        </div>
+                        @endif
+                        
+                        {{-- Téléphone de l'organisation si disponible --}}
+                        @if($dossier->organisation->telephone)
+                        <div class="mb-2">
+                            <i class="fas fa-phone-alt text-muted me-2"></i>
+                            <span>{{ $dossier->organisation->telephone }}</span>
+                            <small class="text-muted">(Organisation)</small>
+                        </div>
+                        @endif
+                        
+                        {{-- Email de l'organisation si disponible --}}
+                        @if($dossier->organisation->email)
+                        <div class="mb-2">
+                            <i class="fas fa-envelope text-muted me-2"></i>
+                            <span>{{ $dossier->organisation->email }}</span>
+                            <small class="text-muted">(Organisation)</small>
                         </div>
                         @endif
                         
                         <div class="mb-2">
                             <i class="fas fa-calendar text-muted me-2"></i>
-                            <span>Inscrit le {{ \Carbon\Carbon::parse($dossier->user->created_at)->format('d/m/Y') }}</span>
+                            <span>Inscrit le {{ \Carbon\Carbon::parse($demandeur->created_at)->format('d/m/Y') }}</span>
                         </div>
                         
                         <div class="mt-3">
@@ -785,10 +959,29 @@
                             </button>
                         </div>
                     @else
+                        {{-- Fallback : afficher les informations de contact de l'organisation --}}
+                        @if($dossier->organisation && ($dossier->organisation->telephone || $dossier->organisation->email))
+                        <div class="mb-3">
+                            <h6 class="text-muted mb-2">Contact de l'Organisation</h6>
+                            @if($dossier->organisation->telephone)
+                            <div class="mb-2">
+                                <i class="fas fa-phone text-muted me-2"></i>
+                                <span>{{ $dossier->organisation->telephone }}</span>
+                            </div>
+                            @endif
+                            @if($dossier->organisation->email)
+                            <div class="mb-2">
+                                <i class="fas fa-envelope text-muted me-2"></i>
+                                <span>{{ $dossier->organisation->email }}</span>
+                            </div>
+                            @endif
+                        </div>
+                        @else
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle"></i>
                             Aucune information de demandeur disponible
                         </div>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -1045,6 +1238,66 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('❌ Erreur ouverture modal assignation:', error);
             showAlert('error', 'Erreur lors de l\'ouverture de la modal');
+        }
+    };
+
+    /**
+     * ✅ Mise à jour immédiate de l'UI après assignation
+     */
+    window.updateAssignationUI = function(agentName, agentEmail) {
+        console.log('🔄 Mise à jour UI assignation:', agentName, agentEmail);
+        
+        // Trouver le conteneur d'assignation
+        const assignationContainer = document.querySelector('.card-body .mb-3 .alert-warning, .card-body .mb-3 .alert-info');
+        
+        if (assignationContainer) {
+            // Créer les initiales de l'agent
+            const initiales = agentName ? agentName.substring(0, 2).toUpperCase() : 'NA';
+            
+            // Remplacer le contenu avec les nouvelles informations
+            const parentDiv = assignationContainer.parentElement;
+            parentDiv.innerHTML = `
+                <label class="text-muted small d-block mb-2">
+                    <i class="fas fa-user-cog me-1"></i> Assignation
+                </label>
+                <div class="alert alert-info mb-0 py-2">
+                    <div class="d-flex align-items-center">
+                        <div class="avatar-circle bg-primary text-white me-2" style="width: 35px; height: 35px; font-size: 12px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                            ${initiales}
+                        </div>
+                        <div>
+                            <strong>${agentName}</strong>
+                            <br>
+                            <small class="text-muted">${agentEmail}</small>
+                        </div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small>
+                            <i class="fas fa-calendar-check me-1"></i>
+                            À l'instant
+                        </small>
+                        <span class="badge bg-success">
+                            <i class="fas fa-check me-1"></i>Assigné
+                        </span>
+                    </div>
+                </div>
+            `;
+            
+            console.log('✅ UI assignation mise à jour');
+        } else {
+            console.warn('⚠️ Conteneur assignation non trouvé pour mise à jour UI');
+        }
+        
+        // Mettre à jour le statut du dossier visuellement
+        const statutBadge = document.querySelector('.status-badge-large h5');
+        if (statutBadge && statutBadge.textContent.includes('Soumis')) {
+            statutBadge.textContent = 'En cours de traitement';
+            const badgeContainer = statutBadge.closest('.status-badge-large');
+            if (badgeContainer) {
+                badgeContainer.classList.remove('bg-info');
+                badgeContainer.classList.add('bg-warning');
+            }
         }
     };
 
@@ -1365,7 +1618,16 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 
     window.contacterDemandeur = function() {
-        showAlert('info', 'Fonction de contact à implémenter', 6000);
+        // Récupérer l'email du demandeur (organisation ou opérateur)
+        const emailOrg = '{{ $dossier->organisation->email ?? "" }}';
+        const emailUser = '{{ $dossier->organisation->user->email ?? "" }}';
+        const email = emailOrg || emailUser;
+        
+        if (email) {
+            window.location.href = 'mailto:' + email + '?subject=Concernant votre dossier {{ $dossier->numero_dossier }}';
+        } else {
+            showAlert('warning', 'Aucune adresse email disponible pour ce demandeur', 6000);
+        }
     };
 
     // ========== GESTIONNAIRES DE FORMULAIRES (BOOTSTRAP 4) ==========
@@ -1652,6 +1914,9 @@ function handleAssignSubmission(form) {
             
             showAlert('success', successMessage, 10000);
             
+            // ✅ MISE À JOUR IMMÉDIATE DE L'UI - Section Assignation
+            updateAssignationUI(agentName, agentEmail);
+            
             // ✅ AFFICHER LES INFORMATIONS SUPPLÉMENTAIRES
             if (formData.instructions_agent) {
                 setTimeout(() => {
@@ -1659,30 +1924,30 @@ function handleAssignSubmission(form) {
                         ? formData.instructions_agent.substring(0, 80) + '...' 
                         : formData.instructions_agent;
                     showAlert('info', `📝 Instructions transmises: "${instructionsPreview}"`, 8000);
-                }, 60000);
+                }, 3000);
             }
             
             if (formData.notifier_agent_email && data.data.email_sent) {
                 setTimeout(() => {
                     showAlert('info', `📧 Email de notification envoyé à ${agentEmail}`, 6000);
-                }, 60000);
+                }, 4000);
             } else if (formData.notifier_agent_email && !data.data.email_sent) {
                 setTimeout(() => {
                     showAlert('warning', '⚠️ Email de notification non envoyé - Vérifier la configuration', 8000);
-                }, 60000);
+                }, 4000);
             }
             
             // ✅ AFFICHER LES DÉTAILS DE LA QUEUE SI PRIORITÉ SPÉCIALE
             if (prioriteNiveau !== 'normale' && data.data.queue_info) {
                 setTimeout(() => {
                     showFifoQueueUpdate(data.data.queue_info);
-                }, 60000);
+                }, 5000);
             }
             
-            // ✅ RECHARGEMENT DE LA PAGE
+            // ✅ RECHARGEMENT DE LA PAGE (délai court pour voir le message)
             setTimeout(() => {
                 window.location.reload();
-            }, 60000); // Délai plus long pour laisser le temps de lire les messages
+            }, 3000);
             
         } else {
             // ✅ GESTION D'ERREURS MÉTIER

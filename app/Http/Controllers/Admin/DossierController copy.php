@@ -34,16 +34,19 @@ class DossierController extends Controller
     protected $pdfService;
     protected $workflowService;
     protected $qrCodeService;
+    protected $fifoPriorityService;
 
     public function __construct(
         PDFService $pdfService,
         WorkflowService $workflowService,
-        QrCodeService $qrCodeService
+        QrCodeService $qrCodeService,
+        FifoPriorityService $fifoPriorityService
     ) {
         $this->middleware(['auth', 'verified', 'admin']);
         $this->pdfService = $pdfService;
         $this->workflowService = $workflowService;
         $this->qrCodeService = $qrCodeService;
+        $this->fifoPriorityService = $fifoPriorityService;
     }
     
    /**
@@ -281,15 +284,20 @@ class DossierController extends Controller
                 'nom' => $validated['org_nom'],
                 'sigle' => $validated['org_sigle'] ?? null,
                 'objet' => $validated['org_objet'],
-                'siege_social' => $validated['org_adresse'],
-                'adresse' => $validated['org_adresse'],
+                'siege_social' => $validated['org_adresse'], // Mapping correct vers siege_social
                 'province' => $province->nom ?? null,
                 'departement' => $departement->nom ?? null,
-                'commune' => $commune->nom ?? null,
+                'prefecture' => $departement->nom ?? 'Non défini', // Champ obligatoire
+                'ville_commune' => $commune->nom ?? null,
                 'arrondissement' => $arrondissement->nom ?? null,
                 'quartier' => $validated['org_quartier'] ?? null,
                 'latitude' => $validated['org_latitude'] ?? null,
                 'longitude' => $validated['org_longitude'] ?? null,
+                // Références ID pour les jointures
+                'province_ref_id' => $validated['org_province_id'],
+                'departement_ref_id' => $validated['org_departement_id'],
+                'commune_ville_ref_id' => $validated['org_commune_id'] ?? null,
+                'arrondissement_ref_id' => $validated['org_arrondissement_id'] ?? null,
                 'telephone' => $validated['org_telephone'],
                 'email' => $validated['org_email'] ?? null,
                 'site_web' => $validated['org_site_web'] ?? null,
@@ -365,14 +373,22 @@ class DossierController extends Controller
 
             // Traiter les documents uploadés
             if ($request->hasFile('documents')) {
-                foreach ($request->file('documents') as $key => $file) {
+                foreach ($request->file('documents') as $documentTypeId => $file) {
                     $path = $file->store('dossiers/' . $dossier->id, 'public');
+                    
+                    // Générer le hash du fichier
+                    $hash = hash_file('sha256', $file->getRealPath());
+                    
                     $dossier->documents()->create([
-                        'nom_fichier' => $path,
+                        'document_type_id' => $documentTypeId,
+                        'chemin_fichier' => $path,
+                        'nom_fichier' => $file->getClientOriginalName(),
                         'nom_original' => $file->getClientOriginalName(),
-                        'type_fichier' => $file->getClientMimeType(),
-                        'taille_fichier' => $file->getSize(),
+                        'type_mime' => $file->getClientMimeType(),
+                        'taille' => $file->getSize(),
+                        'hash_fichier' => $hash,
                         'uploaded_by' => auth()->id(),
+                        'is_system_generated' => false,
                     ]);
                 }
             }
@@ -808,14 +824,14 @@ public function validateDossier(Request $request, $id)
             'date_approbation' => 'required|date',
             'validite_mois' => 'nullable|integer|min:1|max:120',
             'commentaire_approbation' => 'nullable|string|max:2000',
-            'generer_recepisse' => 'boolean',
-            'envoyer_email_approbation' => 'boolean',
-            'publier_annuaire' => 'boolean'
+            'generer_recepisse' => 'nullable',
+            'envoyer_email_approbation' => 'nullable',
+            'publier_annuaire' => 'nullable'
         ]);
 
         DB::beginTransaction();
 
-        $dossier = Dossier::with('organisation', 'user')->findOrFail($id);
+        $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
         
         // Vérifier que le dossier peut être approuvé
         if (!in_array($dossier->statut, ['en_cours', 'soumis'])) {
@@ -854,16 +870,31 @@ public function validateDossier(Request $request, $id)
             $dossier->organisation->update($updateData);
         }
 
-        // Ajouter un commentaire d'approbation
+        // Enregistrer l'opération de validation
+        if (method_exists($dossier, 'operations')) {
+            $dossier->operations()->create([
+                'type_operation' => 'validation',
+                'user_id' => auth()->id(),
+                'description' => 'Dossier approuvé - Récépissé: ' . $request->numero_recepisse_final,
+                'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
+                'nouveau_statut' => 'approuve',
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
+            ]);
+        }
+
+        // Ajouter un commentaire d'approbation (optionnel)
         if ($request->filled('commentaire_approbation')) {
             // Vérifier que la relation operations existe
             if (method_exists($dossier, 'operations')) {
                 $dossier->operations()->create([
                     'type_operation' => 'commentaire',
                     'user_id' => auth()->id(),
-                    'type' => 'approbation',
-                    'contenu' => $request->commentaire_approbation,
-                    'is_visible_operateur' => true
+                    'description' => $request->commentaire_approbation,
+                    'ancien_statut' => $dossier->getOriginal('statut'),
+                    'nouveau_statut' => 'approuve',
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
                 ]);
             }
         }
@@ -871,14 +902,13 @@ public function validateDossier(Request $request, $id)
         // Créer une validation selon le modèle existant
         if (method_exists($dossier, 'validations')) {
             $dossier->validations()->create([
-                'user_id' => auth()->id(),
-                'workflow_step_id' => 1, // Valeur par défaut
-                'validation_entity_id' => 1, // Valeur par défaut
+                'workflow_step_id' => $dossier->current_step_id ?? 1,
+                'validation_entity_id' => 1,
                 'validated_by' => auth()->id(),
                 'decision' => 'approuve',
                 'commentaire' => $request->commentaire_approbation,
-                'decided_at' => now(),
-                'numero_enregistrement' => $request->numero_recepisse_final
+                'numero_enregistrement' => $request->numero_recepisse_final,
+                'decided_at' => now()
             ]);
         }
 
@@ -905,10 +935,11 @@ public function validateDossier(Request $request, $id)
         }
 
         // Envoyer email de confirmation si demandé
-        if ($request->envoyer_email_approbation && $dossier->user && $dossier->user->email) {
+        $userEmail = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
+        if ($request->envoyer_email_approbation && $userEmail) {
             try {
                 // TODO: Implémenter l'envoi d'email
-                \Log::info('Email d\'approbation à envoyer à: ' . $dossier->user->email);
+                \Log::info('Email d\'approbation à envoyer à: ' . $userEmail);
             } catch (\Exception $e) {
                 \Log::warning('Erreur envoi email d\'approbation: ' . $e->getMessage());
             }
@@ -1413,9 +1444,9 @@ public function assign(Request $request, $id)
             $dossier->operations()->create([
                 'type_operation' => 'commentaire',
                 'user_id' => auth()->id(),
-                'type' => 'assignation',
-                'contenu' => $request->commentaire,
-                'is_visible_operateur' => true
+                'description' => $request->commentaire,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
             ]);
         }
 
@@ -1642,9 +1673,9 @@ public function addComment(Request $request, $id)
             $comment = $dossier->operations()->create([
                 'type_operation' => 'commentaire',
                 'user_id' => auth()->id(),
-                'type' => 'note_admin',
-                'contenu' => $request->comment_text,
-                'is_visible_operateur' => false
+                'description' => $request->comment_text,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
             ]);
 
             return response()->json([
@@ -1733,9 +1764,9 @@ public function approuver(Request $request, $id)
             $dossier->operations()->create([
                 'type_operation' => 'commentaire',
                 'user_id' => auth()->id(),
-                'type' => 'approbation',
-                'contenu' => $request->commentaire_approbation,
-                'is_visible_operateur' => true
+                'description' => $request->commentaire_approbation,
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
             ]);
         }
 
@@ -1769,10 +1800,11 @@ public function approuver(Request $request, $id)
         }
 
         // Envoyer notification email si demandé
-        if ($request->envoyer_email_approbation && $dossier->user) {
+        $emailUser = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
+        if ($request->envoyer_email_approbation && $emailUser) {
             try {
                 // TODO: Implémenter l'envoi d'email avec Mailable
-                \Log::info('Email d\'approbation à envoyer à: ' . $dossier->user->email);
+                \Log::info('Email d\'approbation à envoyer à: ' . $emailUser);
             } catch (\Exception $e) {
                 \Log::warning('Erreur envoi email: ' . $e->getMessage());
             }
@@ -1834,7 +1866,7 @@ public function reject(Request $request, $id)
 
         DB::beginTransaction();
 
-        $dossier = Dossier::with('organisation', 'user')->findOrFail($id);
+        $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
         
         // Vérifier que le dossier peut être rejeté
         if (in_array($dossier->statut, ['approuve', 'rejete'])) {
@@ -1874,11 +1906,13 @@ public function reject(Request $request, $id)
         }
 
         $dossier->operations()->create([
-            'type_operation' => 'commentaire',
+            'type_operation' => 'rejet',
             'user_id' => auth()->id(),
-            'type' => 'rejet',
-            'contenu' => $commentaireRejet,
-            'is_visible_operateur' => true
+            'description' => $commentaireRejet,
+            'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
+            'nouveau_statut' => 'rejete',
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent()
         ]);
 
         // Générer la lettre de rejet si demandé
@@ -1905,10 +1939,11 @@ public function reject(Request $request, $id)
         }
 
         // Envoyer notification email si demandé
-        if ($request->envoyer_email_rejet && $dossier->user) {
+        $emailRejet = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
+        if ($request->envoyer_email_rejet && $emailRejet) {
             try {
                 // TODO: Implémenter l'envoi d'email de rejet
-                \Log::info('Email de rejet à envoyer à: ' . $dossier->user->email);
+                \Log::info('Email de rejet à envoyer à: ' . $emailRejet);
             } catch (\Exception $e) {
                 \Log::warning('Erreur envoi email rejet: ' . $e->getMessage());
             }
@@ -1978,7 +2013,7 @@ public function requestModification(Request $request, $id)
 
         DB::beginTransaction();
 
-        $dossier = Dossier::with('organisation', 'user')->findOrFail($id);
+        $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
         
         // Vérifier que le dossier peut être modifié
         if (in_array($dossier->statut, ['approuve', 'rejete'])) {
@@ -2021,18 +2056,21 @@ public function requestModification(Request $request, $id)
         $commentaireModification .= "\n**Date limite:** " . now()->addDays($request->delai_modification)->format('d/m/Y');
 
         $dossier->operations()->create([
-            'type_operation' => 'commentaire',
+            'type_operation' => 'retour_pour_correction',
             'user_id' => auth()->id(),
-            'type' => 'demande_modification',
-            'contenu' => $commentaireModification,
-            'is_visible_operateur' => true
+            'description' => $commentaireModification,
+            'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
+            'nouveau_statut' => 'retour_modification',
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent()
         ]);
 
         // Envoyer notification email si demandé
-        if ($request->envoyer_email_modification && $dossier->user) {
+        $userEmail = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
+        if ($request->envoyer_email_modification && $userEmail) {
             try {
                 // TODO: Implémenter l'envoi d'email de demande de modification
-                \Log::info('Email de demande modification à envoyer à: ' . $dossier->user->email);
+                \Log::info('Email de demande modification à envoyer à: ' . $userEmail);
             } catch (\Exception $e) {
                 \Log::warning('Erreur envoi email modification: ' . $e->getMessage());
             }
@@ -3042,52 +3080,6 @@ private function calculateHighPriorityCountArchitecture()
     }
 
     /**
-     * ✅ NOUVELLE : Récupérer les cantons d'un département
-     */
-    public function getCantons($departement_id)
-    {
-        try {
-            $cantons = Canton::where('departement_id', $departement_id)
-                ->where('is_active', true)
-                ->orderBy('nom')
-                ->get(['id', 'nom', 'code']);
-
-            return response()->json([
-                'success' => true,
-                'data' => $cantons
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur chargement cantons'
-            ], 500);
-        }
-    }
-
-    /**
-     * ✅ NOUVELLE : Récupérer les regroupements d'un canton
-     */
-    public function getRegroupements($canton_id)
-    {
-        try {
-            $regroupements = Regroupement::where('canton_id', $canton_id)
-                ->where('is_active', true)
-                ->orderBy('nom')
-                ->get(['id', 'nom', 'code']);
-
-            return response()->json([
-                'success' => true,
-                'data' => $regroupements
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur chargement regroupements'
-            ], 500);
-        }
-    }
-
-    /**
      * ✅ NOUVELLE : Récupérer les localités d'un regroupement OU d'un arrondissement
      */
     public function getLocalitesNew(Request $request)
@@ -3141,7 +3133,7 @@ public function getOrganisationTypeRules($organisation_type_id)
         // Charger le type avec ses documents requis
         $orgType = \App\Models\OrganisationType::with(['documentTypes' => function($query) {
             $query->where('is_active', true)
-                  ->orderBy('organisation_type_document_type.ordre', 'asc');
+                  ->orderBy('document_type_organisation_type.ordre', 'asc');
         }])->findOrFail($organisation_type_id);
 
         // Formater les documents requis
@@ -3216,6 +3208,163 @@ public function getOrganisationTypeRules($organisation_type_id)
         ], 500);
     }
 }
+
+
+/**
+ * ============================================
+ * MÉTHODES API GÉOLOCALISATION - À AJOUTER
+ * Dans app/Http/Controllers/Admin/DossierController.php
+ * ============================================
+ * 
+ * Ajouter ces méthodes dans la section API du DossierController
+ * Après les méthodes existantes : getCantons(), getRegroupements()
+ */
+
+    /**
+     * ========================================
+     * API : Obtenir les quartiers d'un arrondissement (Zone Urbaine)
+     * ========================================
+     * Route: GET /admin/api/geo/quartiers/{arrondissement_id}
+     * 
+     * @param int $arrondissement_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getQuartiers($arrondissement_id)
+    {
+        try {
+            $quartiers = \App\Models\Localite::where('arrondissement_id', $arrondissement_id)
+                ->where('type', 'quartier')
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->select('id', 'nom', 'code')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $quartiers,
+                'count' => $quartiers->count()
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erreur getQuartiers: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des quartiers',
+                'data' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * ========================================
+     * API : Obtenir les villages d'un regroupement (Zone Rurale)
+     * ========================================
+     * Route: GET /admin/api/geo/villages/{regroupement_id}
+     * 
+     * @param int $regroupement_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getVillages($regroupement_id)
+    {
+        try {
+            $villages = \App\Models\Localite::where('regroupement_id', $regroupement_id)
+                ->where('type', 'village')
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->select('id', 'nom', 'code')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $villages,
+                'count' => $villages->count()
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erreur getVillages: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des villages',
+                'data' => []
+            ], 500);
+        }
+    }
+
+
+/**
+ * ============================================
+ * VÉRIFICATION DES MÉTHODES EXISTANTES
+ * ============================================
+ * 
+ * Assurez-vous que ces méthodes existent également :
+ * 
+ * - getProvinces()
+ * - getDepartements($province_id)
+ * - getCommunes($departement_id)
+ * - getArrondissements($commune_id)
+ * - getCantons($departement_id)
+ * - getRegroupements($canton_id)
+ * 
+ * Si elles n'existent pas, voici leurs implémentations :
+ */
+
+    /**
+     * API : Obtenir les cantons d'un département (Zone Rurale)
+     * Route: GET /admin/api/geo/cantons/{departement_id}
+     */
+    public function getCantons($departement_id)
+    {
+        try {
+            $cantons = \App\Models\Canton::where('departement_id', $departement_id)
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->select('id', 'nom', 'code')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $cantons,
+                'count' => $cantons->count()
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erreur getCantons: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des cantons',
+                'data' => []
+            ], 500);
+        }
+    }
+
+    /**
+     * API : Obtenir les regroupements d'un canton (Zone Rurale)
+     * Route: GET /admin/api/geo/regroupements/{canton_id}
+     */
+    public function getRegroupements($canton_id)
+    {
+        try {
+            $regroupements = \App\Models\Regroupement::where('canton_id', $canton_id)
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->select('id', 'nom', 'code')
+                ->get();
+            
+            return response()->json([
+                'success' => true,
+                'data' => $regroupements,
+                'count' => $regroupements->count()
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Erreur getRegroupements: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des regroupements',
+                'data' => []
+            ], 500);
+        }
+    }
 
 
 }
