@@ -747,14 +747,14 @@
                     </div>
                     
                     <!-- Informations d'Assignation -->
-                    <div class="mb-3">
+                    <div class="mb-3" id="section-assignation">
                         <label class="text-muted small d-block mb-2">
                             <i class="fas fa-user-cog me-1"></i> Assignation
                         </label>
                         @if($dossier->assigned_to && $dossier->assignedAgent)
-                            <div class="alert alert-info mb-0 py-2">
+                            <div class="alert alert-info mb-0 py-2" id="assignation-content">
                                 <div class="d-flex align-items-center">
-                                    <div class="avatar-circle bg-primary text-white me-2" style="width: 35px; height: 35px; font-size: 12px;">
+                                    <div class="avatar-circle bg-primary text-white me-2" style="width: 35px; height: 35px; font-size: 12px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
                                         {{ strtoupper(substr($dossier->assignedAgent->name ?? 'NA', 0, 2)) }}
                                     </div>
                                     <div>
@@ -809,7 +809,7 @@
                                 @endif
                             </div>
                         @else
-                            <div class="alert alert-warning mb-0 py-2">
+                            <div class="alert alert-warning mb-0 py-2" id="assignation-content">
                                 <i class="fas fa-exclamation-triangle me-1"></i>
                                 <strong>Non assigné</strong>
                                 <br>
@@ -1247,46 +1247,42 @@ document.addEventListener('DOMContentLoaded', function() {
     window.updateAssignationUI = function(agentName, agentEmail) {
         console.log('🔄 Mise à jour UI assignation:', agentName, agentEmail);
         
-        // Trouver le conteneur d'assignation
-        const assignationContainer = document.querySelector('.card-body .mb-3 .alert-warning, .card-body .mb-3 .alert-info');
+        // ✅ Utiliser l'ID spécifique pour cibler la bonne section
+        const assignationContent = document.getElementById('assignation-content');
         
-        if (assignationContainer) {
+        if (assignationContent) {
             // Créer les initiales de l'agent
             const initiales = agentName ? agentName.substring(0, 2).toUpperCase() : 'NA';
             
-            // Remplacer le contenu avec les nouvelles informations
-            const parentDiv = assignationContainer.parentElement;
-            parentDiv.innerHTML = `
-                <label class="text-muted small d-block mb-2">
-                    <i class="fas fa-user-cog me-1"></i> Assignation
-                </label>
-                <div class="alert alert-info mb-0 py-2">
-                    <div class="d-flex align-items-center">
-                        <div class="avatar-circle bg-primary text-white me-2" style="width: 35px; height: 35px; font-size: 12px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
-                            ${initiales}
-                        </div>
-                        <div>
-                            <strong>${agentName}</strong>
-                            <br>
-                            <small class="text-muted">${agentEmail}</small>
-                        </div>
+            // Remplacer le contenu et changer la classe
+            assignationContent.className = 'alert alert-info mb-0 py-2';
+            assignationContent.id = 'assignation-content';
+            assignationContent.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="avatar-circle bg-primary text-white me-2" style="width: 35px; height: 35px; font-size: 12px; display: flex; align-items: center; justify-content: center; border-radius: 50%;">
+                        ${initiales}
                     </div>
-                    <hr class="my-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <small>
-                            <i class="fas fa-calendar-check me-1"></i>
-                            À l'instant
-                        </small>
-                        <span class="badge bg-success">
-                            <i class="fas fa-check me-1"></i>Assigné
-                        </span>
+                    <div>
+                        <strong>${agentName}</strong>
+                        <br>
+                        <small class="text-muted">${agentEmail}</small>
                     </div>
+                </div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <small>
+                        <i class="fas fa-calendar-check me-1"></i>
+                        À l'instant
+                    </small>
+                    <span class="badge bg-success">
+                        <i class="fas fa-check me-1"></i>Assigné
+                    </span>
                 </div>
             `;
             
-            console.log('✅ UI assignation mise à jour');
+            console.log('✅ UI assignation mise à jour avec succès');
         } else {
-            console.warn('⚠️ Conteneur assignation non trouvé pour mise à jour UI');
+            console.warn('⚠️ Element #assignation-content non trouvé');
         }
         
         // Mettre à jour le statut du dossier visuellement
@@ -1944,10 +1940,9 @@ function handleAssignSubmission(form) {
                 }, 5000);
             }
             
-            // ✅ RECHARGEMENT DE LA PAGE (délai court pour voir le message)
-            setTimeout(() => {
-                window.location.reload();
-            }, 3000);
+            // ✅ PAS DE RECHARGEMENT AUTOMATIQUE - L'UI est déjà mise à jour
+            // L'utilisateur peut recharger manuellement si besoin
+            console.log('✅ Assignation terminée - UI mise à jour sans rechargement');
             
         } else {
             // ✅ GESTION D'ERREURS MÉTIER
