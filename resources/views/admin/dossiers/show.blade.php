@@ -21,8 +21,8 @@
     <!-- Header du dossier avec actions -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="card border-0 shadow-lg" 
-                 style="background: linear-gradient(135deg, #003f7f 0%, #0056b3 100%);">
+            <div class="card border-0-lg" 
+                 style="background-color: #009e3f;">
                 <div class="card-body text-white">
                     <div class="row align-items-center">
                         <div class="col-md-8">
@@ -75,7 +75,7 @@
                                             @endphp
                                             {{ $delai }} jour{{ $delai > 1 ? 's' : '' }}
                                             @if($delai > 7)
-                                                <i class="fas fa-exclamation-triangle text-warning ms-1" title="Priorité haute"></i>
+                                                <i class="fas fa-exclamation-triangle text-secondary ms-1" title="Priorité haute"></i>
                                             @endif
                                         </div>
                                     </div>
@@ -113,7 +113,7 @@
         <!-- Colonne principale - Détails -->
         <div class="col-lg-8">
             <!-- Informations de l'organisation -->
-            <div class="card shadow mb-4">
+            <div class="card mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-building me-2"></i>Informations de l'Organisation
@@ -172,10 +172,405 @@
                 </div>
             </div>
 
-            
 
+            <!-- ========== LOCALISATION GÉOGRAPHIQUE (COMPACT) ========== -->
+            <div class="card mb-4">
+                <div class="card-header py-2 bg-light">
+                    <h6 class="m-0 font-weight-bold text-dark">
+                        <i class="fas fa-map-marker-alt me-2"></i>Localisation
+                        @if($dossier->organisation && $dossier->organisation->zone_type)
+                            <span class="badge {{ $dossier->organisation->zone_type === 'urbaine' ? 'bg-primary' : 'bg-success' }} ms-2">
+                                Zone {{ ucfirst($dossier->organisation->zone_type) }}
+                            </span>
+                        @endif
+                    </h6>
+                </div>
+                <div class="card-body py-3">
+                    @if($dossier->organisation)
+                        @php
+                            $org = $dossier->organisation;
+                            $zoneType = $org->zone_type ?? 'urbaine';
+                            $isUrbaine = $zoneType === 'urbaine';
+                        @endphp
+                        
+                        <div class="row">
+                            <div class="col-md-8">
+                                <!-- Hiérarchie selon le type de zone -->
+                                <div class="mb-2">
+                                    {{-- Province (toujours) --}}
+                                    <strong class="text-primary">
+                                        {{ $org->province ?? ($org->provinceRef->nom ?? 'N/D') }}
+                                    </strong>
+                                    
+                                    {{-- Département (toujours) --}}
+                                    @if($org->departement || $org->departementRef)
+                                        <span class="text-muted mx-1">›</span>
+                                        {{ $org->departement ?? ($org->departementRef->nom ?? '') }}
+                                    @endif
+                                    
+                                    @if($isUrbaine)
+                                        {{-- ZONE URBAINE : Commune/Ville → Arrondissement → Quartier --}}
+                                        @if($org->ville_commune || $org->communeVilleRef)
+                                            <span class="text-muted mx-1">›</span>
+                                            {{ $org->ville_commune ?? ($org->communeVilleRef->nom ?? '') }}
+                                        @endif
+                                        @if($org->arrondissement || $org->arrondissementRef)
+                                            <span class="text-muted mx-1">›</span>
+                                            {{ $org->arrondissement ?? ($org->arrondissementRef->nom ?? '') }}
+                                        @endif
+                                        @if($org->quartier || ($org->localiteRef && $org->localiteRef->type === 'quartier'))
+                                            <span class="text-muted mx-1">›</span>
+                                            <strong>{{ $org->quartier ?? ($org->localiteRef->nom ?? '') }}</strong>
+                                        @endif
+                                    @else
+                                        {{-- ZONE RURALE : Canton → Regroupement → Village --}}
+                                        @if($org->canton || $org->cantonRef)
+                                            <span class="text-muted mx-1">›</span>
+                                            {{ $org->canton ?? ($org->cantonRef->nom ?? '') }}
+                                        @endif
+                                        @if($org->regroupement || $org->regroupementRef)
+                                            <span class="text-muted mx-1">›</span>
+                                            {{ $org->regroupement ?? ($org->regroupementRef->nom ?? '') }}
+                                        @endif
+                                        @if($org->village || ($org->localiteRef && $org->localiteRef->type === 'village'))
+                                            <span class="text-muted mx-1">›</span>
+                                            <strong>{{ $org->village ?? ($org->localiteRef->nom ?? '') }}</strong>
+                                        @endif
+                                    @endif
+                                    
+                                    {{-- Lieu-dit (commun) --}}
+                                    @if($org->lieu_dit)
+                                        <span class="text-muted mx-1">›</span>
+                                        <em>{{ $org->lieu_dit }}</em>
+                                    @endif
+                                </div>
+                                
+                                <!-- Siège social -->
+                                @if($org->siege_social)
+                                    <div class="small text-muted">
+                                        <i class="fas fa-building me-1"></i> {{ $org->siege_social }}
+                                    </div>
+                                @endif
+                                
+                                <!-- Préfecture si disponible -->
+                                @if($org->prefecture)
+                                    <div class="small text-muted mt-1">
+                                        <i class="fas fa-university me-1"></i> Préfecture : {{ $org->prefecture }}
+                                        @if($org->sous_prefecture)
+                                            / Sous-Préf. : {{ $org->sous_prefecture }}
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+                            
+                            <div class="col-md-4 text-md-end">
+                                <!-- GPS -->
+                                @if($org->latitude && $org->longitude)
+                                    <a href="https://www.google.com/maps?q={{ $org->latitude }},{{ $org->longitude }}" 
+                                       target="_blank" class="btn btn-sm btn-outline-secondary">
+                                        <i class="fas fa-map me-1"></i> Carte
+                                    </a>
+                                @endif
+                            </div>
+                        </div>
+                    @else
+                        <span class="text-muted">Aucune information disponible</span>
+                    @endif
+                </div>
+            </div>
+
+
+{{-- ============================================ --}}
+{{-- SECTIONS À AJOUTER DANS show.blade.php --}}
+{{-- Insérer après la section "Informations de l'Organisation" --}}
+{{-- et avant "Historique et commentaires" --}}
+{{-- ============================================ --}}
+
+            <!-- ========== INFORMATIONS DU DEMANDEUR ========== -->
+            @php
+                $donnees = json_decode($dossier->donnees_supplementaires, true);
+                $demandeur = $donnees['demandeur'] ?? null;
+                $geoloc = $donnees['geolocalisation'] ?? null;
+            @endphp
+            
+            @if($demandeur)
+            <div class="card mb-4">
+                <div class="card-header py-3 bg-secondary text-white">
+                    <h6 class="m-0 font-weight-bold">
+                        <i class="fas fa-id-card me-2"></i>Informations du Demandeur
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-group mb-3">
+                                <label class="text-muted small">NIP</label>
+                                <div class="fw-bold">
+                                    <span class="badge bg-secondary">{{ $demandeur['nip'] ?? 'Non renseigné' }}</span>
+                                </div>
+                            </div>
+                            <div class="info-group mb-3">
+                                <label class="text-muted small">Nom complet</label>
+                                <div class="fw-bold">
+                                    {{ $demandeur['civilite'] ?? '' }} {{ $demandeur['prenom'] ?? '' }} {{ $demandeur['nom'] ?? '' }}
+                                </div>
+                            </div>
+                            <div class="info-group mb-3">
+                                <label class="text-muted small">Rôle dans l'organisation</label>
+                                <div class="fw-bold">
+                                    <span class="badge bg-primary">{{ $demandeur['role'] ?? 'Non défini' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-group mb-3">
+                                <label class="text-muted small">Téléphone</label>
+                                <div class="fw-bold">
+                                    <i class="fas fa-phone text-success me-1"></i>
+                                    {{ $demandeur['telephone'] ?? 'Non renseigné' }}
+                                </div>
+                            </div>
+                            <div class="info-group mb-3">
+                                <label class="text-muted small">Email</label>
+                                <div class="fw-bold">
+                                    <i class="fas fa-envelope text-primary me-1"></i>
+                                    {{ $demandeur['email'] ?? 'Non renseigné' }}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endif
+
+            <!-- ========== LISTE DES FONDATEURS ========== -->
+            <div class="card mb-4">
+                <div class="card-header py-3" style="background-color: #009e3f;">
+                    <h6 class="m-0 font-weight-bold text-white">
+                        <i class="fas fa-users me-2"></i>Membres Fondateurs
+                        @if($dossier->organisation && $dossier->organisation->fondateurs)
+                            <span class="badge bg-light text-dark ms-2">{{ $dossier->organisation->fondateurs->count() }}</span>
+                        @endif
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if($dossier->organisation && $dossier->organisation->fondateurs && $dossier->organisation->fondateurs->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>NIP</th>
+                                        <th>Civilité</th>
+                                        <th>Nom & Prénom</th>
+                                        <th>Fonction</th>
+                                        <th>Contact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($dossier->organisation->fondateurs as $index => $fondateur)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ $fondateur->nip ?? 'N/A' }}</span>
+                                        </td>
+                                        <td>{{ $fondateur->civilite ?? '-' }}</td>
+                                        <td>
+                                            <strong>{{ $fondateur->nom ?? '' }}</strong> {{ $fondateur->prenom ?? '' }}
+                                        </td>
+                                        <td>
+                                            @if($fondateur->fonction)
+                                                <span class="badge bg-secondary">{{ $fondateur->fonction->nom ?? $fondateur->fonction }}</span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($fondateur->telephone)
+                                                <i class="fas fa-phone text-success me-1"></i>{{ $fondateur->telephone }}
+                                            @endif
+                                            @if($fondateur->email)
+                                                <br><i class="fas fa-envelope text-primary me-1"></i>{{ $fondateur->email }}
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Aucun fondateur enregistré pour cette organisation.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- ========== LISTE DES ADHÉRENTS ========== -->
+            <div class="card mb-4">
+                <div class="card-header py-3" style="background-color: #009e3f;">
+                    <h6 class="m-0 font-weight-bold text-white">
+                        <i class="fas fa-user-friends me-2"></i>Adhérents
+                        @if($dossier->organisation && $dossier->organisation->adherents)
+                            <span class="badge bg-light text-dark ms-2">{{ $dossier->organisation->adherents->count() }}</span>
+                        @endif
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if($dossier->organisation && $dossier->organisation->adherents && $dossier->organisation->adherents->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover table-striped mb-0">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>NIP</th>
+                                        <th>Nom & Prénom</th>
+                                        <th>Profession</th>
+                                        <th>Date adhésion</th>
+                                        <th>Contact</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($dossier->organisation->adherents as $index => $adherent)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>
+                                            <span class="badge bg-secondary">{{ $adherent->nip ?? 'N/A' }}</span>
+                                        </td>
+                                        <td>
+                                            <strong>{{ $adherent->nom ?? '' }}</strong> {{ $adherent->prenom ?? '' }}
+                                        </td>
+                                        <td>{{ $adherent->profession ?? '-' }}</td>
+                                        <td>
+                                            @if($adherent->date_adhesion)
+                                                {{ \Carbon\Carbon::parse($adherent->date_adhesion)->format('d/m/Y') }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($adherent->telephone)
+                                                <i class="fas fa-phone text-success me-1"></i>{{ $adherent->telephone }}
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-info mb-0">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Aucun adhérent enregistré pour cette organisation.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+            <!-- ========== DOCUMENTS UPLOADÉS ========== -->
+            <div class="card mb-4">
+                <div class="card-header py-3" style="background-color: #6c757d;">
+                    <h6 class="m-0 font-weight-bold text-white">
+                        <i class="fas fa-folder-open me-2"></i>Pièces Jointes au Dossier
+                        @if($dossier->documents)
+                            <span class="badge bg-light text-dark ms-2">{{ $dossier->documents->count() }}</span>
+                        @endif
+                    </h6>
+                </div>
+                <div class="card-body">
+                    @if($dossier->documents && $dossier->documents->count() > 0)
+                        <div class="row g-3">
+                            @foreach($dossier->documents as $document)
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card h-100 document-card border">
+                                    <div class="card-body text-center">
+                                        <!-- Icône selon le type de fichier -->
+                                        @php
+                                            $extension = pathinfo($document->nom_fichier ?? $document->chemin_fichier, PATHINFO_EXTENSION);
+                                            $iconClass = match(strtolower($extension)) {
+                                                'pdf' => 'fa-file-pdf text-secondary',
+                                                'doc', 'docx' => 'fa-file-word text-primary',
+                                                'xls', 'xlsx' => 'fa-file-excel text-success',
+                                                'jpg', 'jpeg', 'png', 'gif' => 'fa-file-image text-secondary',
+                                                default => 'fa-file text-secondary'
+                                            };
+                                        @endphp
+                                        <i class="fas {{ $iconClass }} fa-4x mb-3"></i>
+                                        
+                                        <!-- Nom du type de document -->
+                                        <h6 class="card-title mb-1">
+                                            {{ $document->documentType->nom ?? 'Document' }}
+                                        </h6>
+                                        
+                                        <!-- Nom du fichier -->
+                                        <p class="card-text small text-muted mb-2" title="{{ $document->nom_fichier ?? $document->nom_original ?? 'Fichier' }}">
+                                            {{ Str::limit($document->nom_fichier ?? $document->nom_original ?? 'Fichier', 25) }}
+                                        </p>
+                                        
+                                        <!-- Métadonnées -->
+                                        <div class="small text-muted mb-2">
+                                            @if($document->taille)
+                                                <span class="me-2">
+                                                    <i class="fas fa-weight me-1"></i>{{ number_format($document->taille / 1024, 1) }} KB
+                                                </span>
+                                            @endif
+                                            @if($document->created_at)
+                                                <span>
+                                                    <i class="fas fa-calendar me-1"></i>{{ \Carbon\Carbon::parse($document->created_at)->format('d/m/Y') }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        
+                                        <!-- Statut validation -->
+                                        @if($document->is_validated)
+                                            <span class="badge bg-success mb-2">
+                                                <i class="fas fa-check me-1"></i>Validé
+                                            </span>
+                                        @elseif($document->has_anomalies_info)
+                                            <span class="badge bg-secondary mb-2">
+                                                <i class="fas fa-exclamation-triangle me-1"></i>Anomalies
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary mb-2">
+                                                <i class="fas fa-clock me-1"></i>En attente
+                                            </span>
+                                        @endif
+                                    </div>
+                                    <div class="card-footer bg-light">
+                                        <div class="btn-group w-100" role="group">
+                                            <a href="{{ Storage::url($document->chemin_fichier) }}" 
+                                               target="_blank" 
+                                               class="btn btn-sm btn-outline-primary" 
+                                               title="Visualiser">
+                                                <i class="fas fa-eye"></i> Voir
+                                            </a>
+                                            <a href="{{ Storage::url($document->chemin_fichier) }}" 
+                                               download="{{ $document->nom_fichier ?? $document->nom_original }}"
+                                               class="btn btn-sm btn-outline-success"
+                                               title="Télécharger">
+                                                <i class="fas fa-download"></i> Télécharger
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Aucun document joint à ce dossier.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+{{-- ============================================ --}}
+{{-- FIN DES SECTIONS À AJOUTER --}}
+{{-- ============================================ --}}
             <!-- Historique et commentaires -->
-            <div class="card shadow mb-4">
+            <div class="card mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-history me-2"></i>Historique et Commentaires
@@ -204,7 +599,7 @@
                         @if($dossier->operations && $dossier->operations->where('type_operation', 'commentaire')->count() > 0)
                             @foreach($dossier->operations->where('type_operation', 'commentaire')->sortBy('created_at') as $comment)
                             <div class="timeline-item">
-                                <div class="timeline-marker bg-info">
+                                <div class="timeline-marker bg-secondary">
                                     <i class="fas fa-comment text-white"></i>
                                 </div>
                                 <div class="timeline-content">
@@ -278,7 +673,7 @@
         <!-- Colonne secondaire - Informations complémentaires -->
         <div class="col-lg-4">
             <!-- Statut et assignation -->
-            <div class="card shadow mb-4">
+            <div class="card mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-info-circle me-2"></i>Statut du Dossier
@@ -354,7 +749,7 @@
             </div>
 
             <!-- Informations du demandeur -->
-            <div class="card shadow mb-4">
+            <div class="card mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-user me-2"></i>Demandeur
@@ -399,7 +794,7 @@
             </div>
 
             <!-- Statistiques du dossier -->
-            <div class="card shadow mb-4">
+            <div class="card mb-4">
                 <div class="card-header py-3">
                     <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-chart-bar me-2"></i>Statistiques
@@ -415,7 +810,7 @@
                         </div>
                         <div class="col-6">
                             <div class="stat-item">
-                                <h4 class="text-info">{{ $dossier->operations ? $dossier->operations->where('type_operation', 'commentaire')->count() : 0 }}</h4>
+                                <h4 class="text-secondary">{{ $dossier->operations ? $dossier->operations->where('type_operation', 'commentaire')->count() : 0 }}</h4>
                                 <small class="text-muted">Commentaire{{ ($dossier->operations && $dossier->operations->where('type_operation', 'commentaire')->count() > 1) ? 's' : '' }}</small>
                             </div>
                         </div>
@@ -1052,6 +1447,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const numeroRecepisse = form.querySelector('#numero_recepisse_final').value.trim();
         const dateApprobation = form.querySelector('#date_approbation').value;
         
+        // ✅ LOG: Données du formulaire
+        console.log('📋 Données du formulaire:', {
+            numero_recepisse_final: numeroRecepisse,
+            date_approbation: dateApprobation,
+            validite_mois: form.querySelector('#validite_mois')?.value,
+            generer_recepisse: form.querySelector('#generer_recepisse')?.checked,
+            envoyer_email_approbation: form.querySelector('#envoyer_email_approbation')?.checked,
+            publier_annuaire: form.querySelector('#publier_annuaire')?.checked,
+            commentaire_approbation: form.querySelector('#commentaire_approbation')?.value
+        });
+        
         if (!numeroRecepisse) {
             showAlert('warning', 'Le numéro de récépissé est obligatoire', 10000);
             return;
@@ -1066,18 +1472,41 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const formData = new FormData(form);
         
-        fetch(`/admin/dossiers/${dossierId}/valider`, {
+        // ✅ LOG: Contenu FormData
+        console.log('📤 FormData envoyé:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`   ${key}: ${value}`);
+        }
+        
+        const url = `/admin/dossiers/${dossierId}/validate`;
+        console.log('🌐 URL:', url);
+        
+        fetch(url, {
             method: 'POST',
             body: formData,
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
             }
         })
-        .then(response => response.json())
-        .then(data => {
+        .then(response => {
+            // ✅ LOG: Statut de la réponse
+            console.log('📥 Réponse HTTP:', {
+                status: response.status,
+                statusText: response.statusText,
+                ok: response.ok
+            });
+            
+            return response.json().then(data => {
+                return { status: response.status, ok: response.ok, data: data };
+            });
+        })
+        .then(result => {
             hideLoadingAlert();
             
-            if (data.success) {
+            // ✅ LOG: Données de la réponse
+            console.log('📦 Données réponse:', result.data);
+            
+            if (result.ok && result.data.success) {
                 // ✅ BOOTSTRAP 4 : Utiliser jQuery pour fermer la modal
                 $('#approveModal').modal('hide');
                 
@@ -1085,16 +1514,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 setTimeout(() => {
                     window.location.reload();
-                }, 60000);
+                }, 2000);
                 
             } else {
-                showAlert('error', data.message || 'Erreur lors de l\'approbation', 12000);
+                // ✅ LOG: Erreurs de validation Laravel
+                if (result.data.errors) {
+                    console.error('❌ Erreurs de validation:', result.data.errors);
+                    let errorMessages = [];
+                    for (let field in result.data.errors) {
+                        errorMessages.push(`${field}: ${result.data.errors[field].join(', ')}`);
+                    }
+                    showAlert('error', 'Erreurs de validation:\n' + errorMessages.join('\n'), 15000);
+                } else {
+                    console.error('❌ Erreur:', result.data.message || result.data);
+                    showAlert('error', result.data.message || 'Erreur lors de l\'approbation', 12000);
+                }
             }
         })
         .catch(error => {
             hideLoadingAlert();
-            console.error('❌ Erreur approbation:', error);
-            showAlert('error', 'Erreur technique lors de l\'approbation', 12000);
+            console.error('❌ Erreur fetch:', error);
+            showAlert('error', 'Erreur technique lors de l\'approbation: ' + error.message, 12000);
         });
     }
 
@@ -1173,7 +1613,7 @@ function handleAssignSubmission(form) {
     formDataToSend.append('agent_email', agentEmail);
     
     // ✅ ENVOI DE LA REQUÊTE AVEC GESTION D'ERREURS AMÉLIORÉE
-    fetch(`/admin/dossiers/${dossierId}/assigner`, {
+    fetch(`/admin/dossiers/${dossierId}/assign`, {
         method: 'POST',
         body: formDataToSend,
         headers: {
@@ -1354,9 +1794,9 @@ function previewPriorityImpact(prioriteNiveau) {
                 if (data.position <= 3) {
                     estimatedPosition.className = 'text-success font-weight-bold';
                 } else if (data.position <= 10) {
-                    estimatedPosition.className = 'text-warning font-weight-bold';
+                    estimatedPosition.className = 'text-secondary font-weight-bold';
                 } else {
-                    estimatedPosition.className = 'text-info';
+                    estimatedPosition.className = 'text-secondary';
                 }
             }
             
@@ -1375,7 +1815,7 @@ function previewPriorityImpact(prioriteNiveau) {
         const estimatedPosition = document.getElementById('estimatedPosition');
         if (estimatedPosition) {
             estimatedPosition.textContent = 'Erreur de calcul';
-            estimatedPosition.className = 'text-danger';
+            estimatedPosition.className = 'text-secondary';
         }
     });
 }
@@ -1385,7 +1825,7 @@ function previewPriorityImpact(prioriteNiveau) {
 const fifoStyles = document.createElement('style');
 fifoStyles.textContent = `
 .fifo-queue-alert {
-    border-left: 4px solid #17a2b8;
+    border-left: 4px solid #6c757d;
     animation: slideInFromTop 0.5s ease-out;
 }
 
@@ -1394,7 +1834,7 @@ fifoStyles.textContent = `
 }
 
 .fifo-queue-alert.alert-warning {
-    border-left-color: #ffc107;
+    border-left-color: #6c757d;
 }
 
 @keyframes slideInFromTop {
@@ -1413,7 +1853,7 @@ fifoStyles.textContent = `
     border-radius: 5px;
     margin: 10px 0;
     border-left: 3px solid #007bff;
-    background: linear-gradient(90deg, #f8f9fc 0%, #e3e6f0 100%);
+    background-color: #f8f9fa;
 }
 `;
 
@@ -1441,7 +1881,7 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
         
         const formData = new FormData(form);
         
-        fetch(`/admin/dossiers/${dossierId}/rejeter`, {
+        fetch(`/admin/dossiers/${dossierId}/reject`, {
             method: 'POST',
             body: formData,
             headers: {
@@ -1602,6 +2042,46 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
     margin-bottom: 1rem;
 }
 
+/* ========== STYLES DOCUMENT CARDS ========== */
+.document-card {
+    transition: all 0.3s ease;
+    border-radius: 0.5rem;
+}
+
+.document-card:hover {
+    transform: translateY(-3px);
+    
+}
+
+.document-card .card-body {
+    padding: 1.25rem;
+}
+
+.document-card .card-footer {
+    border-top: 1px solid #e3e6f0;
+    padding: 0.75rem;
+}
+
+/* ========== STYLES TABLES MEMBRES ========== */
+.table-dark th {
+    background-color: #003f7f;
+    color: white;
+    font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(0, 158, 63, 0.1);
+}
+
+/* ========== INFO GROUP AMÉLIORATION ========== */
+.info-group label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+    display: block;
+}
+
 .timeline {
     position: relative;
     padding-left: 30px;
@@ -1622,7 +2102,7 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    
 }
 
 .timeline::before {
@@ -1639,11 +2119,11 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
     background: #f8f9fc;
     padding: 1rem;
     border-radius: 0.5rem;
-    border-left: 3px solid #4e73df;
+    border-left: 3px solid #003f7f;
 }
 
 .timeline-header h6 {
-    color: #5a5c69;
+    color: #6c757d;
     margin-bottom: 0.25rem;
 }
 
@@ -1662,7 +2142,7 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
 }
 
 .card {
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    
     border: 1px solid #e3e6f0;
 }
 
@@ -1670,8 +2150,8 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
 
 /* Améliorations pour les alertes de chargement */
 .loading-alert {
-    border-left: 4px solid #4e73df;
-    background: linear-gradient(90deg, #f8f9fc 0%, #e3e6f0 100%);
+    border-left: 4px solid #003f7f;
+    background-color: #f8f9fa;
     animation: slideDown 0.3s ease-out, pulse 2s infinite;
     font-weight: 500;
 }
@@ -1696,7 +2176,7 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
 .dropdown-menu {
     border: 1px solid #e3e6f0;
     border-radius: 0.5rem;
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    
     min-width: 220px;
     padding: 0.5rem 0;
 }
@@ -1710,8 +2190,8 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
 }
 
 .dropdown-item:hover {
-    background: linear-gradient(90deg, #f8f9fc 0%, #e3e6f0 100%);
-    color: #2c3e50;
+    background-color: #f8f9fa;
+    color: #343a40;
     transform: translateX(3px);
 }
 
@@ -1724,13 +2204,13 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
 /* Amélioration des boutons PDF */
 .btn-outline-primary.btn-sm:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    
     transition: all 0.2s ease;
 }
 
 .btn-outline-success.btn-sm:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    
     transition: all 0.2s ease;
 }
 
@@ -1738,26 +2218,26 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
 .alert {
     border-radius: 0.5rem;
     border-width: 1px;
-    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    
 }
 
 .alert-success {
-    background: linear-gradient(45deg, #d4edda 0%, #c3e6cb 100%);
+    background-color: #f8f9fa;
     border-color: #b8dacc;
 }
 
 .alert-danger {
-    background: linear-gradient(45deg, #f8d7da 0%, #f5c6cb 100%);
+    background-color: #f8f9fa;
     border-color: #f1b2b7;
 }
 
 .alert-warning {
-    background: linear-gradient(45deg, #fff3cd 0%, #ffeaa7 100%);
+    background-color: #f8f9fa;
     border-color: #fde68a;
 }
 
 .alert-info {
-    background: linear-gradient(45deg, #d1ecf1 0%, #bee5eb 100%);
+    background-color: #f8f9fa;
     border-color: #abdde5;
 }
 
@@ -1785,7 +2265,7 @@ console.log('✅ Gestionnaire FIFO + Priorité chargé avec succès');
     }
     
     .card {
-        box-shadow: none;
+        
         border: 1px solid #ddd;
         margin-bottom: 20px;
     }

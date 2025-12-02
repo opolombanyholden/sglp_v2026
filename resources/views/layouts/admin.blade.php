@@ -833,6 +833,15 @@
                             </li>
                             @endif
                             
+                            @if(Route::has('admin.organisations.create'))
+                            <li class="nav-item">
+                                <a href="{{ route('admin.organisations.create') }}" class="nav-link-custom {{ request()->routeIs('admin.organisations.create') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-plus-circle"></i>
+                                    <span class="nav-text">Nouvelle Organisation</span>
+                                </a>
+                            </li>
+                            @endif
+                            
                             @if(Route::has('admin.organisations.index'))
                             <li class="nav-item">
                                 <a href="{{ route('admin.organisations.index') }}" class="nav-link-custom {{ request()->routeIs('admin.organisations*') ? 'active' : '' }}">
@@ -1262,6 +1271,15 @@
                 <a href="{{ route('admin.referentiels.document-types.index') }}" class="nav-link-custom {{ request()->routeIs('admin.referentiels.document-types.*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-file-alt"></i>
                     <span class="nav-text">Types Documents</span>
+                </a>
+            </li>
+            @endif
+            
+            @if(Route::has('admin.referentiels.fonctions.index'))
+            <li class="nav-item">
+                <a href="{{ route('admin.referentiels.fonctions.index') }}" class="nav-link-custom {{ request()->routeIs('admin.referentiels.fonctions.*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-user-tag"></i>
+                    <span class="nav-text">Fonctions Membres</span>
                 </a>
             </li>
             @endif

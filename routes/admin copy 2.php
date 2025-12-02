@@ -17,7 +17,6 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\ReferentielController;
 use App\Http\Controllers\Admin\OrganisationTypeController;
 use App\Http\Controllers\Admin\DocumentTypeController;
-use App\Http\Controllers\Admin\FonctionController;
 use App\Http\Controllers\Admin\ContentController;
 use App\Http\Controllers\Admin\AnalyticsController;
 use App\Http\Controllers\Admin\WorkflowController;
@@ -34,7 +33,7 @@ use App\Http\Controllers\Admin\WorkflowStepController;
 
 /*
 |--------------------------------------------------------------------------
-| Routes Administration - SGLP/PNGDI - VERSION CORRIGÉE v2.3
+| Routes Administration - SGLP/PNGDI - VERSION CORRIGÉE v2.2
 |--------------------------------------------------------------------------
 | Routes pour l'interface d'administration complète
 | Middleware : auth, verified, admin
@@ -45,7 +44,6 @@ use App\Http\Controllers\Admin\WorkflowStepController;
 | ✅ MODULE ROLES - ROUTES COMPLÈTES CORRIGÉES (08/11/2025)
 | ✅ MODULE PERMISSIONS - ROUTES COMPLÈTES AJOUTÉES (11/11/2025)
 | ✅ MODULE NIP DATABASE - ROUTES CLEANUP ET VERIFY AJOUTÉES (21/11/2025)
-| ✅ MODULE FONCTIONS MEMBRES - ROUTES COMPLÈTES AJOUTÉES (24/11/2025)
 | ❌ ROUTES PUBLIQUES ET API SUPPRIMÉES (maintenant dans web.php et api.php)
 |--------------------------------------------------------------------------
 */
@@ -105,7 +103,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::delete('/clean', [AnalyticsController::class, 'cleanLogs'])->name('clean');
         Route::get('/export', [AnalyticsController::class, 'exportLogs'])->name('export');
     });
-
 
     /*
     |--------------------------------------------------------------------------
@@ -187,9 +184,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::get('/create', [DossierController::class, 'create'])->name('create');
         Route::post('/', [DossierController::class, 'store'])->name('store');
         
-        // API Configuration type d'organisation (pour formulaire création)
-        Route::get('/type-config/{id}', [DossierController::class, 'getTypeConfig'])->name('type-config');
-        
         // Statuts
         Route::get('/en-attente', [DossierController::class, 'enAttente'])->name('en-attente');
         Route::get('/en-cours', [DossierController::class, 'enCours'])->name('en-cours');
@@ -201,9 +195,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::post('/export', [DossierController::class, 'export'])->name('export');
         Route::get('/stats', [DossierController::class, 'stats'])->name('stats');
         Route::get('/search', [DossierController::class, 'search'])->name('search');
-        // Queue FIFO et calcul de position (pour modal assignation)
-        Route::get('/queue-preview', [DossierController::class, 'queuePreview'])->name('queue-preview');
-        Route::post('/calculate-position', [DossierController::class, 'calculatePosition'])->name('calculate-position');
+        
         // ========== ROUTES AVEC PARAMÈTRES DYNAMIQUES À LA FIN ==========
         
         Route::get('/{dossier}', [DossierController::class, 'show'])->name('show');
@@ -220,12 +212,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::get('/{dossier}/history', [DossierController::class, 'history'])->name('history');
         Route::get('/{dossier}/documents', [DossierController::class, 'documents'])->name('documents');
         Route::post('/{dossier}/generate-document', [DossierController::class, 'generateDocument'])->name('generate-document');
-        
-        // Téléchargements PDF
-        Route::get('/{dossier}/accuse-reception', [DossierController::class, 'downloadAccuseReception'])->name('accuse-reception');
-        Route::get('/{dossier}/recepisse-provisoire', [DossierController::class, 'downloadRecepisseProvisoire'])->name('recepisse-provisoire');
-        Route::get('/{dossier}/recepisse-definitif', [DossierController::class, 'downloadRecepisseDefinitif'])->name('recepisse-definitif');
-        Route::post('/{dossier}/request-supplement', [DossierController::class, 'requestSupplement'])->name('request-supplement');
     });
 
     /*
@@ -453,50 +439,35 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
-    | 📚 RÉFÉRENTIELS - TYPES D'ORGANISATIONS, DOCUMENTS ET FONCTIONS (27 routes)
-    |--------------------------------------------------------------------------
-    | ✅ MODULE FONCTIONS MEMBRES AJOUTÉ (24/11/2025) - 10 routes
+    | 📚 RÉFÉRENTIELS - TYPES D'ORGANISATIONS ET DOCUMENTS (3 routes)
     |--------------------------------------------------------------------------
     */
     Route::prefix('referentiels')->name('referentiels.')->group(function () {
         Route::get('/', [ReferentielController::class, 'index'])->name('index');
         Route::get('/types-organisations', [ReferentielController::class, 'typesOrganisations'])->name('types-organisations');
         Route::get('/types-documents', [ReferentielController::class, 'typesDocuments'])->name('types-documents');
-        
-        // 🏢 TYPES D'ORGANISATIONS (7 routes) - DANS LE GROUPE REFERENTIELS
-        Route::prefix('organisation-types')->name('organisation-types.')->group(function () {
-            Route::get('/', [OrganisationTypeController::class, 'index'])->name('index');
-            Route::get('/create', [OrganisationTypeController::class, 'create'])->name('create');
-            Route::post('/', [OrganisationTypeController::class, 'store'])->name('store');
-            Route::get('/{organisationType}', [OrganisationTypeController::class, 'show'])->name('show');
-            Route::get('/{organisationType}/edit', [OrganisationTypeController::class, 'edit'])->name('edit');
-            Route::put('/{organisationType}', [OrganisationTypeController::class, 'update'])->name('update');
-            Route::delete('/{organisationType}', [OrganisationTypeController::class, 'destroy'])->name('destroy');
-        });
+    });
 
-        // 📄 TYPES DE DOCUMENTS (7 routes) - DANS LE GROUPE REFERENTIELS
-        Route::prefix('document-types')->name('document-types.')->group(function () {
-            Route::get('/', [DocumentTypeController::class, 'index'])->name('index');
-            Route::get('/create', [DocumentTypeController::class, 'create'])->name('create');
-            Route::post('/', [DocumentTypeController::class, 'store'])->name('store');
-            Route::get('/{documentType}', [DocumentTypeController::class, 'show'])->name('show');
-            Route::get('/{documentType}/edit', [DocumentTypeController::class, 'edit'])->name('edit');
-            Route::put('/{documentType}', [DocumentTypeController::class, 'update'])->name('update');
-            Route::delete('/{documentType}', [DocumentTypeController::class, 'destroy'])->name('destroy');
-        });
+    // 🏢 TYPES D'ORGANISATIONS (7 routes)
+    Route::prefix('organisation-types')->name('organisation-types.')->group(function () {
+        Route::get('/', [OrganisationTypeController::class, 'index'])->name('index');
+        Route::get('/create', [OrganisationTypeController::class, 'create'])->name('create');
+        Route::post('/', [OrganisationTypeController::class, 'store'])->name('store');
+        Route::get('/{organisationType}', [OrganisationTypeController::class, 'show'])->name('show');
+        Route::get('/{organisationType}/edit', [OrganisationTypeController::class, 'edit'])->name('edit');
+        Route::put('/{organisationType}', [OrganisationTypeController::class, 'update'])->name('update');
+        Route::delete('/{organisationType}', [OrganisationTypeController::class, 'destroy'])->name('destroy');
+    });
 
-        // 👤 FONCTIONS DES MEMBRES (10 routes) - ✅ NOUVEAU MODULE 24/11/2025
-        Route::prefix('fonctions')->name('fonctions.')->group(function () {
-            Route::get('/', [FonctionController::class, 'index'])->name('index');
-            Route::get('/create', [FonctionController::class, 'create'])->name('create');
-            Route::post('/', [FonctionController::class, 'store'])->name('store');
-            Route::post('/reorder', [FonctionController::class, 'reorder'])->name('reorder');
-            Route::get('/{fonction}', [FonctionController::class, 'show'])->name('show');
-            Route::get('/{fonction}/edit', [FonctionController::class, 'edit'])->name('edit');
-            Route::put('/{fonction}', [FonctionController::class, 'update'])->name('update');
-            Route::delete('/{fonction}', [FonctionController::class, 'destroy'])->name('destroy');
-            Route::patch('/{fonction}/toggle-status', [FonctionController::class, 'toggleStatus'])->name('toggle-status');
-        });
+    // 📄 TYPES DE DOCUMENTS (7 routes)
+    Route::prefix('document-types')->name('document-types.')->group(function () {
+        Route::get('/', [DocumentTypeController::class, 'index'])->name('index');
+        Route::get('/create', [DocumentTypeController::class, 'create'])->name('create');
+        Route::post('/', [DocumentTypeController::class, 'store'])->name('store');
+        Route::get('/{documentType}', [DocumentTypeController::class, 'show'])->name('show');
+        Route::get('/{documentType}/edit', [DocumentTypeController::class, 'edit'])->name('edit');
+        Route::put('/{documentType}', [DocumentTypeController::class, 'update'])->name('update');
+        Route::delete('/{documentType}', [DocumentTypeController::class, 'destroy'])->name('destroy');
     });
 
     /*
@@ -758,73 +729,5 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::delete('/{id}', [WorkflowStepController::class, 'destroy'])->name('destroy');
         Route::post('/', [WorkflowStepController::class, 'store'])->name('store');
     });
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🗺️ API GÉOLOCALISATION - ROUTES AJAX EN CASCADE
-    |--------------------------------------------------------------------------
-    | Routes AJAX pour chargement dynamique des données géographiques
-    | ✅ Mis à jour le : 25/11/2025
-    | ✅ 10 routes pour cascade géolocalisation complète
-    | 
-    | Hiérarchie :
-    | - Zone Urbaine : Province > Département > Commune > Arrondissement > Quartier
-    | - Zone Rurale : Province > Département > Canton > Regroupement > Village
-    | 
-    | Utilisation : Formulaire création organisation (Admin)
-    |--------------------------------------------------------------------------
-    */
-    Route::prefix('api/geo')->name('api.geo.')->group(function () {
-        
-        // Provinces (point de départ)
-        Route::get('/provinces', [DossierController::class, 'getProvinces'])
-            ->name('provinces');
-        
-        // Départements d'une province
-        Route::get('/departements/{province_id}', [DossierController::class, 'getDepartements'])
-            ->name('departements');
-        
-        // ZONE URBAINE : Communes d'un département
-        Route::get('/communes/{departement_id}', [DossierController::class, 'getCommunes'])
-            ->name('communes');
-        
-        // ZONE URBAINE : Arrondissements d'une commune
-        Route::get('/arrondissements/{commune_id}', [DossierController::class, 'getArrondissements'])
-            ->name('arrondissements');
-        
-        // ZONE RURALE : Cantons d'un département
-        Route::get('/cantons/{departement_id}', [DossierController::class, 'getCantons'])
-            ->name('cantons');
-        
-        // ZONE RURALE : Regroupements d'un canton
-        Route::get('/regroupements/{canton_id}', [DossierController::class, 'getRegroupements'])
-            ->name('regroupements');
-        
-        // ZONE URBAINE : Quartiers d'un arrondissement
-        Route::get('/quartiers/{arrondissement_id}', [DossierController::class, 'getQuartiers'])
-            ->name('quartiers');
-        
-        // ZONE RURALE : Villages d'un regroupement
-        Route::get('/villages/{regroupement_id}', [DossierController::class, 'getVillages'])
-            ->name('villages');
-        
-        // Localités (villages ou quartiers)
-        Route::get('/localites', [DossierController::class, 'getLocalitesNew'])
-            ->name('localites');
-        
-        // Règles métier d'un type d'organisation (validation dynamique)
-        Route::get('/organisation-types/{organisation_type_id}/rules', [DossierController::class, 'getOrganisationTypeRules'])
-            ->name('organisation-type-rules');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | 🔧 API FONCTIONS - ROUTES AJAX
-    |--------------------------------------------------------------------------
-    | Route pour chargement dynamique des fonctions (select, autocomplete)
-    | ✅ Ajouté le : 24/11/2025
-    |--------------------------------------------------------------------------
-    */
-    Route::get('/api/fonctions', [FonctionController::class, 'apiList'])->name('api.fonctions');
 
 });

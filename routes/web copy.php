@@ -191,10 +191,40 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     |--------------------------------------------------------------------------
     | Routes Admin - Gestion des Dossiers et Organisations
     |--------------------------------------------------------------------------
-    | ⚠️ SUPPRIMÉ : Routes déplacées vers routes/admin.php pour éviter les doublons
-    | ⚠️ NE PAS AJOUTER de routes dossiers ici !
+    | ✅ Ajouté le : 28/10/2025
+    | Ces routes permettent la gestion complète des dossiers et organisations
     |--------------------------------------------------------------------------
     */
+    
+    // Liste des dossiers/organisations
+    Route::get('/organisations', [AdminDossierController::class, 'index'])->name('organisations.index');
+    
+    // Dossiers en attente
+    Route::get('/dossiers/en-attente', [AdminDossierController::class, 'enAttente'])->name('dossiers.en-attente');
+    
+    // Détail d'un dossier
+    Route::get('/dossiers/{id}', [AdminDossierController::class, 'show'])->name('dossiers.show');
+    
+    // Assigner un dossier
+    Route::post('/dossiers/{id}/assign', [AdminDossierController::class, 'assign'])->name('dossiers.assign');
+    
+    // Valider un dossier
+    Route::post('/dossiers/{id}/validate', [AdminDossierController::class, 'validate'])->name('dossiers.validate');
+    
+    // Rejeter un dossier
+    Route::post('/dossiers/{id}/reject', [AdminDossierController::class, 'reject'])->name('dossiers.reject');
+    
+    // Demander des compléments
+    Route::post('/dossiers/{id}/request-supplement', [AdminDossierController::class, 'requestSupplement'])->name('dossiers.request-supplement');
+    
+    // Télécharger l'accusé de réception
+    Route::get('/dossiers/{id}/accuse-reception', [AdminDossierController::class, 'downloadAccuseReception'])->name('dossiers.accuse-reception');
+    
+    // Télécharger le récépissé provisoire
+    Route::get('/dossiers/{id}/recepisse-provisoire', [AdminDossierController::class, 'downloadRecepisseProvisoire'])->name('dossiers.recepisse-provisoire');
+    
+    // Télécharger le récépissé définitif
+    Route::get('/dossiers/{id}/recepisse-definitif', [AdminDossierController::class, 'downloadRecepisseDefinitif'])->name('dossiers.recepisse-definitif');
     
     /*
     |--------------------------------------------------------------------------

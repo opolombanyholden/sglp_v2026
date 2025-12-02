@@ -65,8 +65,12 @@
                         <div class="col-md-6 mb-3">
                             <label class="form-label text-muted">Date de naissance</label>
                             <div class="h6">
-                                {{ $nip->date_naissance->format('d/m/Y') }}
-                                <span class="badge bg-info ms-2">{{ $nip->age }} ans</span>
+                                @if($nip->date_naissance)
+                                    {{ $nip->date_naissance->format('d/m/Y') }}
+                                    <span class="badge bg-info ms-2">{{ $nip->age }} ans</span>
+                                @else
+                                    <span class="text-muted">Non renseigné</span>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -287,12 +291,24 @@
 
                     <div class="mb-3">
                         <label class="form-label text-muted small">Créé le</label>
-                        <div class="text-dark">{{ $nip->created_at->format('d/m/Y à H:i') }}</div>
+                        <div class="text-dark">
+                            @if($nip->created_at)
+                                {{ $nip->created_at->format('d/m/Y à H:i') }}
+                            @else
+                                <span class="text-muted">Non renseigné</span>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="mb-3">
                         <label class="form-label text-muted small">Modifié le</label>
-                        <div class="text-dark">{{ $nip->updated_at->format('d/m/Y à H:i') }}</div>
+                        <div class="text-dark">
+                            @if($nip->updated_at)
+                                {{ $nip->updated_at->format('d/m/Y à H:i') }}
+                            @else
+                                <span class="text-muted">Non renseigné</span>
+                            @endif
+                        </div>
                     </div>
 
                     <hr>
@@ -402,7 +418,7 @@ function copyNipData() {
     const data = `NIP: {{ $nip->nip }}
 Nom: {{ $nip->nom }}
 Prénom: {{ $nip->prenom }}
-Date de naissance: {{ $nip->date_naissance->format('d/m/Y') }}
+Date de naissance: {{ $nip->date_naissance ? $nip->date_naissance->format('d/m/Y') : 'Non renseigné' }}
 Lieu de naissance: {{ $nip->lieu_naissance ?? 'Non renseigné' }}
 Sexe: {{ $nip->sexe == 'M' ? 'Homme' : 'Femme' }}
 Statut: {{ ucfirst($nip->statut) }}`;
@@ -445,9 +461,9 @@ function searchInOrganizations() {
 function checkDuplicates() {
     // Rechercher des doublons potentiels
     const searchParams = new URLSearchParams({
-        search: '{{ $nip->nom }} {{ $nip->prenom }}',
+        search: '{{ $nip->nom }} {{ $nip->prenom }}'@if($nip->date_naissance),
         date_from: '{{ $nip->date_naissance->format("Y-m-d") }}',
-        date_to: '{{ $nip->date_naissance->format("Y-m-d") }}'
+        date_to: '{{ $nip->date_naissance->format("Y-m-d") }}'@endif
     });
     
     window.open('/admin/nip-database?' + searchParams.toString(), '_blank');

@@ -220,12 +220,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::get('/{dossier}/history', [DossierController::class, 'history'])->name('history');
         Route::get('/{dossier}/documents', [DossierController::class, 'documents'])->name('documents');
         Route::post('/{dossier}/generate-document', [DossierController::class, 'generateDocument'])->name('generate-document');
-        
-        // Téléchargements PDF
-        Route::get('/{dossier}/accuse-reception', [DossierController::class, 'downloadAccuseReception'])->name('accuse-reception');
-        Route::get('/{dossier}/recepisse-provisoire', [DossierController::class, 'downloadRecepisseProvisoire'])->name('recepisse-provisoire');
-        Route::get('/{dossier}/recepisse-definitif', [DossierController::class, 'downloadRecepisseDefinitif'])->name('recepisse-definitif');
-        Route::post('/{dossier}/request-supplement', [DossierController::class, 'requestSupplement'])->name('request-supplement');
     });
 
     /*

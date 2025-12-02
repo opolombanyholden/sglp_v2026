@@ -258,14 +258,16 @@
                     </div>
                     
                     @php
-                        $lastImport = \App\Models\NipDatabase::latest('date_import')->first();
+                        $lastImport = \App\Models\NipDatabase::whereNotNull('date_import')
+                            ->latest('date_import')
+                            ->first();
                     @endphp
                     
-                    @if($lastImport)
+                    @if($lastImport && $lastImport->date_import)
                         <hr>
                         <small class="text-muted">
                             <i class="fas fa-clock"></i>
-                            Dernier import : {{ $lastImport->date_import->format('d/m/Y à H:i') }}
+                            Dernier import : {{ \Carbon\Carbon::parse($lastImport->date_import)->format('d/m/Y à H:i') }}
                         </small>
                     @endif
                 </div>

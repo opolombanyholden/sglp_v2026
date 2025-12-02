@@ -150,6 +150,8 @@ class NipDatabaseController extends Controller
                         ->with('success', 'NIP mis à jour avec succès');
     }
 
+
+    
     /**
      * Recherche Ajax de NIP
      */

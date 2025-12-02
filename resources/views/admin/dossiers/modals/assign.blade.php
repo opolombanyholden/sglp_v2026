@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ✅ CALCUL DE LA POSITION ESTIMÉE
     function calculateEstimatedPosition(priority) {
-        fetch(`/admin/dossiers/calculate-position`, {
+        fetch('/admin/dossiers/calculate-position', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // ✅ CHARGEMENT DE LA QUEUE FIFO
     function loadQueuePreview() {
-        fetch(`/admin/dossiers/queue-preview`, {
+        fetch('/admin/dossiers/queue-preview', {
             method: 'GET',
             headers: {
                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content

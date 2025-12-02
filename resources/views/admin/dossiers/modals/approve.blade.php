@@ -191,77 +191,10 @@
 <!-- Script JavaScript pour la modal d'approbation -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const approveForm = document.getElementById('approveForm');
     const approveModal = document.getElementById('approveModal');
     
-    // Gestionnaire de soumission du formulaire d'approbation
-    if (approveForm) {
-        approveForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Validation côté client
-            const numeroRecepisse = document.getElementById('numero_recepisse_final').value.trim();
-            const dateApprobation = document.getElementById('date_approbation').value;
-            
-            if (!numeroRecepisse) {
-                showAlert('warning', 'Le numéro de récépissé est obligatoire');
-                return;
-            }
-            
-            if (!dateApprobation) {
-                showAlert('warning', 'La date d\'approbation est obligatoire');
-                return;
-            }
-            
-            // Désactiver le bouton pendant l'envoi
-            const submitBtn = approveForm.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Approbation en cours...';
-            submitBtn.disabled = true;
-            
-            // Préparer les données
-            const formData = new FormData(approveForm);
-            
-            // Envoyer la requête
-            fetch(`/admin/dossiers/${window.dossierId}/valider`, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // ✅ CORRECTION BOOTSTRAP 4 : Utiliser jQuery pour fermer la modal
-                    $('#approveModal').modal('hide');
-                    
-                    // Afficher le succès
-                    showAlert('success', 'Dossier approuvé avec succès !');
-                    
-                    // Recharger la page après un délai
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                    
-                } else {
-                    showAlert('error', data.message || 'Erreur lors de l\'approbation');
-                    
-                    // Réactiver le bouton
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                showAlert('error', 'Erreur technique lors de l\'approbation');
-                
-                // Réactiver le bouton
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            });
-        });
-    }
+    // ⚠️ Le gestionnaire de soumission est dans show.blade.php (handleApproveSubmission)
+    // Ne pas ajouter de gestionnaire ici pour éviter les conflits
     
     // Auto-générer un numéro de récépissé si le champ est vide
     if (approveModal) {

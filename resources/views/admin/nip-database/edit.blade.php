@@ -56,14 +56,22 @@
                             <div class="col-md-3">
                                 <label class="form-label text-muted">Date de naissance</label>
                                 <div class="form-control-plaintext">
-                                    {{ $nip->date_naissance->format('d/m/Y') }}
+                                    @if($nip->date_naissance)
+                                        {{ \Carbon\Carbon::parse($nip->date_naissance)->format('d/m/Y') }}
+                                    @else
+                                        <span class="text-muted">Non disponible</span>
+                                    @endif
                                 </div>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label text-muted">Sexe</label>
                                 <div class="form-control-plaintext">
-                                    <i class="fas fa-{{ $nip->sexe == 'M' ? 'mars text-primary' : 'venus text-danger' }} me-2"></i>
-                                    {{ $nip->sexe == 'M' ? 'Homme' : 'Femme' }}
+                                    @if($nip->sexe)
+                                        <i class="fas fa-{{ $nip->sexe == 'M' ? 'mars text-primary' : 'venus text-danger' }} me-2"></i>
+                                        {{ $nip->sexe == 'M' ? 'Homme' : 'Femme' }}
+                                    @else
+                                        <span class="text-muted">Non déterminé</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -173,28 +181,40 @@
                                       id="remarques" 
                                       name="remarques"
                                       rows="3"
-                                      placeholder="Notes ou remarques administratives...">{{ old('remarques', $nip->remarques) }}</textarea>
+                                      placeholder="Notes ou observations particulières...">{{ old('remarques', $nip->remarques) }}</textarea>
                             @error('remarques')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
+                        <hr class="my-4">
+
                         <!-- Boutons d'action -->
-                        <div class="d-flex justify-content-between">
+                        <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="text-danger">*</span> 
-                                <small class="text-muted">Champs obligatoires</small>
-                            </div>
-                            <div>
-                                <a href="{{ route('admin.nip-database.show', $nip) }}" 
-                                   class="btn btn-secondary me-2">
+                                <button type="submit" class="btn btn-warning btn-lg">
+                                    <i class="fas fa-save"></i> Enregistrer les modifications
+                                </button>
+                                <a href="{{ route('admin.nip-database.show', $nip) }}" class="btn btn-secondary btn-lg">
                                     <i class="fas fa-times"></i> Annuler
                                 </a>
-                                <button type="submit" class="btn btn-warning">
-                                    <i class="fas fa-save"></i> Enregistrer les modifications
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        onclick="if(confirm('Voulez-vous vraiment supprimer ce NIP ?')) { document.getElementById('delete-form').submit(); }">
+                                    <i class="fas fa-trash"></i> Supprimer
                                 </button>
                             </div>
                         </div>
+                    </form>
+
+                    <!-- Formulaire de suppression caché -->
+                    <form id="delete-form" 
+                          action="{{ route('admin.nip-database.destroy', $nip) }}" 
+                          method="POST" 
+                          class="d-none">
+                        @csrf
+                        @method('DELETE')
                     </form>
                 </div>
             </div>
@@ -202,54 +222,73 @@
 
         <!-- Sidebar avec informations -->
         <div class="col-lg-4">
-            <!-- Informations actuelles -->
+            <!-- Informations système -->
             <div class="card shadow mb-4">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-info">
+                    <h6 class="m-0 font-weight-bold text-primary">
                         <i class="fas fa-info-circle"></i>
-                        Informations actuelles
+                        Informations système
                     </h6>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Nom complet actuel</label>
-                        <div class="text-dark h6">{{ $nip->nom_complet }}</div>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Âge</label>
-                        <div class="text-dark">
-                            <span class="badge bg-info">{{ $nip->age }} ans</span>
+                        <label class="text-muted small">Importé depuis</label>
+                        <div class="fw-bold">
+                            {{ $nip->source_import ?? 'Saisie manuelle' }}
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Statut actuel</label>
+                        <label class="text-muted small">Date d'import</label>
                         <div>
-                            @switch($nip->statut)
-                                @case('actif')
-                                    <span class="badge bg-success">Actif</span>
-                                    @break
-                                @case('inactif')
-                                    <span class="badge bg-secondary">Inactif</span>
-                                    @break
-                                @case('decede')
-                                    <span class="badge bg-dark">Décédé</span>
-                                    @break
-                                @case('suspendu')
-                                    <span class="badge bg-warning">Suspendu</span>
-                                    @break
-                            @endswitch
+                            @if($nip->date_import)
+                                {{ \Carbon\Carbon::parse($nip->date_import)->format('d/m/Y') }}
+                            @else
+                                <span class="text-muted">Non disponible</span>
+                            @endif
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label text-muted small">Dernière modification</label>
-                        <div class="text-dark">
-                            {{ $nip->updated_at->format('d/m/Y à H:i') }}
-                            <br><small class="text-muted">
-                                Il y a {{ $nip->updated_at->diffForHumans() }}
-                            </small>
+                        <label class="text-muted small">Dernière vérification</label>
+                        <div>
+                            @if($nip->last_verified_at)
+                                {{ \Carbon\Carbon::parse($nip->last_verified_at)->format('d/m/Y') }}
+                                <br><small class="text-success">
+                                    <i class="fas fa-check-circle"></i> Vérifié
+                                </small>
+                            @else
+                                <span class="text-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> Non vérifié
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <label class="text-muted small">Créé le</label>
+                        <div>
+                            @if($nip->created_at)
+                                {{ \Carbon\Carbon::parse($nip->created_at)->format('d/m/Y à H:i') }}
+                            @else
+                                <span class="text-muted">Non disponible</span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-muted small">Dernière modification</label>
+                        <div>
+                            @if($nip->updated_at)
+                                {{ \Carbon\Carbon::parse($nip->updated_at)->format('d/m/Y à H:i') }}
+                                <br><small class="text-muted">
+                                    Il y a {{ \Carbon\Carbon::parse($nip->updated_at)->diffForHumans() }}
+                                </small>
+                            @else
+                                <span class="text-muted">Aucune modification</span>
+                            @endif
                         </div>
                     </div>
                 </div>

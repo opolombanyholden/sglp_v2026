@@ -25,7 +25,6 @@ class DossierValidation extends Model
         'numero_enregistrement',
         'validated_at',
         'validated_by',
-        'deadline',
         'is_returned',
         'returned_from_step_id',
         'documents_added',
@@ -35,7 +34,6 @@ class DossierValidation extends Model
     protected $casts = [
         'assigned_at' => 'datetime',
         'validated_at' => 'datetime',
-        'deadline' => 'datetime',
         'is_returned' => 'boolean',
         'documents_added' => 'array',
         'metadata' => 'array'
@@ -61,15 +59,9 @@ class DossierValidation extends Model
         parent::boot();
 
         static::creating(function ($validation) {
-            // Définir la date d'assignation
+            // Définir la date d'assignation par défaut
             if (empty($validation->assigned_at)) {
                 $validation->assigned_at = now();
-            }
-
-            // Calculer la deadline basée sur le délai de traitement de l'étape
-            if (empty($validation->deadline) && $validation->workflowStep) {
-                $delaiJours = $validation->workflowStep->delai_traitement ?? 3;
-                $validation->deadline = now()->addDays($delaiJours);
             }
         });
 
@@ -152,11 +144,12 @@ class DossierValidation extends Model
         return $query->where('decision', self::DECISION_REJETE);
     }
 
-    public function scopeExpired($query)
-    {
-        return $query->whereNull('decision')
-            ->where('deadline', '<', now());
-    }
+    // Scope désactivé - deadline supprimé
+    // public function scopeExpired($query)
+    // {
+    //     return $query->whereNull('decision')
+    //         ->where('deadline', '<', now());
+    // }
 
     public function scopeByAgent($query, $userId)
     {
@@ -175,10 +168,6 @@ class DossierValidation extends Model
     {
         if ($this->decision) {
             return self::STATUS_COMPLETED;
-        }
-
-        if ($this->deadline < now()) {
-            return self::STATUS_EXPIRED;
         }
 
         if ($this->assigned_to) {
@@ -236,14 +225,14 @@ class DossierValidation extends Model
         return $colors[$this->decision] ?? 'secondary';
     }
 
-    public function getDaysRemainingAttribute(): ?int
-    {
-        if (!$this->deadline || $this->decision) {
-            return null;
-        }
-
-        return now()->diffInDays($this->deadline, false);
-    }
+    // Accesseur désactivé - deadline supprimé
+    // public function getDaysRemainingAttribute(): ?int
+    // {
+    //     if (!$this->deadline || $this->decision) {
+    //         return null;
+    //     }
+    //     return now()->diffInDays($this->deadline, false);
+    // }
 
     public function getProcessingTimeAttribute(): ?string
     {
@@ -266,7 +255,8 @@ class DossierValidation extends Model
      */
     public function isExpired(): bool
     {
-        return !$this->decision && $this->deadline && $this->deadline < now();
+        // Deadline supprimé - toujours false
+        return false;
     }
 
     public function isCompleted(): bool

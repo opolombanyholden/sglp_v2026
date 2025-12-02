@@ -109,21 +109,16 @@ class OrganisationType extends Model
     {
         return $this->belongsToMany(
             DocumentType::class,
-            'organisation_type_document_type',
+            'document_type_organisation_type',
             'organisation_type_id',
             'document_type_id'
         )
         ->withPivot([
             'is_obligatoire',
-            'ordre',
-            'aide_texte',
-            'modele_texte',
-            'exemple_fichier',
-            'regles_validation',
-            'metadata'
+            'ordre'
         ])
         ->withTimestamps()
-        ->orderBy('organisation_type_document_type.ordre');
+        ->orderBy('document_type_organisation_type.ordre');
     }
 
     /**
@@ -336,13 +331,11 @@ class OrganisationType extends Model
     public function attachDocumentType(
         int $documentTypeId,
         bool $isObligatoire = true,
-        int $ordre = 0,
-        ?string $aideTexte = null
+        int $ordre = 0
     ): void {
         $this->documentTypes()->attach($documentTypeId, [
             'is_obligatoire' => $isObligatoire,
             'ordre' => $ordre,
-            'aide_texte' => $aideTexte,
         ]);
     }
 
