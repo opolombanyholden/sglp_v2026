@@ -5,285 +5,285 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Récépissé Provisoire - {{ $organisation->nom ?? $nom_organisation }}</title>
     <style>
+        @page {
+            margin: 1.5cm 2cm;
+        }
+        
         body {
             font-family: "Times New Roman", serif;
             font-size: 12pt;
-            margin: 50px;
-            position: relative;
+            margin: 0;
+            padding: 0;
+            line-height: 1.4;
         }
         
-        h1 {
-            color: #009e3f;
-            border: 2px solid #009e3f;
-            padding: 5px 15px;
-            text-align: center;
-            display: inline-block;
-            margin: 20px 0;
-        }
-        
-        /* ===== STYLES QR CODE HARMONISÉS AVEC L'ACCUSÉ ===== */
-        .qr-section {
-            margin-top:40px;
-            margin-left: 0px;
-            padding-top:0px;
-            width: 120px;
-            position: relative;
-        }
-
-        .qr-content {
-            display: table;
-            width: 100%;
-        }
-
-        .qr-left {
-            display: table-cell;
-            width: 150px;
-            vertical-align: top;
-            padding:0px;
-        }
-
-        .qr-right {
-            display: table-cell;
-            vertical-align: top;
-            text-align: center;
-            padding:0px;
-        }
-
-        .qr-box {
-            text-align: center;
-            width: 100px;
-        }
-
-        .qr-image {
-            display: block;
-            margin: auto;
-            color: #000000;
-        }
-
-        .qr-text {
-            font-size: 8pt;
-            color: #000000;
-            font-weight: bold;
-            text-transform: uppercase;
-            margin: 5px 0;
-        }
-
-        .qr-code-id {
-            font-size: 7pt;
-            color: #666;
-            font-family: monospace;
-            margin: 5px 0;
-        }
-
-        .qr-url {
-            font-size: 6pt;
-            color: #666;
-            word-break: break-all;
-            margin-top: 5px;
-        }
-
-        .footer-content {
-            font-size: 10pt;
-            line-height: 1.3;
-        }
-
-        .footer-content strong {
-            color: #003f7f;
-        }
-
-        .footer-content em {
-            font-style: italic;
-            color: #666;
-            font-size: 9pt;
-        }
-        
-        /* En-tête harmonisé */
+        /* ===== EN-TÊTE MINISTÉRIEL ===== */
         .header-table {
             width: 100%;
-            margin-bottom: 20px;
             border-collapse: collapse;
+            margin-bottom: 20px;
         }
         
         .header-left {
-            color: #000000;
-            font-weight: bold;
-            font-size: 14px;
+            width: 60%;
             vertical-align: top;
-            width: 400px;
             text-align: left;
         }
         
         .header-right {
-            color: #003f7f;
-            font-weight: bold;
-            font-size: 12px;
-            text-align: center;
+            width: 40%;
             vertical-align: top;
-        }
-        
-        /* Contenu principal */
-        .main-content {
-            text-align: justify;
-            line-height: 1.8;
-            margin: 30px 0;
-        }
-        
-        /* Signature */
-        .signature-section {
-            margin-top: 50px;
             text-align: right;
         }
         
+        .ministry-header {
+            font-size: 10pt;
+            line-height: 1.3;
+        }
+        
+        .ministry-name {
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 10pt;
+        }
+        
+        .separator {
+            font-size: 9pt;
+            margin: 2px 0;
+        }
+        
+        .direction {
+            font-size: 9pt;
+            text-transform: uppercase;
+        }
+        
+        .logo-box {
+            text-align: center;
+        }
+        
+        .logo-box img {
+            max-height: 70px;
+            margin: 3px;
+        }
+        
+        /* ===== NUMÉRO DE RÉFÉRENCE ===== */
+        .reference-number {
+            font-weight: bold;
+            font-size: 11pt;
+            margin: 25px 0 20px 0;
+        }
+        
+        /* ===== TITRE DU DOCUMENT ===== */
+        .document-title {
+            text-align: center;
+            margin: 25px 0;
+        }
+        
+        .document-title h1 {
+            font-size: 14pt;
+            font-weight: bold;
+            text-decoration: underline;
+            text-transform: uppercase;
+            margin: 0;
+            display: inline;
+        }
+        
+        /* ===== CONTENU PRINCIPAL ===== */
+        .main-content {
+            text-align: justify;
+            line-height: 1.6;
+            margin: 20px 0;
+            font-size: 12pt;
+        }
+        
+        /* ===== NOM ORGANISATION ===== */
+        .organisation-name {
+            text-align: center;
+            font-weight: bold;
+            font-size: 12pt;
+            margin: 15px 0;
+        }
+        
+        /* ===== DATE ET SIGNATURE ===== */
         .date-location {
             text-align: right;
             margin-top: 30px;
-            font-style: italic;
+            font-size: 12pt;
         }
         
-        /* Titre du document */
-        .document-title {
+        .signature-section {
+            text-align: right;
+            margin-top: 15px;
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+        
+        .signature-title {
+            font-weight: bold;
+        }
+        
+        .signature-space {
+            height: 70px;
+        }
+        
+        /* ===== QR CODE ===== */
+        .qr-section {
+            position: fixed;
+            bottom: 20px;
+            left: 40px;
+            width: 90px;
+        }
+        
+        .qr-box {
             text-align: center;
-            font-size: 16px;
-            margin: 25px 0;
-            text-transform: uppercase;
+        }
+        
+        .qr-image {
+            display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
 <body>
-    
-    <!-- En-tête harmonisé avec l'accusé -->
+
+    <!-- ===== EN-TÊTE MINISTÉRIEL ===== -->
     <table class="header-table">
         <tr>
             <td class="header-left">
-                <div style="font-size:18px; font-weight: bold; margin-top:150px;">
-                    N° {{ $numero_administratif ?? $numero_reference ?? 'XXXX/MISD/SG/DGELP/DPPALC' }}
+                <div class="ministry-header">
+                    <div class="ministry-name">MINISTÈRE DE L'INTÉRIEUR, DE LA SÉCURITÉ</div>
+                    <div class="ministry-name">ET DE LA DÉCENTRALISATION</div>
+                    <div class="separator">--------------</div>
+                    <div class="direction">SECRÉTARIAT GÉNÉRAL</div>
+                    <div class="separator">--------------</div>
+                    <div class="direction">DIRECTION GÉNÉRALE DES ÉLECTIONS</div>
+                    <div class="direction">ET DES LIBERTÉS PUBLIQUES</div>
+                    <div class="separator">--------------</div>
+                    <div class="direction">DIRECTION DES PARTIS POLITIQUES</div>
+                    <div class="direction">ASSOCIATIONS ET LIBERTÉ DE CULTE</div>
                 </div>
             </td>
-            <td width="70"></td>
-            <td class="header-right"></td>
+            <td class="header-right">
+                <div class="logo-box">
+                    {{-- Logos République Gabonaise si disponibles --}}
+                </div>
+            </td>
         </tr>
     </table>
 
-    <!-- Titre principal -->
+    <!-- ===== NUMÉRO DE RÉFÉRENCE ===== -->
+    @php
+        // Code type selon organisation
+        $typeCode = match($type_organisation ?? $organisation->type ?? 'association') {
+            'association' => 'AS',
+            'ong' => 'ONG',
+            'parti_politique' => 'PP',
+            'confession_religieuse' => 'CR',
+            default => 'AS'
+        };
+        $annee = date('Y');
+        $sequence = str_pad($dossier->id ?? $organisation->id ?? 1, 4, '0', STR_PAD_LEFT);
+        $numeroGenere = "N° {$typeCode}{$annee}{$sequence}/MISD/SG/DGELP/DPPALC";
+    @endphp
+    <div class="reference-number">
+        {{ $numero_administratif ?? $numero_reference ?? $numeroGenere }}
+    </div>
+
+    <!-- ===== TITRE ===== -->
     <div class="document-title">
-        <h1>
-            RÉCÉPISSÉ PROVISOIRE
-            DE LÉGALISATION
-        </h1>
+        <h1>RÉCÉPISSÉ PROVISOIRE</h1>
     </div>
 
-    <!-- Contenu principal avec variables harmonisées -->
+    <!-- ===== CONTENU ===== -->
+    @php
+        // Type d'organisation
+        $typeOrg = $type_organisation ?? $organisation->type ?? 'association';
+        
+        // Libellé du type
+        $typeLibelle = match($typeOrg) {
+            'parti_politique' => 'du parti politique',
+            'ong' => 'de l\'Organisation Non Gouvernementale (ONG)',
+            'confession_religieuse' => 'de la confession religieuse',
+            default => 'de l\'association à but non lucratif'
+        };
+        
+        // Domaine d'activité
+        $domaine = $organisation->domaine ?? $organisation->objet ?? $domaine_activite ?? '';
+        
+        // Fonction du représentant
+        $fonction = $fonction_dirigeant ?? $fonction_representant ?? match($typeOrg) {
+            'parti_politique' => 'Secrétaire Général(e)',
+            default => 'Président(e)'
+        };
+        
+        // Loi de référence
+        $loiRef = match($typeOrg) {
+            'parti_politique' => 'la loi n°016/2025 du 27 juin 2025 relative aux partis politiques',
+            'ong' => 'la loi n°001/2005 du 4 février 2005 relative aux ONG',
+            default => 'la loi n° 35/62 du 10 décembre 1962 relative aux associations'
+        };
+        
+        // Type déclaration
+        $typeDeclaration = match($typeOrg) {
+            'parti_politique' => 'de parti politique',
+            'ong' => 'd\'ONG',
+            default => 'd\'association'
+        };
+    @endphp
+
     <div class="main-content">
-        Je soussigné, Ministre de l'Intérieur, de la Sécurité et de la Décentralisation,<br><br>
-
-        atteste que {{ $civilite ?? 'Monsieur' }} 
-        <strong>{{ $nom_prenom ?? 'NOM PRÉNOM' }}</strong>, 
-        de nationalité {{ $nationalite ?? 'gabonaise' }},
-        domicilié à {{ $domicile ?? 'ADRESSE' }}, 
-        
-        {{-- ✅ CORRECTION : Affichage conditionnel du téléphone (IDENTIQUE À L'ACCUSÉ) --}}
-        @if(isset($telephone) && $telephone !== 'Non renseigné')
-            Téléphone : <span class="">{{ $telephone }}</span>,
-        @else
-            {{-- Essayer le téléphone de l'organisation comme fallback --}}
-            @if(isset($org_telephone) && $org_telephone !== 'Non renseigné')
-                Téléphone : <span class="">{{ $org_telephone }}</span>,
-            @endif
-        @endif
-        
-        <strong>{{ $fonction_representant ?? $fonction_dirigeant ?? 'Secrétaire Général' }}</strong> du Parti politique dénommé 
-        <strong>« {{ strtoupper($organisation->nom ?? $nom_organisation ?? 'NOM ORGANISATION') }} »</strong>{{ isset($sigle_organisation) && $sigle_organisation ? ', en abrégé ' : '' }}<strong>{{ $sigle_organisation ?? '' }}</strong>, 
-        dont le siège est fixé à {{ $adresse_siege ?? 'Libreville' }}, {{ $boite_postale ? 'BP : ' . $boite_postale . ', ' : '' }}a déposé un dossier auprès des services compétents du Ministère de l'Intérieur en vue de sa légalisation, 
-        suivant l'accusé de réception n°{{ $numero_accuse_reception ?? '001' }} du {{ $date_accuse_reception ?? '11 juillet 2025' }}, 
-        et jugé conforme aux prescriptions <strong>de la loi n°016/2025 du 27 juin 2025 relative aux Partis politiques en République Gabonaise</strong>.<br><br>
-
-        En application de <strong>l'article 28</strong> de la loi relative aux partis politiques susmentionnée, 
-        le présent récépissé est délivré à l'intéressé{{ ($civilite ?? '') === 'Madame' ? 'e' : '' }}, en sa qualité de représentant du Parti politique 
-        <strong>« {{ strtoupper($organisation->nom ?? $nom_organisation ?? 'NOM ORGANISATION') }} »</strong>, pour servir et valoir ce que de droit.
+        Nous soussignés, Ministre de l'Intérieur, de la Sécurité et de la Décentralisation, 
+        attestons que <strong>{{ $civilite ?? 'Monsieur' }} {{ $nom_prenom ?? 'NOM PRÉNOM' }}</strong> 
+        de nationalité <strong>{{ ucfirst($nationalite ?? 'Gabonaise') }}</strong>, 
+        <strong>{{ $fonction }}</strong> {{ $typeLibelle }}@if($domaine), œuvrant dans le domaine <strong>{{ ucfirst($domaine) }}</strong>@endif dénommée :
     </div>
 
-    <!-- Date et lieu -->
+    <!-- ===== NOM ORGANISATION ===== -->
+    <div class="organisation-name">
+        « {{ strtoupper($organisation->nom ?? $nom_organisation ?? 'NOM ORGANISATION') }}@if(isset($sigle_organisation) && $sigle_organisation) ({{ strtoupper($sigle_organisation) }})@elseif(isset($organisation->sigle) && $organisation->sigle) ({{ strtoupper($organisation->sigle) }})@endif »
+    </div>
+
+    <!-- ===== SUITE CONTENU ===== -->
+    <div class="main-content">
+        Dont le siège social est fixé à <strong>{{ $adresse_siege ?? $organisation->adresse ?? 'Libreville' }}</strong>,
+        @if(isset($telephone) && $telephone !== 'Non renseigné')
+            Téléphone : <strong>{{ $telephone }}</strong>,
+        @elseif(isset($org_telephone) && $org_telephone)
+            Téléphone : <strong>{{ $org_telephone }}</strong>,
+        @endif
+        a déposé à nos services un dossier complet visant à obtenir un récépissé définitif de déclaration {{ $typeDeclaration }} conformément aux dispositions de {{ $loiRef }} en République Gabonaise.
+        <br><br>
+        En foi de quoi, le présent récépissé est délivré à l'intéressé{{ ($civilite ?? '') === 'Madame' ? 'e' : '' }} pour servir et valoir ce que de droit.
+    </div>
+
+    <!-- ===== DATE ===== -->
     <div class="date-location">
         Fait à Libreville, le {{ $date_generation ?? now()->format('d/m/Y') }}
     </div>
 
-    <!-- Signature -->
+    <!-- ===== SIGNATURE ===== -->
     <div class="signature-section">
-        Le Ministre<br><br><br><br>
-        <strong>Hermann IMMONGAULT</strong>
+        <div class="signature-title">Le Ministre de l'Intérieur, de la Sécurité</div>
+        <div class="signature-title">et de la Décentralisation</div>
+        <div class="signature-space"></div>
     </div>
 
-    <!-- Copie -->
-    <p style="margin-top: 15px; font-size: 11pt;">
-        <u>Copies :</u> 
-        <p>- SG (MISD)<br/>
-           - CND
-        </p>
-    </p>
-
-    <!-- ✅ SECTION QR CODE HARMONISÉE AVEC L'ACCUSÉ DE RÉCEPTION -->
+    <!-- ===== QR CODE ===== -->
     <div class="qr-section">
-        <div class="qr-content">
-            <div class="qr-left">
-                <div class="qr-box">
-                    @if(isset($qr_code) && $qr_code)
-                        @php
-                            // Utiliser le service QrCodeService avec méthode optimisée
-                            $qrService = app(\App\Services\QrCodeService::class);
-                            $qrBase64 = $qrService->getQrCodeForPdf($qr_code);
-                        @endphp
-
-                        {{-- ✅ QR CODE EN BASE64 (solution optimale) --}}
-                        @if($qrBase64)
-                            <img src="{{ $qrBase64 }}" 
-                                 alt="QR Code de vérification" 
-                                 width="100" 
-                                 height="100" 
-                                 class="qr-image">
-                            <div class="qr-text"></div>
-                            <div class="qr-code-id"></div>
-                            
-                        {{-- ✅ FALLBACK: SVG si base64 échoue --}}
-                        @elseif(!empty($qr_code->svg_content))
-                            <div style="width: 100px; height: 100px; margin: 0 auto 10px auto; overflow: hidden;">
-                                {!! str_replace(['width="150"', 'height="150"'], ['width="100"', 'height="100"'], $qr_code->svg_content) !!}
-                            </div>
-                            <div class="qr-text">Vérification en lign 2</div>
-                            <div class="qr-code-id">{{ $qr_code->code }}</div>
-                            
-                        {{-- ✅ FALLBACK: Placeholder si tout échoue --}}
-                        @else
-                            <svg width="100" height="100" style="margin: 0 auto 10px auto; display: block;">
-                                <rect width="100" height="100" fill="#f8f9fa" stroke="#003f7f" stroke-width="2"/>
-                                <text x="50" y="30" font-family="Arial" font-size="8" text-anchor="middle" fill="#003f7f">QR Code</text>
-                                <text x="50" y="45" font-family="Arial" font-size="7" text-anchor="middle" fill="#666">Disponible</text>
-                                <text x="50" y="60" font-family="Arial" font-size="6" text-anchor="middle" fill="#666">en ligne</text>
-                                <text x="50" y="75" font-family="Arial" font-size="5" text-anchor="middle" fill="#999">{{ $qr_code->code }}</text>
-                            </svg>
-                            <div class="qr-text"></div>
-                            <div class="qr-code-id"></div>
-                        @endif
-
-                        {{-- URL de vérification --}}
-                        @if(!empty($qr_code->verification_url))
-                            <div class="qr-url"></div>
-                        @endif
-                        
-                    @else
-                        {{-- Pas de QR code --}}
-                        <svg width="100" height="100" style="margin: 0 auto 10px auto; display: block;">
-                            <rect width="100" height="100" fill="#f8f9fa" stroke="#999" stroke-width="1" stroke-dasharray="4,4"/>
-                            <text x="50" y="40" font-family="Arial" font-size="8" text-anchor="middle" fill="#666">QR Code</text>
-                            <text x="50" y="55" font-family="Arial" font-size="7" text-anchor="middle" fill="#666">En cours</text>
-                            <text x="50" y="70" font-family="Arial" font-size="6" text-anchor="middle" fill="#999">de génération...</text>
-                        </svg>
-                        <div class="qr-text"></div>
-                        <div class="qr-code-id"></div>
-                    @endif
-                </div>
-            </div>
-
-           
+        <div class="qr-box">
+            @if(isset($qr_code) && $qr_code)
+                @php
+                    $qrService = app(\App\Services\QrCodeService::class);
+                    $qrBase64 = $qrService->getQrCodeBase64ForPdf($qr_code);
+                @endphp
+                @if($qrBase64)
+                    <img src="{{ $qrBase64 }}" alt="QR Code" width="80" height="80" class="qr-image">
+                @elseif(!empty($qr_code->svg_content))
+                    <div style="width:80px;height:80px;margin:0 auto;overflow:hidden;">
+                        {!! str_replace(['width="150"','height="150"'],['width="80"','height="80"'],$qr_code->svg_content) !!}
+                    </div>
+                @endif
+            @endif
         </div>
     </div>
 

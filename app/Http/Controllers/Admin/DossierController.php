@@ -48,8 +48,8 @@ class DossierController extends Controller
         $this->qrCodeService = $qrCodeService;
         $this->fifoPriorityService = $fifoPriorityService;
     }
-    
-   /**
+
+    /**
      * Liste de toutes les organisations
      * Route: /admin/dossiers
      */
@@ -57,17 +57,20 @@ class DossierController extends Controller
     {
         try {
             // Query de base avec les organisations et leurs dossiers
-            $query = Organisation::with(['user', 'dossiers' => function($q) {
-                $q->latest()->take(1); // Dernier dossier seulement
-            }])->orderBy('created_at', 'desc');
+            $query = Organisation::with([
+                'user',
+                'dossiers' => function ($q) {
+                    $q->latest()->take(1); // Dernier dossier seulement
+                }
+            ])->orderBy('created_at', 'desc');
 
             // Filtres de recherche
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('nom', 'like', "%{$search}%")
-                      ->orWhere('sigle', 'like', "%{$search}%")
-                      ->orWhere('numero_recepisse', 'like', "%{$search}%");
+                        ->orWhere('sigle', 'like', "%{$search}%")
+                        ->orWhere('numero_recepisse', 'like', "%{$search}%");
                 });
             }
 
@@ -141,21 +144,28 @@ class DossierController extends Controller
             ];
 
             $provinces = [
-                'Estuaire', 'Haut-Ogooué', 'Moyen-Ogooué', 'Ngounié', 
-                'Nyanga', 'Ogooué-Ivindo', 'Ogooué-Lolo', 'Ogooué-Maritime', 'Woleu-Ntem'
+                'Estuaire',
+                'Haut-Ogooué',
+                'Moyen-Ogooué',
+                'Ngounié',
+                'Nyanga',
+                'Ogooué-Ivindo',
+                'Ogooué-Lolo',
+                'Ogooué-Maritime',
+                'Woleu-Ntem'
             ];
 
             return view('admin.dossiers.index', compact(
-                'organisations', 
-                'stats', 
-                'types', 
-                'statuts', 
+                'organisations',
+                'stats',
+                'types',
+                'statuts',
                 'provinces'
             ));
 
         } catch (\Exception $e) {
             \Log::error('Erreur DossierController@index: ' . $e->getMessage());
-            
+
             return back()->with('error', 'Erreur lors du chargement des organisations.');
         }
     }
@@ -214,7 +224,7 @@ class DossierController extends Controller
             $validated = $request->validate([
                 // Type d'organisation
                 'organisation_type_id' => 'required|exists:organisation_types,id',
-                
+
                 // Déclarant
                 'demandeur_nip' => 'required|string|max:20',
                 'demandeur_nom' => 'required|string|max:100',
@@ -222,7 +232,7 @@ class DossierController extends Controller
                 'demandeur_email' => 'nullable|email|max:255',
                 'demandeur_telephone' => 'required|string|max:20',
                 'demandeur_role' => 'nullable|string|max:100',
-                
+
                 // Organisation
                 'org_nom' => 'required|string|max:255',
                 'org_sigle' => 'nullable|string|max:20',
@@ -231,7 +241,7 @@ class DossierController extends Controller
                 'org_telephone' => 'required|string|max:20',
                 'org_email' => 'nullable|email|max:255',
                 'org_site_web' => 'nullable|url|max:255',
-                
+
                 // Géolocalisation
                 'org_province_id' => 'required|exists:provinces,id',
                 'org_departement_id' => 'required|exists:departements,id',
@@ -241,7 +251,7 @@ class DossierController extends Controller
                 'org_adresse' => 'required|string|max:500',
                 'org_latitude' => 'nullable|numeric|between:-90,90',
                 'org_longitude' => 'nullable|numeric|between:-180,180',
-                
+
                 // Fondateurs
                 'fondateurs' => 'required|array|min:1',
                 'fondateurs.*.nip' => 'required|string|max:20',
@@ -251,7 +261,7 @@ class DossierController extends Controller
                 'fondateurs.*.fonction' => 'required|string|max:100',
                 'fondateurs.*.telephone' => 'nullable|string|max:20',
                 'fondateurs.*.email' => 'nullable|email|max:255',
-                
+
                 // Adhérents (optionnels selon config)
                 'adherents' => 'nullable|array',
                 'adherents.*.nip' => 'required_with:adherents|string|max:20',
@@ -259,7 +269,7 @@ class DossierController extends Controller
                 'adherents.*.prenom' => 'required_with:adherents|string|max:100',
                 'adherents.*.telephone' => 'nullable|string|max:20',
                 'adherents.*.profession' => 'nullable|string|max:100',
-                
+
                 // Documents
                 'documents' => 'nullable|array',
                 'documents.*' => 'file|max:10240',
@@ -375,10 +385,10 @@ class DossierController extends Controller
             if ($request->hasFile('documents')) {
                 foreach ($request->file('documents') as $documentTypeId => $file) {
                     $path = $file->store('dossiers/' . $dossier->id, 'public');
-                    
+
                     // Générer le hash du fichier
                     $hash = hash_file('sha256', $file->getRealPath());
-                    
+
                     $dossier->documents()->create([
                         'document_type_id' => $documentTypeId,
                         'chemin_fichier' => $path,
@@ -418,7 +428,7 @@ class DossierController extends Controller
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             return back()->withErrors($e->errors())->withInput();
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Erreur création dossier admin: ' . $e->getMessage(), [
@@ -435,10 +445,12 @@ class DossierController extends Controller
     public function getTypeConfig($id)
     {
         try {
-            $orgType = OrganisationType::with(['documentTypes' => function($q) {
-                $q->where('is_active', true)->orderBy('ordre');
-            }])->findOrFail($id);
-            
+            $orgType = OrganisationType::with([
+                'documentTypes' => function ($q) {
+                    $q->where('is_active', true)->orderBy('ordre');
+                }
+            ])->findOrFail($id);
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -450,7 +462,7 @@ class DossierController extends Controller
                     'is_lucratif' => $orgType->is_lucratif ?? false,
                     'guide_creation' => $orgType->guide_creation,
                     'loi_reference' => $orgType->loi_reference,
-                    'documents_requis' => $orgType->documentTypes->map(function($doc) {
+                    'documents_requis' => $orgType->documentTypes->map(function ($doc) {
                         return [
                             'id' => $doc->id,
                             'nom' => $doc->nom,
@@ -491,11 +503,11 @@ class DossierController extends Controller
             'parti_politique' => 'PP',
             'confession_religieuse' => 'CR',
         ];
-        
+
         $prefix = $prefixes[$type] ?? 'ORG';
         $year = date('Y');
         $count = Organisation::whereYear('created_at', $year)->where('type', $type)->count() + 1;
-        
+
         return sprintf('%s/%s/%05d', $prefix, $year, $count);
     }
 
@@ -509,125 +521,125 @@ class DossierController extends Controller
      * Page des dossiers en attente - Compatible avec en-attente.blade.php
      */
     public function enAttente(Request $request)
-{
-    try {
-        // Query de base avec SEULEMENT les relations confirmées
-        $query = Dossier::with(['organisation']) // Organisation existe ✅
-            ->whereIn('statut', ['soumis', 'en_cours'])
-            ->where(function($q) {
-                $q->whereNull('assigned_to')->orWhere('statut', 'soumis');
-            })
-            ->orderBy('created_at', 'desc');
+    {
+        try {
+            // Query de base avec SEULEMENT les relations confirmées
+            $query = Dossier::with(['organisation']) // Organisation existe ✅
+                ->whereIn('statut', ['soumis', 'en_cours'])
+                ->where(function ($q) {
+                    $q->whereNull('assigned_to')->orWhere('statut', 'soumis');
+                })
+                ->orderBy('created_at', 'desc');
 
-        // Application des filtres de recherche
-        if ($request->filled('search')) {
-            $search = trim($request->search);
-            $query->where(function($q) use ($search) {
-                $q->where('numero_dossier', 'like', "%{$search}%")
-                  ->orWhereHas('organisation', function($org) use ($search) {
-                      $org->where('nom', 'like', "%{$search}%")
-                          ->orWhere('sigle', 'like', "%{$search}%");
-                  });
-            });
-        }
-
-        // Filtre par type d'organisation
-        if ($request->filled('type') && $request->type !== '') {
-            $query->whereHas('organisation', function($q) use ($request) {
-                $q->where('type', $request->type);
-            });
-        }
-
-        // Filtre par priorité calculée
-        if ($request->filled('priorite') && $request->priorite !== '') {
-            if ($request->priorite === 'haute') {
-                $query->where(function($q) {
-                    $q->where('created_at', '<=', now()->subDays(7))
-                      ->orWhereHas('organisation', function($org) {
-                          $org->where('type', 'parti_politique');
-                      });
+            // Application des filtres de recherche
+            if ($request->filled('search')) {
+                $search = trim($request->search);
+                $query->where(function ($q) use ($search) {
+                    $q->where('numero_dossier', 'like', "%{$search}%")
+                        ->orWhereHas('organisation', function ($org) use ($search) {
+                            $org->where('nom', 'like', "%{$search}%")
+                                ->orWhere('sigle', 'like', "%{$search}%");
+                        });
                 });
-            } elseif ($request->priorite === 'normale') {
-                $query->where('created_at', '>', now()->subDays(7))
-                      ->whereHas('organisation', function($org) {
-                          $org->where('type', '!=', 'parti_politique');
-                      });
             }
-        }
 
-        // Filtre par période
-        if ($request->filled('periode') && $request->periode !== '') {
-            switch ($request->periode) {
-                case 'today':
-                    $query->whereDate('created_at', today());
-                    break;
-                case 'week':
-                    $query->where('created_at', '>=', now()->startOfWeek());
-                    break;
-                case 'month':
-                    $query->where('created_at', '>=', now()->startOfMonth());
-                    break;
+            // Filtre par type d'organisation
+            if ($request->filled('type') && $request->type !== '') {
+                $query->whereHas('organisation', function ($q) use ($request) {
+                    $q->where('type', $request->type);
+                });
             }
+
+            // Filtre par priorité calculée
+            if ($request->filled('priorite') && $request->priorite !== '') {
+                if ($request->priorite === 'haute') {
+                    $query->where(function ($q) {
+                        $q->where('created_at', '<=', now()->subDays(7))
+                            ->orWhereHas('organisation', function ($org) {
+                                $org->where('type', 'parti_politique');
+                            });
+                    });
+                } elseif ($request->priorite === 'normale') {
+                    $query->where('created_at', '>', now()->subDays(7))
+                        ->whereHas('organisation', function ($org) {
+                            $org->where('type', '!=', 'parti_politique');
+                        });
+                }
+            }
+
+            // Filtre par période
+            if ($request->filled('periode') && $request->periode !== '') {
+                switch ($request->periode) {
+                    case 'today':
+                        $query->whereDate('created_at', today());
+                        break;
+                    case 'week':
+                        $query->where('created_at', '>=', now()->startOfWeek());
+                        break;
+                    case 'month':
+                        $query->where('created_at', '>=', now()->startOfMonth());
+                        break;
+                }
+            }
+
+            // Pagination avec 15 éléments par page
+            $dossiersEnAttente = $query->paginate(15);
+
+            // Enrichir chaque dossier avec données métier
+            $dossiersEnAttente->getCollection()->transform(function ($dossier) {
+                return $this->enrichDossierDataArchitecture($dossier);
+            });
+
+            // Calcul des statistiques pour les cards
+            $totalEnAttente = Dossier::whereIn('statut', ['soumis', 'en_cours'])
+                ->where(function ($q) {
+                    $q->whereNull('assigned_to')->orWhere('statut', 'soumis');
+                })->count();
+
+            $prioriteHaute = $this->calculateHighPriorityCountArchitecture();
+            $delaiMoyen = $this->calculateAverageWaitingTimeArchitecture();
+
+            // Agents disponibles - Utiliser le modèle User correct
+            $agents = User::where('role', 'agent')
+                ->where('is_active', 1)
+                ->orderBy('name')
+                ->get(['id', 'name', 'email']);
+
+            // Retour de la vue avec toutes les données
+            return view('admin.dossiers.en-attente', compact(
+                'dossiersEnAttente',
+                'totalEnAttente',
+                'prioriteHaute',
+                'delaiMoyen',
+                'agents'
+            ));
+
+        } catch (\Exception $e) {
+            // Log détaillé de l'erreur
+            \Log::error('Erreur DossierController@enAttente: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_params' => $request->all()
+            ]);
+
+            // Retour avec message d'erreur utilisateur
+            return back()->with('error', 'Erreur lors du chargement des dossiers en attente. Veuillez réessayer.')
+                ->withInput();
         }
-
-        // Pagination avec 15 éléments par page
-        $dossiersEnAttente = $query->paginate(15);
-
-        // Enrichir chaque dossier avec données métier
-        $dossiersEnAttente->getCollection()->transform(function ($dossier) {
-            return $this->enrichDossierDataArchitecture($dossier);
-        });
-
-        // Calcul des statistiques pour les cards
-        $totalEnAttente = Dossier::whereIn('statut', ['soumis', 'en_cours'])
-            ->where(function($q) {
-                $q->whereNull('assigned_to')->orWhere('statut', 'soumis');
-            })->count();
-
-        $prioriteHaute = $this->calculateHighPriorityCountArchitecture();
-        $delaiMoyen = $this->calculateAverageWaitingTimeArchitecture();
-        
-        // Agents disponibles - Utiliser le modèle User correct
-        $agents = User::where('role', 'agent')
-            ->where('is_active', 1)
-            ->orderBy('name')
-            ->get(['id', 'name', 'email']);
-
-        // Retour de la vue avec toutes les données
-        return view('admin.dossiers.en-attente', compact(
-            'dossiersEnAttente',
-            'totalEnAttente',
-            'prioriteHaute',
-            'delaiMoyen',
-            'agents'
-        ));
-
-    } catch (\Exception $e) {
-        // Log détaillé de l'erreur
-        \Log::error('Erreur DossierController@enAttente: ' . $e->getMessage(), [
-            'file' => $e->getFile(),
-            'line' => $e->getLine(),
-            'trace' => $e->getTraceAsString(),
-            'request_params' => $request->all()
-        ]);
-        
-        // Retour avec message d'erreur utilisateur
-        return back()->with('error', 'Erreur lors du chargement des dossiers en attente. Veuillez réessayer.')
-                    ->withInput();
     }
-}
 
 
     /**
      * Afficher les détails d'un dossier
      */
-   public function show(Request $request, $id)
+    public function show(Request $request, $id)
     {
         try {
             // ========== CORRECTION : Relations alignées sur la structure DB ==========
             $dossier = Dossier::with([
                 'organisation.fondateurs',
-                'organisation.adherents' => function($query) {
+                'organisation.adherents' => function ($query) {
                     $query->take(10);
                 },
                 'documents.documentType',
@@ -674,8 +686,8 @@ class DossierController extends Controller
             $declarant = null;
             if (!empty($dossier->donnees_supplementaires)) {
                 // donnees_supplementaires est déjà un array grâce au cast du modèle
-                $donneesSupplementaires = is_array($dossier->donnees_supplementaires) 
-                    ? $dossier->donnees_supplementaires 
+                $donneesSupplementaires = is_array($dossier->donnees_supplementaires)
+                    ? $dossier->donnees_supplementaires
                     : json_decode($dossier->donnees_supplementaires, true);
                 $declarant = $donneesSupplementaires['demandeur'] ?? null;
             }
@@ -692,9 +704,9 @@ class DossierController extends Controller
 
             // ========== RETOUR VUE AVEC VARIABLES COMPATIBLES ==========
             return view('admin.dossiers.show', compact(
-                'dossier', 
-                'agents', 
-                'stats', 
+                'dossier',
+                'agents',
+                'stats',
                 'historique',
                 'declarant',
                 'documentsDisponibles'
@@ -724,26 +736,26 @@ class DossierController extends Controller
     /**
      * Télécharger l'accusé de réception PDF
      */
-   public function downloadAccuse($id)
+    public function downloadAccuse($id)
     {
         try {
             // CORRECTION : Charger avec organisation.fondateurs
             $dossier = Dossier::with(['organisation.fondateurs'])->findOrFail($id);
-            
+
             // Vérifier que le dossier a des données supplémentaires JSON
             if (empty($dossier->donnees_supplementaires)) {
                 return back()->with('error', 'Impossible de générer l\'accusé : informations du déclarant manquantes.');
             }
-            
+
             // Générer le PDF d'accusé de réception
             $pdf = $this->pdfService->generateAccuseReception($dossier);
-            
+
             // Nom de fichier sécurisé
             $filename = $this->sanitizeFilename("accuse_reception_{$dossier->numero_dossier}") . "_" . now()->format('Ymd') . ".pdf";
-            
+
             // CORRECTION : donnees_supplementaires est déjà un array
-            $donneesSupp = is_array($dossier->donnees_supplementaires) 
-                ? $dossier->donnees_supplementaires 
+            $donneesSupp = is_array($dossier->donnees_supplementaires)
+                ? $dossier->donnees_supplementaires
                 : json_decode($dossier->donnees_supplementaires, true);
             $declarant = $donneesSupp['demandeur'] ?? [];
             \Log::info("Génération accusé PDF pour dossier {$dossier->id}", [
@@ -753,7 +765,7 @@ class DossierController extends Controller
                 'declarant_nip' => $declarant['nip'] ?? 'Non renseigné',
                 'user' => auth()->user()->name
             ]);
-            
+
             return $pdf->download($filename);
 
         } catch (\Exception $e) {
@@ -762,13 +774,19 @@ class DossierController extends Controller
                 'user' => auth()->user()->name ?? 'Système',
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->with('error', 'Erreur lors de la génération de l\'accusé de réception: ' . $e->getMessage());
         }
     }
 
-
-
+    /**
+     * Alias pour télécharger l'accusé de réception PDF
+     * Route: GET /admin/dossiers/{id}/accuse-reception
+     */
+    public function downloadAccuseReception($id)
+    {
+        return $this->downloadAccuse($id);
+    }
 
 
 
@@ -781,18 +799,18 @@ class DossierController extends Controller
         try {
             // CORRECTION : Charger avec organisation.fondateurs
             $dossier = Dossier::with(['organisation.fondateurs'])->findOrFail($id);
-            
+
             // Vérifier que le dossier est approuvé
             if ($dossier->statut !== 'approuve') {
                 return back()->with('error', 'Le récépissé définitif n\'est disponible que pour les dossiers approuvés.');
             }
-            
+
             // Générer le PDF de récépissé
             $pdf = $this->pdfService->generateRecepisseDefinitif($dossier);
-            
+
             // Nom de fichier sécurisé
             $filename = $this->sanitizeFilename("recepisse_definitif_{$dossier->organisation->nom}_{$dossier->numero_dossier}") . "_" . now()->format('Ymd') . ".pdf";
-            
+
             // CORRECTION : Log avec backslash
             \Log::info("Génération récépissé définitif PDF pour dossier {$dossier->id}", [
                 'dossier_numero' => $dossier->numero_dossier,
@@ -800,7 +818,7 @@ class DossierController extends Controller
                 'numero_recepisse' => $dossier->numero_recepisse,
                 'user' => auth()->user()->name
             ]);
-            
+
             return $pdf->download($filename);
 
         } catch (\Exception $e) {
@@ -809,364 +827,409 @@ class DossierController extends Controller
                 'user' => auth()->user()->name ?? 'Système',
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->with('error', 'Erreur lors de la génération du récépissé définitif: ' . $e->getMessage());
         }
     }
 
     /**
- * ========================================
- * MÉTHODE PRINCIPALE : validate() 
- * ========================================
- * Route: POST /admin/dossiers/{id}/validate
- * Cette méthode sera appelée par la modal d'approbation
- */
-public function validateDossier(Request $request, $id)
-{
-    try {
-        // Validation des données d'entrée
-        $request->validate([
-            'numero_recepisse_final' => 'required|string|max:100',
-            'date_approbation' => 'required|date',
-            'validite_mois' => 'nullable|integer|min:1|max:120',
-            'commentaire_approbation' => 'nullable|string|max:2000',
-            'generer_recepisse' => 'nullable',
-            'envoyer_email_approbation' => 'nullable',
-            'publier_annuaire' => 'nullable'
-        ]);
+     * Télécharger le récépissé définitif PDF
+     * Route: GET /admin/dossiers/{dossier}/recepisse-definitif
+     * 
+     * @param int|string $id ID du dossier
+     * @return \Illuminate\Http\Response
+     */
+    public function downloadRecepisseDefinitif($id)
+    {
+        try {
+            // Charger le dossier avec ses relations
+            $dossier = Dossier::with(['organisation.fondateurs'])->findOrFail($id);
 
-        DB::beginTransaction();
-
-        $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
-        
-        // Vérifier que le dossier peut être approuvé
-        if (!in_array($dossier->statut, ['en_cours', 'soumis'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ce dossier ne peut pas être approuvé dans son état actuel'
-            ], 400);
-        }
-
-        // Mettre à jour le dossier
-        $dossier->update([
-            'statut' => 'approuve',
-            'approved_at' => $request->date_approbation,
-            'approved_by' => auth()->id(),
-            'numero_recepisse' => $request->numero_recepisse_final
-        ]);
-
-        // Mettre à jour l'organisation
-        if ($dossier->organisation) {
-            $updateData = [
-                'numero_recepisse' => $request->numero_recepisse_final,
-                'date_approbation' => $request->date_approbation,
-                'statut' => 'approuve',
-                'is_approved' => true
-            ];
-
-            if ($request->validite_mois) {
-                $updateData['date_expiration'] = Carbon::parse($request->date_approbation)
-                    ->addMonths($request->validite_mois);
+            // Vérifier que le dossier est dans un statut permettant le récépissé définitif
+            if (!in_array($dossier->statut, [Dossier::STATUT_ACCEPTE, 'approuve'])) {
+                return back()->with('error', 'Le récépissé définitif n\'est disponible que pour les dossiers acceptés/approuvés.');
             }
 
-            if ($request->publier_annuaire) {
-                $updateData['visible_annuaire'] = true;
-            }
+            // Générer le PDF du récépissé définitif
+            $pdf = $this->pdfService->generateRecepisseDefinitif($dossier);
 
-            $dossier->organisation->update($updateData);
-        }
+            // Nom de fichier sécurisé
+            $filename = $this->sanitizeFilename("recepisse_definitif_{$dossier->organisation->nom}_{$dossier->numero_dossier}") . "_" . now()->format('Ymd') . ".pdf";
 
-        // Enregistrer l'opération de validation
-        if (method_exists($dossier, 'operations')) {
-            $dossier->operations()->create([
-                'type_operation' => 'validation',
-                'user_id' => auth()->id(),
-                'description' => 'Dossier approuvé - Récépissé: ' . $request->numero_recepisse_final,
-                'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
-                'nouveau_statut' => 'approuve',
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent()
+            // Log de l'activité
+            \Log::info("Téléchargement récépissé définitif pour dossier {$dossier->id}", [
+                'dossier_numero' => $dossier->numero_dossier,
+                'organisation' => $dossier->organisation->nom ?? 'Inconnue',
+                'numero_recepisse' => $dossier->numero_recepisse,
+                'user' => auth()->user()->name
             ]);
-        }
 
-        // Ajouter un commentaire d'approbation (optionnel)
-        if ($request->filled('commentaire_approbation')) {
-            // Vérifier que la relation operations existe
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur téléchargement récépissé définitif: ' . $e->getMessage(), [
+                'dossier_id' => $id,
+                'user' => auth()->user()->name ?? 'Système',
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->with('error', 'Erreur lors de la génération du récépissé définitif: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * ========================================
+     * MÉTHODE PRINCIPALE : validate() 
+     * ========================================
+     * Route: POST /admin/dossiers/{id}/validate
+     * Cette méthode sera appelée par la modal d'approbation
+     */
+    public function validateDossier(Request $request, $id)
+    {
+        try {
+            // Validation des données d'entrée
+            $request->validate([
+                'numero_recepisse_final' => 'required|string|max:100',
+                'date_approbation' => 'required|date',
+                'validite_mois' => 'nullable|integer|min:1|max:120',
+                'commentaire_approbation' => 'nullable|string|max:2000',
+                'generer_recepisse' => 'nullable',
+                'envoyer_email_approbation' => 'nullable',
+                'publier_annuaire' => 'nullable'
+            ]);
+
+            DB::beginTransaction();
+
+            $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
+
+            // Vérifier que le dossier peut être approuvé
+            if (!in_array($dossier->statut, ['en_cours', 'soumis'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce dossier ne peut pas être approuvé dans son état actuel'
+                ], 400);
+            }
+
+            // Mettre à jour le dossier
+            $dossier->update([
+                'statut' => 'approuve',
+                'approved_at' => $request->date_approbation,
+                'approved_by' => auth()->id(),
+                'numero_recepisse' => $request->numero_recepisse_final
+            ]);
+
+            // Mettre à jour l'organisation
+            if ($dossier->organisation) {
+                $updateData = [
+                    'numero_recepisse' => $request->numero_recepisse_final,
+                    'date_approbation' => $request->date_approbation,
+                    'statut' => 'approuve',
+                    'is_approved' => true
+                ];
+
+                if ($request->validite_mois) {
+                    $updateData['date_expiration'] = Carbon::parse($request->date_approbation)
+                        ->addMonths($request->validite_mois);
+                }
+
+                if ($request->publier_annuaire) {
+                    $updateData['visible_annuaire'] = true;
+                }
+
+                $dossier->organisation->update($updateData);
+            }
+
+            // Enregistrer l'opération de validation
             if (method_exists($dossier, 'operations')) {
                 $dossier->operations()->create([
-                    'type_operation' => 'commentaire',
+                    'type_operation' => 'validation',
                     'user_id' => auth()->id(),
-                    'description' => $request->commentaire_approbation,
-                    'ancien_statut' => $dossier->getOriginal('statut'),
+                    'description' => 'Dossier approuvé - Récépissé: ' . $request->numero_recepisse_final,
+                    'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
                     'nouveau_statut' => 'approuve',
                     'ip_address' => request()->ip(),
                     'user_agent' => request()->userAgent()
                 ]);
             }
-        }
 
-        // Créer une validation selon le modèle existant
-        if (method_exists($dossier, 'validations')) {
-            $dossier->validations()->create([
-                'workflow_step_id' => $dossier->current_step_id ?? 1,
-                'validation_entity_id' => 1,
-                'validated_by' => auth()->id(),
-                'decision' => 'approuve',
-                'commentaire' => $request->commentaire_approbation,
-                'numero_enregistrement' => $request->numero_recepisse_final,
-                'decided_at' => now()
-            ]);
-        }
-
-        // Générer le récépissé PDF si demandé
-        if ($request->generer_recepisse && $this->pdfService) {
-            try {
-                // UTILISER LA MÉTHODE EXISTANTE generateRecepisseDefinitif
-                $pdf = $this->pdfService->generateRecepisseDefinitif($dossier);
-                
-                // Sauvegarder le document récépissé si la relation documents existe
-                if (method_exists($dossier, 'documents')) {
-                    $dossier->documents()->create([
-                        'nom_fichier' => 'recepisse_definitif_' . $dossier->numero_dossier . '.pdf',
-                        'nom_original' => 'Récépissé Définitif.pdf',
-                        'type_document' => 'recepisse_definitif',
-                        'taille_fichier' => 0,
-                        'is_generated' => true,
-                        'uploaded_by' => auth()->id()
+            // Ajouter un commentaire d'approbation (optionnel)
+            if ($request->filled('commentaire_approbation')) {
+                // Vérifier que la relation operations existe
+                if (method_exists($dossier, 'operations')) {
+                    $dossier->operations()->create([
+                        'type_operation' => 'commentaire',
+                        'user_id' => auth()->id(),
+                        'description' => $request->commentaire_approbation,
+                        'ancien_statut' => $dossier->getOriginal('statut'),
+                        'nouveau_statut' => 'approuve',
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent()
                     ]);
                 }
-            } catch (\Exception $e) {
-                \Log::warning('Erreur génération récépissé lors de l\'approbation: ' . $e->getMessage());
-            }
-        }
-
-        // Envoyer email de confirmation si demandé
-        $userEmail = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
-        if ($request->envoyer_email_approbation && $userEmail) {
-            try {
-                // TODO: Implémenter l'envoi d'email
-                \Log::info('Email d\'approbation à envoyer à: ' . $userEmail);
-            } catch (\Exception $e) {
-                \Log::warning('Erreur envoi email d\'approbation: ' . $e->getMessage());
-            }
-        }
-
-        // Log de l'approbation avec le style existant
-        \Log::info("Dossier {$dossier->id} approuvé", [
-            'dossier_numero' => $dossier->numero_dossier,
-            'organisation' => $dossier->organisation->nom ?? 'Inconnue',
-            'numero_recepisse' => $request->numero_recepisse_final,
-            'approved_by' => auth()->user()->name,
-            'date_approbation' => $request->date_approbation
-        ]);
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Dossier approuvé avec succès',
-            'data' => [
-                'dossier_id' => $dossier->id,
-                'nouveau_statut' => 'approuve',
-                'numero_recepisse' => $request->numero_recepisse_final,
-                'date_approbation' => $request->date_approbation,
-                'recepisse_genere' => $request->generer_recepisse
-            ]
-        ]);
-
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        DB::rollBack();
-        return response()->json([
-            'success' => false,
-            'message' => 'Données invalides',
-            'errors' => $e->errors()
-        ], 422);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        \Log::error('Erreur lors de l\'approbation du dossier: ' . $e->getMessage(), [
-            'dossier_id' => $id,
-            'user' => auth()->user()->name ?? 'Système',
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de l\'approbation: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-
-
-
-/**
- * ========================================
- * CORRECTION DE LA MÉTHODE EXISTANTE : valider()
- * ========================================
- * Garder cette méthode mais corriger les erreurs
- */
-public function valider(Request $request, $id)
-{
-    try {
-        // CORRECTION : Utiliser validate() au lieu de approuver()
-        $request->validate([
-            'numero_enregistrement' => 'nullable|string|max:100',
-            'commentaire' => 'nullable|string|max:1000'
-        ]);
-
-        $dossier = Dossier::findOrFail($id);
-
-        DB::transaction(function() use ($dossier, $request) {
-            // Mettre à jour le dossier
-            $dossier->update([
-                'statut' => 'approuve',
-                'validated_at' => now(),
-                'numero_recepisse' => $request->numero_enregistrement ?: $this->generateRecepisseNumber($dossier)
-            ]);
-
-            // Mettre à jour l'organisation
-            if ($dossier->organisation) {
-                $dossier->organisation->update([
-                    'statut' => 'approuve',
-                    'numero_recepisse' => $dossier->numero_recepisse
-                ]);
             }
 
-            // CORRECTION : Gérer les relations optionnelles
-            if (class_exists('App\Models\DossierValidation')) {
-                DossierValidation::updateOrCreate([
-                    'dossier_id' => $dossier->id,
-                ], [
-                    'workflow_step_id' => 1,
+            // Créer une validation selon le modèle existant
+            if (method_exists($dossier, 'validations')) {
+                $dossier->validations()->create([
+                    'workflow_step_id' => $dossier->current_step_id ?? 1,
                     'validation_entity_id' => 1,
                     'validated_by' => auth()->id(),
                     'decision' => 'approuve',
-                    'commentaire' => $request->commentaire,
-                    'numero_enregistrement' => $request->numero_enregistrement,
-                    'decided_at' => now(),
-                    'duree_traitement' => $dossier->created_at->diffInMinutes(now())
+                    'commentaire' => $request->commentaire_approbation,
+                    'numero_enregistrement' => $request->numero_recepisse_final,
+                    'decided_at' => now()
                 ]);
             }
-        });
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Dossier validé avec succès',
-            'recepisse_number' => $dossier->fresh()->numero_recepisse
-        ]);
+            // Générer le récépissé PDF si demandé
+            if ($request->generer_recepisse && $this->pdfService) {
+                try {
+                    // UTILISER LA MÉTHODE EXISTANTE generateRecepisseDefinitif
+                    $pdf = $this->pdfService->generateRecepisseDefinitif($dossier);
 
-    } catch (\Exception $e) {
-        \Log::error('Erreur validation dossier: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de la validation: ' . $e->getMessage()
-        ], 500);
-    }
-}
+                    // Sauvegarder le document récépissé si la relation documents existe
+                    if (method_exists($dossier, 'documents')) {
+                        $dossier->documents()->create([
+                            'nom_fichier' => 'recepisse_definitif_' . $dossier->numero_dossier . '.pdf',
+                            'nom_original' => 'Récépissé Définitif.pdf',
+                            'type_document' => 'recepisse_definitif',
+                            'taille_fichier' => 0,
+                            'is_generated' => true,
+                            'uploaded_by' => auth()->id()
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Erreur génération récépissé lors de l\'approbation: ' . $e->getMessage());
+                }
+            }
 
-    /**
- * ========================================
- * CORRECTION DE LA MÉTHODE : rejeter()
- * ========================================
- */
-public function rejeter(Request $request, $id)
-{
-    try {
-        // CORRECTION : Utiliser validate() au lieu de approuver()
-        $request->validate([
-            'motif' => 'required|string|max:1000',
-            'commentaire' => 'required|string|max:1000'
-        ]);
+            // Envoyer email de confirmation si demandé
+            $userEmail = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
+            if ($request->envoyer_email_approbation && $userEmail) {
+                try {
+                    // TODO: Implémenter l'envoi d'email
+                    \Log::info('Email d\'approbation à envoyer à: ' . $userEmail);
+                } catch (\Exception $e) {
+                    \Log::warning('Erreur envoi email d\'approbation: ' . $e->getMessage());
+                }
+            }
 
-        $dossier = Dossier::findOrFail($id);
-
-        DB::transaction(function() use ($dossier, $request) {
-            $dossier->update([
-                'statut' => 'rejete',
-                'motif_rejet' => $request->commentaire,
-                'validated_at' => now()
+            // Log de l'approbation avec le style existant
+            \Log::info("Dossier {$dossier->id} approuvé", [
+                'dossier_numero' => $dossier->numero_dossier,
+                'organisation' => $dossier->organisation->nom ?? 'Inconnue',
+                'numero_recepisse' => $request->numero_recepisse_final,
+                'approved_by' => auth()->user()->name,
+                'date_approbation' => $request->date_approbation
             ]);
 
-            // CORRECTION : Gérer les relations optionnelles
-            if (class_exists('App\Models\DossierValidation')) {
-                DossierValidation::updateOrCreate([
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dossier approuvé avec succès',
+                'data' => [
                     'dossier_id' => $dossier->id,
-                ], [
-                    'workflow_step_id' => 1,
-                    'validation_entity_id' => 1,
-                    'validated_by' => auth()->id(),
-                    'decision' => 'rejete',
-                    'motif_rejet' => $request->motif,
-                    'commentaire' => $request->commentaire,
-                    'decided_at' => now(),
-                    'duree_traitement' => $dossier->created_at->diffInMinutes(now())
-                ]);
-            }
-        });
+                    'nouveau_statut' => 'approuve',
+                    'numero_recepisse' => $request->numero_recepisse_final,
+                    'date_approbation' => $request->date_approbation,
+                    'recepisse_genere' => $request->generer_recepisse
+                ]
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Dossier rejeté avec succès'
-        ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Données invalides',
+                'errors' => $e->errors()
+            ], 422);
 
-    } catch (\Exception $e) {
-        \Log::error('Erreur rejet dossier: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du rejet: ' . $e->getMessage()
-        ], 500);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Erreur lors de l\'approbation du dossier: ' . $e->getMessage(), [
+                'dossier_id' => $id,
+                'user' => auth()->user()->name ?? 'Système',
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'approbation: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
+
+
+
 
     /**
- * ========================================
- * CORRECTION DE LA MÉTHODE : attribuer()
- * ========================================
- */
-public function attribuer(Request $request, $id)
-{
-    try {
-        // CORRECTION : Utiliser validate() au lieu de approuver()
-        $request->validate([
-            'agent_id' => 'required|exists:users,id',
-            'priorite' => 'nullable|in:normale,moyenne,haute',
-            'commentaire' => 'nullable|string|max:500'
-        ]);
-
-        $dossier = Dossier::findOrFail($id);
-        $agent = User::findOrFail($request->agent_id);
-
-        $dossier->update([
-            'assigned_to' => $agent->id,
-            'statut' => 'en_cours'
-        ]);
-
-        // Enregistrer l'opération d'assignation (pour tracer la date)
-        if (method_exists($dossier, 'operations')) {
-            $dossier->operations()->create([
-                'type_operation' => 'assignation',
-                'user_id' => auth()->id(),
-                'description' => "Dossier assigné à {$agent->name}",
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent()
+     * ========================================
+     * CORRECTION DE LA MÉTHODE EXISTANTE : valider()
+     * ========================================
+     * Garder cette méthode mais corriger les erreurs
+     */
+    public function valider(Request $request, $id)
+    {
+        try {
+            // CORRECTION : Utiliser validate() au lieu de approuver()
+            $request->validate([
+                'numero_enregistrement' => 'nullable|string|max:100',
+                'commentaire' => 'nullable|string|max:1000'
             ]);
+
+            $dossier = Dossier::findOrFail($id);
+
+            DB::transaction(function () use ($dossier, $request) {
+                // Mettre à jour le dossier
+                $dossier->update([
+                    'statut' => 'approuve',
+                    'validated_at' => now(),
+                    'numero_recepisse' => $request->numero_enregistrement ?: $this->generateRecepisseNumber($dossier)
+                ]);
+
+                // Mettre à jour l'organisation
+                if ($dossier->organisation) {
+                    $dossier->organisation->update([
+                        'statut' => 'approuve',
+                        'numero_recepisse' => $dossier->numero_recepisse
+                    ]);
+                }
+
+                // CORRECTION : Gérer les relations optionnelles
+                if (class_exists('App\Models\DossierValidation')) {
+                    DossierValidation::updateOrCreate([
+                        'dossier_id' => $dossier->id,
+                    ], [
+                        'workflow_step_id' => 1,
+                        'validation_entity_id' => 1,
+                        'validated_by' => auth()->id(),
+                        'decision' => 'approuve',
+                        'commentaire' => $request->commentaire,
+                        'numero_enregistrement' => $request->numero_enregistrement,
+                        'decided_at' => now(),
+                        'duree_traitement' => $dossier->created_at->diffInMinutes(now())
+                    ]);
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dossier validé avec succès',
+                'recepisse_number' => $dossier->fresh()->numero_recepisse
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur validation dossier: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la validation: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => "Dossier assigné à {$agent->name} avec succès"
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de l\'assignation: ' . $e->getMessage()
-        ], 500);
     }
-}
+
+    /**
+     * ========================================
+     * CORRECTION DE LA MÉTHODE : rejeter()
+     * ========================================
+     */
+    public function rejeter(Request $request, $id)
+    {
+        try {
+            // CORRECTION : Utiliser validate() au lieu de approuver()
+            $request->validate([
+                'motif' => 'required|string|max:1000',
+                'commentaire' => 'required|string|max:1000'
+            ]);
+
+            $dossier = Dossier::findOrFail($id);
+
+            DB::transaction(function () use ($dossier, $request) {
+                $dossier->update([
+                    'statut' => 'rejete',
+                    'motif_rejet' => $request->commentaire,
+                    'validated_at' => now()
+                ]);
+
+                // CORRECTION : Gérer les relations optionnelles
+                if (class_exists('App\Models\DossierValidation')) {
+                    DossierValidation::updateOrCreate([
+                        'dossier_id' => $dossier->id,
+                    ], [
+                        'workflow_step_id' => 1,
+                        'validation_entity_id' => 1,
+                        'validated_by' => auth()->id(),
+                        'decision' => 'rejete',
+                        'motif_rejet' => $request->motif,
+                        'commentaire' => $request->commentaire,
+                        'decided_at' => now(),
+                        'duree_traitement' => $dossier->created_at->diffInMinutes(now())
+                    ]);
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dossier rejeté avec succès'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur rejet dossier: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du rejet: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * ========================================
+     * CORRECTION DE LA MÉTHODE : attribuer()
+     * ========================================
+     */
+    public function attribuer(Request $request, $id)
+    {
+        try {
+            // CORRECTION : Utiliser validate() au lieu de approuver()
+            $request->validate([
+                'agent_id' => 'required|exists:users,id',
+                'priorite' => 'nullable|in:normale,moyenne,haute',
+                'commentaire' => 'nullable|string|max:500'
+            ]);
+
+            $dossier = Dossier::findOrFail($id);
+            $agent = User::findOrFail($request->agent_id);
+
+            $dossier->update([
+                'assigned_to' => $agent->id,
+                'statut' => 'en_cours'
+            ]);
+
+            // Enregistrer l'opération d'assignation (pour tracer la date)
+            if (method_exists($dossier, 'operations')) {
+                $dossier->operations()->create([
+                    'type_operation' => 'assignation',
+                    'user_id' => auth()->id(),
+                    'description' => "Dossier assigné à {$agent->name}",
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Dossier assigné à {$agent->name} avec succès"
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'assignation: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 
     // ========== MÉTHODES PRIVÉES ==========
 
@@ -1177,15 +1240,15 @@ public function attribuer(Request $request, $id)
     {
         // Jours d'attente
         $dossier->jours_attente = now()->diffInDays($dossier->created_at);
-        
+
         // Calcul de priorité
         $priorite = $this->calculatePriorite($dossier);
         $dossier->priorite = $priorite['niveau'];
         $dossier->priorite_color = $priorite['color'];
-        
+
         // Progression du workflow
         $dossier->progression = $this->calculateProgression($dossier);
-        
+
         // Actions disponibles
         $dossier->actions_disponibles = $this->getAvailableActions($dossier);
 
@@ -1198,12 +1261,12 @@ public function attribuer(Request $request, $id)
     private function calculatePriorite($dossier)
     {
         $joursAttente = now()->diffInDays($dossier->created_at);
-        
+
         // Parti politique = priorité haute automatique
         if ($dossier->organisation && $dossier->organisation->type === 'parti_politique') {
             return ['niveau' => 'haute', 'color' => 'danger'];
         }
-        
+
         // Basé sur ancienneté
         if ($joursAttente > 10) {
             return ['niveau' => 'haute', 'color' => 'danger'];
@@ -1219,13 +1282,19 @@ public function attribuer(Request $request, $id)
      */
     private function calculateProgression($dossier)
     {
-        switch($dossier->statut) {
-            case 'brouillon': return 10;
-            case 'soumis': return 30;
-            case 'en_cours': return 60;
-            case 'approuve': return 100;
-            case 'rejete': return 100;
-            default: return 0;
+        switch ($dossier->statut) {
+            case 'brouillon':
+                return 10;
+            case 'soumis':
+                return 30;
+            case 'en_cours':
+                return 60;
+            case 'approuve':
+                return 100;
+            case 'rejete':
+                return 100;
+            default:
+                return 0;
         }
     }
 
@@ -1254,11 +1323,11 @@ public function attribuer(Request $request, $id)
     private function calculateHighPriorityCount()
     {
         return Dossier::whereIn('statut', ['soumis', 'en_cours'])
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->where('created_at', '<=', now()->subDays(7))
-                  ->orWhereHas('organisation', function($org) {
-                      $org->where('type', 'parti_politique');
-                  });
+                    ->orWhereHas('organisation', function ($org) {
+                        $org->where('type', 'parti_politique');
+                    });
             })->count();
     }
 
@@ -1268,12 +1337,12 @@ public function attribuer(Request $request, $id)
     private function calculateAverageWaitingTime()
     {
         $dossiers = Dossier::whereIn('statut', ['soumis', 'en_cours'])->get();
-        
+
         if ($dossiers->isEmpty()) {
             return 0;
         }
 
-        $totalJours = $dossiers->sum(function($dossier) {
+        $totalJours = $dossiers->sum(function ($dossier) {
             return now()->diffInDays($dossier->created_at);
         });
 
@@ -1303,7 +1372,7 @@ public function attribuer(Request $request, $id)
     private function getAvailableDocuments($dossier)
     {
         $documents = [];
-        
+
         // Accusé de réception toujours disponible
         $documents[] = [
             'type' => 'accuse',
@@ -1311,7 +1380,7 @@ public function attribuer(Request $request, $id)
             'url' => route('admin.dossiers.download-accuse', $dossier->id),
             'icon' => 'fas fa-file-alt'
         ];
-        
+
         // Récépissé seulement si approuvé
         if ($dossier->statut === 'approuve') {
             $documents[] = [
@@ -1333,7 +1402,7 @@ public function attribuer(Request $request, $id)
         return [
             'jours_ecoules' => now()->diffInDays($dossier->created_at),
             'nb_documents' => $dossier->documents ? $dossier->documents->count() : 0,
-            'nb_adherents' => $dossier->organisation && $dossier->organisation->adherents ? 
+            'nb_adherents' => $dossier->organisation && $dossier->organisation->adherents ?
                 $dossier->organisation->adherents->count() : 0,
             'progression' => $this->calculateProgression($dossier)
         ];
@@ -1347,14 +1416,14 @@ public function attribuer(Request $request, $id)
         $type = $dossier->organisation ? substr($dossier->organisation->type, 0, 3) : 'ORG';
         $year = now()->year;
         $sequence = str_pad(Dossier::where('statut', 'approuve')->count() + 1, 4, '0', STR_PAD_LEFT);
-        
+
         return strtoupper($type) . '-' . $year . '-' . $sequence;
     }
 
     /**
      * Générer PDF accusé de réception (placeholder)
      */
-    
+
     private function generateAccusePDF($dossier)
     {
         try {
@@ -1377,7 +1446,7 @@ public function attribuer(Request $request, $id)
             throw new \Exception('Erreur lors de la génération du récépissé: ' . $e->getMessage());
         }
     }
-    
+
     /**
      * ======================================
      * MÉTHODES UTILITAIRES AJOUTÉES
@@ -1400,7 +1469,7 @@ public function attribuer(Request $request, $id)
         if ($dossier->organisation && $dossier->organisation->type === 'parti_politique') {
             return 'haute';
         }
-        
+
         $delai = Carbon::parse($dossier->created_at)->diffInDays(now());
         return $delai > 7 ? 'haute' : 'normale';
     }
@@ -1408,12 +1477,12 @@ public function attribuer(Request $request, $id)
     /**
      * Compte le nombre de dossiers à priorité haute
      */
-    
+
 
     /**
      * Calcule le délai moyen d'attente
      */
-    
+
 
     /**
      * ======================================
@@ -1422,946 +1491,946 @@ public function attribuer(Request $request, $id)
      */
 
     /**
- * ========================================
- * CORRECTION DE LA MÉTHODE : assign()
- * ========================================
- */
-/**
- * Assigner un dossier - Version simplifiée compatible
- */
-public function assign(Request $request, $id)
-{
-    try {
-        $request->validate([
-            'agent_id' => 'required|exists:users,id',
-            'commentaire' => 'nullable|string|max:1000'
-        ]);
-
-        $dossier = Dossier::findOrFail($id);
-        $agent = User::findOrFail($request->agent_id);
-
-        // Vérifier que l'agent est actif
-        if (!($agent->is_active ?? true)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'L\'agent sélectionné n\'est pas actif'
-            ], 400);
-        }
-
-        // Assignation simple
-        $dossier->update([
-            'assigned_to' => $agent->id,
-            'statut' => 'en_cours'
-        ]);
-
-        // Enregistrer l'opération d'assignation (pour tracer la date)
-        if (method_exists($dossier, 'operations')) {
-            $dossier->operations()->create([
-                'type_operation' => 'assignation',
-                'user_id' => auth()->id(),
-                'description' => "Dossier assigné à {$agent->name}",
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent()
-            ]);
-        }
-
-        // Ajouter un commentaire si fourni ET si la relation existe
-        if ($request->filled('commentaire') && method_exists($dossier, 'operations')) {
-            $dossier->operations()->create([
-                'type_operation' => 'commentaire',
-                'user_id' => auth()->id(),
-                'description' => $request->commentaire,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent()
-            ]);
-        }
-
-        // Log simple
-        \Log::info("Dossier {$dossier->id} assigné à {$agent->name}", [
-            'dossier_numero' => $dossier->numero_dossier,
-            'agent_id' => $agent->id,
-            'assigned_by' => auth()->user()->name
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => "Dossier assigné à {$agent->name} avec succès",
-            'data' => [
-                'agent_name' => $agent->name,
-                'assigned_at' => now()->format('d/m/Y à H:i'),
-                'statut' => 'en_cours'
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('Erreur assignation dossier: ' . $e->getMessage(), [
-            'dossier_id' => $id,
-            'agent_id' => $request->agent_id ?? null,
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de l\'assignation: ' . $e->getMessage()
-        ], 500);
-    }
-}
-
-
-/**
- * Calculer la position d'un dossier dans la queue FIFO
- */
-public function calculatePosition(Request $request)
-{
-    try {
-        $request->validate([
-            'priority' => 'required|in:normale,moyenne,haute,urgente',
-            'dossier_id' => 'required|exists:dossiers,id'
-        ]);
-
-        $dossier = Dossier::findOrFail($request->dossier_id);
-        
-        // Calcul simple de position basé sur la priorité
-        $basePosition = Dossier::whereIn('statut', ['soumis', 'en_cours'])
-            ->where('id', '<', $dossier->id)
-            ->count();
-            
-        // Ajustement selon priorité
-        // ✅ COMPATIBLE PHP 7.3
-        switch($request->priority) {
-            case 'urgente':
-                $priorityAdjustment = -10;
-                break;
-            case 'haute':
-                $priorityAdjustment = -5;
-                break;
-            case 'moyenne':
-                $priorityAdjustment = 0;
-                break;
-            case 'normale':
-                $priorityAdjustment = 2;
-                break;
-            default:
-                $priorityAdjustment = 0;
-                break;
-        }
-        
-        $estimatedPosition = max(1, $basePosition + $priorityAdjustment);
-
-        return response()->json([
-            'success' => true,
-            'position' => $estimatedPosition,
-            'priority' => $request->priority
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('Erreur calculatePosition: ' . $e->getMessage());
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du calcul de position'
-        ], 500);
-    }
-}
-
-/**
- * ✅ OBTENIR L'APERÇU DE LA QUEUE FIFO
- */
-public function queuePreview(Request $request)
-{
-    try {
-        $statut = $request->get('statut', 'soumis');
-        $limit = $request->get('limit', 10);
-
-        $queue = $this->fifoPriorityService->getOrderedQueue($statut, $limit);
-        $stats = $this->fifoPriorityService->getQueueStatistics($statut);
-
-        return response()->json([
-            'success' => true,
-            'queue' => $queue,
-            'statistics' => $stats
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Erreur chargement queue preview', [
-            'error' => $e->getMessage()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du chargement de la queue'
-        ], 500);
-    }
-}
-
-/**
- * ✅ RÉORGANISER MANUELLEMENT LA QUEUE
- */
-public function reorganizeQueue(Request $request, string $statut)
-{
-    try {
-        // Vérifier les permissions
-        if (!in_array(auth()->user()->role, ['admin', 'superviseur'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Permissions insuffisantes'
-            ], 403);
-        }
-
-        $this->fifoPriorityService->reorganizeQueue($statut);
-
-        return response()->json([
-            'success' => true,
-            'message' => "Queue du statut '{$statut}' réorganisée avec succès"
-        ]);
-
-    } catch (\Exception $e) {
-        Log::error('Erreur réorganisation queue', [
-            'statut' => $statut,
-            'error' => $e->getMessage()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de la réorganisation'
-        ], 500);
-    }
-}
-
-/**
- * ✅ HISTORIQUE DES CHANGEMENTS DE PRIORITÉ
- */
-public function priorityHistory(Dossier $dossier)
-{
-    try {
-        $history = $this->fifoPriorityService->getPriorityHistory($dossier);
-
-        return response()->json([
-            'success' => true,
-            'history' => $history
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du chargement de l\'historique'
-        ], 500);
-    }
-}
-
-/**
- * ✅ STATISTIQUES GLOBALES FIFO
- */
-public function fifoStatistics()
-{
-    try {
-        $allStats = [];
-        
-        foreach (['soumis', 'en_cours', 'en_attente'] as $statut) {
-            $allStats[$statut] = $this->fifoPriorityService->getQueueStatistics($statut);
-        }
-
-        return response()->json([
-            'success' => true,
-            'statistics' => $allStats,
-            'global' => [
-                'total_in_queue' => array_sum(array_column($allStats, 'total')),
-                'total_urgent' => array_sum(array_column($allStats, 'urgents')),
-                'average_delay' => round(array_sum(array_column($allStats, 'delai_moyen_jours')) / count($allStats), 1)
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du chargement des statistiques'
-        ], 500);
-    }
-}
-
+     * ========================================
+     * CORRECTION DE LA MÉTHODE : assign()
+     * ========================================
+     */
     /**
- * ========================================
- * CORRECTION DE LA MÉTHODE : addComment()
- * ========================================
- */
-public function addComment(Request $request, $id)
-{
-    try {
-        // CORRECTION : Utiliser validate() au lieu de approuver()
-        $request->validate([
-            'comment_text' => 'required|string|max:1000'
-        ]);
+     * Assigner un dossier - Version simplifiée compatible
+     */
+    public function assign(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'agent_id' => 'required|exists:users,id',
+                'commentaire' => 'nullable|string|max:1000'
+            ]);
 
-        $dossier = Dossier::findOrFail($id);
+            $dossier = Dossier::findOrFail($id);
+            $agent = User::findOrFail($request->agent_id);
 
-        // CORRECTION : Vérifier que la relation operations existe
-        if (method_exists($dossier, 'operations')) {
-            $comment = $dossier->operations()->create([
-                'type_operation' => 'commentaire',
-                'user_id' => auth()->id(),
-                'description' => $request->comment_text,
-                'ip_address' => request()->ip(),
-                'user_agent' => request()->userAgent()
+            // Vérifier que l'agent est actif
+            if (!($agent->is_active ?? true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'L\'agent sélectionné n\'est pas actif'
+                ], 400);
+            }
+
+            // Assignation simple
+            $dossier->update([
+                'assigned_to' => $agent->id,
+                'statut' => 'en_cours'
+            ]);
+
+            // Enregistrer l'opération d'assignation (pour tracer la date)
+            if (method_exists($dossier, 'operations')) {
+                $dossier->operations()->create([
+                    'type_operation' => 'assignation',
+                    'user_id' => auth()->id(),
+                    'description' => "Dossier assigné à {$agent->name}",
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            }
+
+            // Ajouter un commentaire si fourni ET si la relation existe
+            if ($request->filled('commentaire') && method_exists($dossier, 'operations')) {
+                $dossier->operations()->create([
+                    'type_operation' => 'commentaire',
+                    'user_id' => auth()->id(),
+                    'description' => $request->commentaire,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            }
+
+            // Log simple
+            \Log::info("Dossier {$dossier->id} assigné à {$agent->name}", [
+                'dossier_numero' => $dossier->numero_dossier,
+                'agent_id' => $agent->id,
+                'assigned_by' => auth()->user()->name
             ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Commentaire ajouté avec succès'
+                'message' => "Dossier assigné à {$agent->name} avec succès",
+                'data' => [
+                    'agent_name' => $agent->name,
+                    'assigned_at' => now()->format('d/m/Y à H:i'),
+                    'statut' => 'en_cours'
+                ]
             ]);
-        } else {
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur assignation dossier: ' . $e->getMessage(), [
+                'dossier_id' => $id,
+                'agent_id' => $request->agent_id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => 'Fonctionnalité de commentaires non disponible'
-            ], 501);
+                'message' => 'Erreur lors de l\'assignation: ' . $e->getMessage()
+            ], 500);
         }
-
-    } catch (\Exception $e) {
-        \Log::error('Erreur DossierController@addComment: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de l\'ajout du commentaire'
-        ], 500);
     }
-}
 
 
-// ===============================================
+    /**
+     * Calculer la position d'un dossier dans la queue FIFO
+     */
+    public function calculatePosition(Request $request)
+    {
+        try {
+            $request->validate([
+                'priority' => 'required|in:normale,moyenne,haute,urgente',
+                'dossier_id' => 'required|exists:dossiers,id'
+            ]);
+
+            $dossier = Dossier::findOrFail($request->dossier_id);
+
+            // Calcul simple de position basé sur la priorité
+            $basePosition = Dossier::whereIn('statut', ['soumis', 'en_cours'])
+                ->where('id', '<', $dossier->id)
+                ->count();
+
+            // Ajustement selon priorité
+            // ✅ COMPATIBLE PHP 7.3
+            switch ($request->priority) {
+                case 'urgente':
+                    $priorityAdjustment = -10;
+                    break;
+                case 'haute':
+                    $priorityAdjustment = -5;
+                    break;
+                case 'moyenne':
+                    $priorityAdjustment = 0;
+                    break;
+                case 'normale':
+                    $priorityAdjustment = 2;
+                    break;
+                default:
+                    $priorityAdjustment = 0;
+                    break;
+            }
+
+            $estimatedPosition = max(1, $basePosition + $priorityAdjustment);
+
+            return response()->json([
+                'success' => true,
+                'position' => $estimatedPosition,
+                'priority' => $request->priority
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur calculatePosition: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du calcul de position'
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ OBTENIR L'APERÇU DE LA QUEUE FIFO
+     */
+    public function queuePreview(Request $request)
+    {
+        try {
+            $statut = $request->get('statut', 'soumis');
+            $limit = $request->get('limit', 10);
+
+            $queue = $this->fifoPriorityService->getOrderedQueue($statut, $limit);
+            $stats = $this->fifoPriorityService->getQueueStatistics($statut);
+
+            return response()->json([
+                'success' => true,
+                'queue' => $queue,
+                'statistics' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur chargement queue preview', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement de la queue'
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ RÉORGANISER MANUELLEMENT LA QUEUE
+     */
+    public function reorganizeQueue(Request $request, string $statut)
+    {
+        try {
+            // Vérifier les permissions
+            if (!in_array(auth()->user()->role, ['admin', 'superviseur'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Permissions insuffisantes'
+                ], 403);
+            }
+
+            $this->fifoPriorityService->reorganizeQueue($statut);
+
+            return response()->json([
+                'success' => true,
+                'message' => "Queue du statut '{$statut}' réorganisée avec succès"
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Erreur réorganisation queue', [
+                'statut' => $statut,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la réorganisation'
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ HISTORIQUE DES CHANGEMENTS DE PRIORITÉ
+     */
+    public function priorityHistory(Dossier $dossier)
+    {
+        try {
+            $history = $this->fifoPriorityService->getPriorityHistory($dossier);
+
+            return response()->json([
+                'success' => true,
+                'history' => $history
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement de l\'historique'
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ STATISTIQUES GLOBALES FIFO
+     */
+    public function fifoStatistics()
+    {
+        try {
+            $allStats = [];
+
+            foreach (['soumis', 'en_cours', 'en_attente'] as $statut) {
+                $allStats[$statut] = $this->fifoPriorityService->getQueueStatistics($statut);
+            }
+
+            return response()->json([
+                'success' => true,
+                'statistics' => $allStats,
+                'global' => [
+                    'total_in_queue' => array_sum(array_column($allStats, 'total')),
+                    'total_urgent' => array_sum(array_column($allStats, 'urgents')),
+                    'average_delay' => round(array_sum(array_column($allStats, 'delai_moyen_jours')) / count($allStats), 1)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des statistiques'
+            ], 500);
+        }
+    }
+
+    /**
+     * ========================================
+     * CORRECTION DE LA MÉTHODE : addComment()
+     * ========================================
+     */
+    public function addComment(Request $request, $id)
+    {
+        try {
+            // CORRECTION : Utiliser validate() au lieu de approuver()
+            $request->validate([
+                'comment_text' => 'required|string|max:1000'
+            ]);
+
+            $dossier = Dossier::findOrFail($id);
+
+            // CORRECTION : Vérifier que la relation operations existe
+            if (method_exists($dossier, 'operations')) {
+                $comment = $dossier->operations()->create([
+                    'type_operation' => 'commentaire',
+                    'user_id' => auth()->id(),
+                    'description' => $request->comment_text,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Commentaire ajouté avec succès'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Fonctionnalité de commentaires non disponible'
+                ], 501);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur DossierController@addComment: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'ajout du commentaire'
+            ], 500);
+        }
+    }
+
+
+    // ===============================================
 // MÉTHODES À AJOUTER AU DossierController
 // ===============================================
 
-/**
- * Valide et approuve un dossier
- * Route: POST /admin/dossiers/{id}/validate
- */
-public function approuver(Request $request, $id)
-{
-    try {
-        $request->validate([
-            'numero_recepisse_final' => 'required|string|max:100|unique:organisations,numero_recepisse,' . $id,
-            'date_approbation' => 'required|date',
-            'validite_mois' => 'nullable|integer|min:1|max:120',
-            'commentaire_approbation' => 'nullable|string|max:2000',
-            'generer_recepisse' => 'boolean',
-            'envoyer_email_approbation' => 'boolean',
-            'publier_annuaire' => 'boolean'
-        ]);
+    /**
+     * Valide et approuve un dossier
+     * Route: POST /admin/dossiers/{id}/validate
+     */
+    public function approuver(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'numero_recepisse_final' => 'required|string|max:100|unique:organisations,numero_recepisse,' . $id,
+                'date_approbation' => 'required|date',
+                'validite_mois' => 'nullable|integer|min:1|max:120',
+                'commentaire_approbation' => 'nullable|string|max:2000',
+                'generer_recepisse' => 'boolean',
+                'envoyer_email_approbation' => 'boolean',
+                'publier_annuaire' => 'boolean'
+            ]);
 
-        DB::beginTransaction();
+            DB::beginTransaction();
 
-        $dossier = Dossier::with('organisation')->findOrFail($id);
-        
-        // Vérifier que le dossier peut être approuvé
-        if (!in_array($dossier->statut, ['en_cours', 'soumis'])) {
+            $dossier = Dossier::with('organisation')->findOrFail($id);
+
+            // Vérifier que le dossier peut être approuvé
+            if (!in_array($dossier->statut, ['en_cours', 'soumis'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce dossier ne peut pas être approuvé dans son état actuel'
+                ], 400);
+            }
+
+            // Mettre à jour le dossier
+            $dossier->update([
+                'statut' => 'approuve',
+                'approved_at' => $request->date_approbation,
+                'approved_by' => auth()->id()
+            ]);
+
+            // Mettre à jour l'organisation
+            if ($dossier->organisation) {
+                $updateData = [
+                    'numero_recepisse' => $request->numero_recepisse_final,
+                    'date_approbation' => $request->date_approbation,
+                    'is_approved' => true
+                ];
+
+                if ($request->validite_mois) {
+                    $updateData['date_expiration'] = Carbon::parse($request->date_approbation)
+                        ->addMonths($request->validite_mois);
+                }
+
+                if ($request->publier_annuaire) {
+                    $updateData['visible_annuaire'] = true;
+                }
+
+                $dossier->organisation->update($updateData);
+            }
+
+            // Ajouter un commentaire d'approbation
+            if ($request->filled('commentaire_approbation')) {
+                $dossier->operations()->create([
+                    'type_operation' => 'commentaire',
+                    'user_id' => auth()->id(),
+                    'description' => $request->commentaire_approbation,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            }
+
+            // Créer une validation officielle
+            $dossier->validations()->create([
+                'user_id' => auth()->id(),
+                'type_validation' => 'approbation',
+                'statut' => 'approuve',
+                'commentaire' => $request->commentaire_approbation,
+                'date_validation' => $request->date_approbation,
+                'numero_recepisse' => $request->numero_recepisse_final
+            ]);
+
+            // Générer le récépissé PDF si demandé
+            if ($request->generer_recepisse && $this->pdfService) {
+                try {
+                    $recepisseUrl = $this->pdfService->generateRecepisse($dossier);
+
+                    // Sauvegarder le document récépissé
+                    $dossier->documents()->create([
+                        'nom_fichier' => 'recepisse_' . $dossier->numero_dossier . '.pdf',
+                        'nom_original' => 'Récépissé Officiel.pdf',
+                        'type_document' => 'recepisse',
+                        'chemin_fichier' => $recepisseUrl,
+                        'taille_fichier' => 0, // À calculer si nécessaire
+                        'is_generated' => true
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('Erreur génération récépissé: ' . $e->getMessage());
+                }
+            }
+
+            // Envoyer notification email si demandé
+            $emailUser = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
+            if ($request->envoyer_email_approbation && $emailUser) {
+                try {
+                    // TODO: Implémenter l'envoi d'email avec Mailable
+                    \Log::info('Email d\'approbation à envoyer à: ' . $emailUser);
+                } catch (\Exception $e) {
+                    \Log::warning('Erreur envoi email: ' . $e->getMessage());
+                }
+            }
+
+            // Log de l'activité
+            activity()
+                ->performedOn($dossier)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'numero_recepisse' => $request->numero_recepisse_final,
+                    'date_approbation' => $request->date_approbation,
+                    'validite_mois' => $request->validite_mois
+                ])
+                ->log('Dossier approuvé');
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dossier approuvé avec succès',
+                'numero_recepisse' => $request->numero_recepisse_final
+            ]);
+
+        } catch (ValidationException $e) {
+            DB::rollback();
             return response()->json([
                 'success' => false,
-                'message' => 'Ce dossier ne peut pas être approuvé dans son état actuel'
-            ], 400);
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Erreur DossierController@validate: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de l\'approbation'
+            ], 500);
         }
+    }
 
-        // Mettre à jour le dossier
-        $dossier->update([
-            'statut' => 'approuve',
-            'approved_at' => $request->date_approbation,
-            'approved_by' => auth()->id()
-        ]);
+    /**
+     * Rejette un dossier
+     * Route: POST /admin/dossiers/{id}/reject
+     */
+    public function reject(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'motif_rejet' => 'required|string|max:100',
+                'justification_rejet' => 'required|string|max:2000',
+                'recommandations' => 'nullable|string|max:1000',
+                'possibilite_recours' => 'required|in:oui,oui_avec_delai,non',
+                'delai_recours' => 'nullable|integer|min:0|max:365',
+                'envoyer_email_rejet' => 'boolean',
+                'generer_lettre_rejet' => 'boolean',
+                'archiver_dossier' => 'boolean'
+            ]);
 
-        // Mettre à jour l'organisation
-        if ($dossier->organisation) {
-            $updateData = [
-                'numero_recepisse' => $request->numero_recepisse_final,
-                'date_approbation' => $request->date_approbation,
-                'is_approved' => true
-            ];
+            DB::beginTransaction();
 
-            if ($request->validite_mois) {
-                $updateData['date_expiration'] = Carbon::parse($request->date_approbation)
-                    ->addMonths($request->validite_mois);
+            $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
+
+            // Vérifier que le dossier peut être rejeté
+            if (in_array($dossier->statut, ['approuve', 'rejete'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce dossier ne peut pas être rejeté dans son état actuel'
+                ], 400);
             }
 
-            if ($request->publier_annuaire) {
-                $updateData['visible_annuaire'] = true;
-            }
+            // Mettre à jour le dossier
+            $dossier->update([
+                'statut' => 'rejete',
+                'rejected_at' => now(),
+                'rejected_by' => auth()->id()
+            ]);
 
-            $dossier->organisation->update($updateData);
-        }
-
-        // Ajouter un commentaire d'approbation
-        if ($request->filled('commentaire_approbation')) {
-            $dossier->operations()->create([
-                'type_operation' => 'commentaire',
+            // Créer une validation de rejet
+            $dossier->validations()->create([
                 'user_id' => auth()->id(),
-                'description' => $request->commentaire_approbation,
+                'type_validation' => 'rejet',
+                'statut' => 'rejete',
+                'motif' => $request->motif_rejet,
+                'commentaire' => $request->justification_rejet,
+                'recommandations' => $request->recommandations,
+                'possibilite_recours' => $request->possibilite_recours,
+                'delai_recours_jours' => $request->delai_recours,
+                'date_validation' => now()
+            ]);
+
+            // Ajouter un commentaire de rejet
+            $commentaireRejet = "**Dossier rejeté**\n\n";
+            $commentaireRejet .= "**Motif:** " . $request->motif_rejet . "\n\n";
+            $commentaireRejet .= "**Justification:** " . $request->justification_rejet;
+
+            if ($request->filled('recommandations')) {
+                $commentaireRejet .= "\n\n**Recommandations:** " . $request->recommandations;
+            }
+
+            $dossier->operations()->create([
+                'type_operation' => 'rejet',
+                'user_id' => auth()->id(),
+                'description' => $commentaireRejet,
+                'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
+                'nouveau_statut' => 'rejete',
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent()
             ]);
-        }
 
-        // Créer une validation officielle
-        $dossier->validations()->create([
-            'user_id' => auth()->id(),
-            'type_validation' => 'approbation',
-            'statut' => 'approuve',
-            'commentaire' => $request->commentaire_approbation,
-            'date_validation' => $request->date_approbation,
-            'numero_recepisse' => $request->numero_recepisse_final
-        ]);
+            // Générer la lettre de rejet si demandé
+            if ($request->generer_lettre_rejet && $this->pdfService) {
+                try {
+                    $lettreUrl = $this->pdfService->generateLettreRejet($dossier, [
+                        'motif' => $request->motif_rejet,
+                        'justification' => $request->justification_rejet,
+                        'recommandations' => $request->recommandations,
+                        'possibilite_recours' => $request->possibilite_recours,
+                        'delai_recours' => $request->delai_recours
+                    ]);
 
-        // Générer le récépissé PDF si demandé
-        if ($request->generer_recepisse && $this->pdfService) {
-            try {
-                $recepisseUrl = $this->pdfService->generateRecepisse($dossier);
-                
-                // Sauvegarder le document récépissé
-                $dossier->documents()->create([
-                    'nom_fichier' => 'recepisse_' . $dossier->numero_dossier . '.pdf',
-                    'nom_original' => 'Récépissé Officiel.pdf',
-                    'type_document' => 'recepisse',
-                    'chemin_fichier' => $recepisseUrl,
-                    'taille_fichier' => 0, // À calculer si nécessaire
-                    'is_generated' => true
+                    $dossier->documents()->create([
+                        'nom_fichier' => 'lettre_rejet_' . $dossier->numero_dossier . '.pdf',
+                        'nom_original' => 'Lettre de Rejet Officielle.pdf',
+                        'type_document' => 'lettre_rejet',
+                        'chemin_fichier' => $lettreUrl,
+                        'is_generated' => true
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::warning('Erreur génération lettre rejet: ' . $e->getMessage());
+                }
+            }
+
+            // Envoyer notification email si demandé
+            $emailRejet = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
+            if ($request->envoyer_email_rejet && $emailRejet) {
+                try {
+                    // TODO: Implémenter l'envoi d'email de rejet
+                    \Log::info('Email de rejet à envoyer à: ' . $emailRejet);
+                } catch (\Exception $e) {
+                    \Log::warning('Erreur envoi email rejet: ' . $e->getMessage());
+                }
+            }
+
+            // Archiver si demandé
+            if ($request->archiver_dossier) {
+                $dossier->archives()->create([
+                    'archived_by' => auth()->id(),
+                    'archived_at' => now(),
+                    'motif_archivage' => 'Archivage automatique après rejet',
+                    'type_archive' => 'rejet'
                 ]);
-            } catch (\Exception $e) {
-                \Log::warning('Erreur génération récépissé: ' . $e->getMessage());
             }
-        }
 
-        // Envoyer notification email si demandé
-        $emailUser = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
-        if ($request->envoyer_email_approbation && $emailUser) {
-            try {
-                // TODO: Implémenter l'envoi d'email avec Mailable
-                \Log::info('Email d\'approbation à envoyer à: ' . $emailUser);
-            } catch (\Exception $e) {
-                \Log::warning('Erreur envoi email: ' . $e->getMessage());
-            }
-        }
-
-        // Log de l'activité
-        activity()
-            ->performedOn($dossier)
-            ->causedBy(auth()->user())
-            ->withProperties([
-                'numero_recepisse' => $request->numero_recepisse_final,
-                'date_approbation' => $request->date_approbation,
-                'validite_mois' => $request->validite_mois
-            ])
-            ->log('Dossier approuvé');
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Dossier approuvé avec succès',
-            'numero_recepisse' => $request->numero_recepisse_final
-        ]);
-
-    } catch (ValidationException $e) {
-        DB::rollback();
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur de validation',
-            'errors' => $e->errors()
-        ], 422);
-    } catch (\Exception $e) {
-        DB::rollback();
-        \Log::error('Erreur DossierController@validate: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de l\'approbation'
-        ], 500);
-    }
-}
-
-/**
- * Rejette un dossier
- * Route: POST /admin/dossiers/{id}/reject
- */
-public function reject(Request $request, $id)
-{
-    try {
-        $request->validate([
-            'motif_rejet' => 'required|string|max:100',
-            'justification_rejet' => 'required|string|max:2000',
-            'recommandations' => 'nullable|string|max:1000',
-            'possibilite_recours' => 'required|in:oui,oui_avec_delai,non',
-            'delai_recours' => 'nullable|integer|min:0|max:365',
-            'envoyer_email_rejet' => 'boolean',
-            'generer_lettre_rejet' => 'boolean',
-            'archiver_dossier' => 'boolean'
-        ]);
-
-        DB::beginTransaction();
-
-        $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
-        
-        // Vérifier que le dossier peut être rejeté
-        if (in_array($dossier->statut, ['approuve', 'rejete'])) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ce dossier ne peut pas être rejeté dans son état actuel'
-            ], 400);
-        }
-
-        // Mettre à jour le dossier
-        $dossier->update([
-            'statut' => 'rejete',
-            'rejected_at' => now(),
-            'rejected_by' => auth()->id()
-        ]);
-
-        // Créer une validation de rejet
-        $dossier->validations()->create([
-            'user_id' => auth()->id(),
-            'type_validation' => 'rejet',
-            'statut' => 'rejete',
-            'motif' => $request->motif_rejet,
-            'commentaire' => $request->justification_rejet,
-            'recommandations' => $request->recommandations,
-            'possibilite_recours' => $request->possibilite_recours,
-            'delai_recours_jours' => $request->delai_recours,
-            'date_validation' => now()
-        ]);
-
-        // Ajouter un commentaire de rejet
-        $commentaireRejet = "**Dossier rejeté**\n\n";
-        $commentaireRejet .= "**Motif:** " . $request->motif_rejet . "\n\n";
-        $commentaireRejet .= "**Justification:** " . $request->justification_rejet;
-        
-        if ($request->filled('recommandations')) {
-            $commentaireRejet .= "\n\n**Recommandations:** " . $request->recommandations;
-        }
-
-        $dossier->operations()->create([
-            'type_operation' => 'rejet',
-            'user_id' => auth()->id(),
-            'description' => $commentaireRejet,
-            'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
-            'nouveau_statut' => 'rejete',
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent()
-        ]);
-
-        // Générer la lettre de rejet si demandé
-        if ($request->generer_lettre_rejet && $this->pdfService) {
-            try {
-                $lettreUrl = $this->pdfService->generateLettreRejet($dossier, [
+            // Log de l'activité
+            activity()
+                ->performedOn($dossier)
+                ->causedBy(auth()->user())
+                ->withProperties([
                     'motif' => $request->motif_rejet,
-                    'justification' => $request->justification_rejet,
-                    'recommandations' => $request->recommandations,
-                    'possibilite_recours' => $request->possibilite_recours,
-                    'delai_recours' => $request->delai_recours
-                ]);
-                
-                $dossier->documents()->create([
-                    'nom_fichier' => 'lettre_rejet_' . $dossier->numero_dossier . '.pdf',
-                    'nom_original' => 'Lettre de Rejet Officielle.pdf',
-                    'type_document' => 'lettre_rejet',
-                    'chemin_fichier' => $lettreUrl,
-                    'is_generated' => true
-                ]);
-            } catch (\Exception $e) {
-                \Log::warning('Erreur génération lettre rejet: ' . $e->getMessage());
-            }
-        }
+                    'possibilite_recours' => $request->possibilite_recours
+                ])
+                ->log('Dossier rejeté');
 
-        // Envoyer notification email si demandé
-        $emailRejet = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
-        if ($request->envoyer_email_rejet && $emailRejet) {
-            try {
-                // TODO: Implémenter l'envoi d'email de rejet
-                \Log::info('Email de rejet à envoyer à: ' . $emailRejet);
-            } catch (\Exception $e) {
-                \Log::warning('Erreur envoi email rejet: ' . $e->getMessage());
-            }
-        }
+            DB::commit();
 
-        // Archiver si demandé
-        if ($request->archiver_dossier) {
-            $dossier->archives()->create([
-                'archived_by' => auth()->id(),
-                'archived_at' => now(),
-                'motif_archivage' => 'Archivage automatique après rejet',
-                'type_archive' => 'rejet'
+            return response()->json([
+                'success' => true,
+                'message' => 'Dossier rejeté avec succès'
             ]);
-        }
 
-        // Log de l'activité
-        activity()
-            ->performedOn($dossier)
-            ->causedBy(auth()->user())
-            ->withProperties([
-                'motif' => $request->motif_rejet,
-                'possibilite_recours' => $request->possibilite_recours
-            ])
-            ->log('Dossier rejeté');
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Dossier rejeté avec succès'
-        ]);
-
-    } catch (ValidationException $e) {
-        DB::rollback();
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur de validation',
-            'errors' => $e->errors()
-        ], 422);
-    } catch (\Exception $e) {
-        DB::rollback();
-        \Log::error('Erreur DossierController@reject: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du rejet'
-        ], 500);
-    }
-}
-
-/**
- * Demande des modifications à un dossier
- * Route: POST /admin/dossiers/{id}/request-modification
- */
-public function requestModification(Request $request, $id)
-{
-    try {
-        $request->validate([
-            'modifications' => 'required|array|min:1',
-            'modifications.*' => 'string|max:100',
-            'details_modifications' => 'required|string|max:2000',
-            'delai_modification' => 'required|integer|min:1|max:365',
-            'priorite_modification' => 'required|in:normale,haute,basse',
-            'envoyer_email_modification' => 'boolean',
-            'suspendre_traitement' => 'boolean',
-            'rappel_automatique' => 'boolean'
-        ]);
-
-        DB::beginTransaction();
-
-        $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
-        
-        // Vérifier que le dossier peut être modifié
-        if (in_array($dossier->statut, ['approuve', 'rejete'])) {
+        } catch (ValidationException $e) {
+            DB::rollback();
             return response()->json([
                 'success' => false,
-                'message' => 'Ce dossier ne peut plus être modifié'
-            ], 400);
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Erreur DossierController@reject: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du rejet'
+            ], 500);
         }
+    }
 
-        // Mettre à jour le statut si suspension demandée
-        if ($request->suspendre_traitement) {
-            $dossier->update([
-                'statut' => 'en_attente_modification',
-                'modification_requested_at' => now(),
-                'modification_deadline' => now()->addDays($request->delai_modification)
+    /**
+     * Demande des modifications à un dossier
+     * Route: POST /admin/dossiers/{id}/request-modification
+     */
+    public function requestModification(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'modifications' => 'required|array|min:1',
+                'modifications.*' => 'string|max:100',
+                'details_modifications' => 'required|string|max:2000',
+                'delai_modification' => 'required|integer|min:1|max:365',
+                'priorite_modification' => 'required|in:normale,haute,basse',
+                'envoyer_email_modification' => 'boolean',
+                'suspendre_traitement' => 'boolean',
+                'rappel_automatique' => 'boolean'
             ]);
-        }
 
-        // Créer l'enregistrement de demande de modification
-        $dossier->modifications()->create([
-            'user_id' => auth()->id(),
-            'type_modifications' => $request->modifications,
-            'details' => $request->details_modifications,
-            'delai_jours' => $request->delai_modification,
-            'priorite' => $request->priorite_modification,
-            'date_limite' => now()->addDays($request->delai_modification),
-            'statut' => 'en_attente',
-            'email_envoye' => $request->envoyer_email_modification,
-            'rappels_actives' => $request->rappel_automatique
-        ]);
+            DB::beginTransaction();
 
-        // Ajouter un commentaire détaillé
-        $commentaireModification = "**Modifications demandées**\n\n";
-        $commentaireModification .= "**Types de modifications:**\n";
-        foreach ($request->modifications as $modification) {
-            $commentaireModification .= "- " . ucfirst(str_replace('_', ' ', $modification)) . "\n";
-        }
-        $commentaireModification .= "\n**Détails:** " . $request->details_modifications;
-        $commentaireModification .= "\n\n**Délai accordé:** " . $request->delai_modification . " jour(s)";
-        $commentaireModification .= "\n**Date limite:** " . now()->addDays($request->delai_modification)->format('d/m/Y');
+            $dossier = Dossier::with('organisation', 'assignedAgent')->findOrFail($id);
 
-        $dossier->operations()->create([
-            'type_operation' => 'retour_pour_correction',
-            'user_id' => auth()->id(),
-            'description' => $commentaireModification,
-            'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
-            'nouveau_statut' => 'retour_modification',
-            'ip_address' => request()->ip(),
-            'user_agent' => request()->userAgent()
-        ]);
-
-        // Envoyer notification email si demandé
-        $userEmail = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
-        if ($request->envoyer_email_modification && $userEmail) {
-            try {
-                // TODO: Implémenter l'envoi d'email de demande de modification
-                \Log::info('Email de demande modification à envoyer à: ' . $userEmail);
-            } catch (\Exception $e) {
-                \Log::warning('Erreur envoi email modification: ' . $e->getMessage());
+            // Vérifier que le dossier peut être modifié
+            if (in_array($dossier->statut, ['approuve', 'rejete'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ce dossier ne peut plus être modifié'
+                ], 400);
             }
-        }
 
-        // Programmer les rappels automatiques si activés
-        if ($request->rappel_automatique) {
-            // TODO: Programmer les tâches de rappel
-            \Log::info('Rappels automatiques programmés pour le dossier: ' . $dossier->numero_dossier);
-        }
+            // Mettre à jour le statut si suspension demandée
+            if ($request->suspendre_traitement) {
+                $dossier->update([
+                    'statut' => 'en_attente_modification',
+                    'modification_requested_at' => now(),
+                    'modification_deadline' => now()->addDays($request->delai_modification)
+                ]);
+            }
 
-        // Log de l'activité
-        activity()
-            ->performedOn($dossier)
-            ->causedBy(auth()->user())
-            ->withProperties([
-                'modifications' => $request->modifications,
+            // Créer l'enregistrement de demande de modification
+            $dossier->modifications()->create([
+                'user_id' => auth()->id(),
+                'type_modifications' => $request->modifications,
+                'details' => $request->details_modifications,
                 'delai_jours' => $request->delai_modification,
-                'priorite' => $request->priorite_modification
-            ])
-            ->log('Modifications demandées');
-
-        DB::commit();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Demande de modification envoyée avec succès',
-            'date_limite' => now()->addDays($request->delai_modification)->format('d/m/Y')
-        ]);
-
-    } catch (ValidationException $e) {
-        DB::rollback();
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur de validation',
-            'errors' => $e->errors()
-        ], 422);
-    } catch (\Exception $e) {
-        DB::rollback();
-        \Log::error('Erreur DossierController@requestModification: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors de la demande de modification'
-        ], 500);
-    }
-}
-
-/**
- * Télécharge un document du dossier
- * Route: GET /admin/dossiers/{id}/documents/{documentId}/download
- */
-public function downloadDocument($dossierId, $documentId)
-{
-    try {
-        $dossier = Dossier::findOrFail($dossierId);
-        $document = $dossier->documents()->findOrFail($documentId);
-        
-        $cheminComplet = storage_path('app/' . $document->chemin_fichier);
-        
-        if (!file_exists($cheminComplet)) {
-            return response()->json(['error' => 'Fichier introuvable'], 404);
-        }
-        
-        // Log de l'activité de téléchargement
-        activity()
-            ->performedOn($document)
-            ->causedBy(auth()->user())
-            ->log('Document téléchargé');
-        
-        return response()->download($cheminComplet, $document->nom_original);
-        
-    } catch (\Exception $e) {
-        \Log::error('Erreur téléchargement document: ' . $e->getMessage());
-        return response()->json(['error' => 'Erreur lors du téléchargement'], 500);
-    }
-}
-
-/**
- * Prévisualise un document du dossier
- * Route: GET /admin/dossiers/{id}/documents/{documentId}/preview
- */
-public function previewDocument($dossierId, $documentId)
-{
-    try {
-        $dossier = Dossier::findOrFail($dossierId);
-        $document = $dossier->documents()->findOrFail($documentId);
-        
-        $cheminComplet = storage_path('app/' . $document->chemin_fichier);
-        
-        if (!file_exists($cheminComplet)) {
-            abort(404, 'Fichier introuvable');
-        }
-        
-        // Log de l'activité de prévisualisation
-        activity()
-            ->performedOn($document)
-            ->causedBy(auth()->user())
-            ->log('Document prévisualisé');
-        
-        return response()->file($cheminComplet, [
-            'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="' . $document->nom_original . '"'
-        ]);
-        
-    } catch (\Exception $e) {
-        \Log::error('Erreur prévisualisation document: ' . $e->getMessage());
-        abort(500, 'Erreur lors de la prévisualisation');
-    }
-}
-
-/**
- * Génère un PDF du dossier complet
- * Route: GET /admin/dossiers/{id}/pdf
- */
-public function generatePDF($id)
-{
-    try {
-        $dossier = Dossier::with([
-            'organisation',
-            'user', 
-            'documents',
-            'operations.user',
-            'validations.user'
-        ])->findOrFail($id);
-        
-        if ($this->pdfService) {
-            $pdfPath = $this->pdfService->generateDossierComplet($dossier);
-            return response()->download($pdfPath, 'dossier_' . $dossier->numero_dossier . '.pdf');
-        }
-        
-        return response()->json(['error' => 'Service PDF non disponible'], 503);
-        
-    } catch (\Exception $e) {
-        \Log::error('Erreur génération PDF dossier: ' . $e->getMessage());
-        return response()->json(['error' => 'Erreur lors de la génération PDF'], 500);
-    }
-}
-
-/**
- * Obtient l'historique complet d'un dossier
- * Route: GET /admin/dossiers/{id}/history
- */
-public function history($id)
-{
-    try {
-        $dossier = Dossier::with([
-            'operations.user',
-            'validations.user',
-            'modifications.user'
-        ])->findOrFail($id);
-        
-        // Combiner tous les événements avec timestamps
-        $events = collect();
-        
-        // Ajouter les commentaires
-        foreach ($dossier->operations->where('type_operation', 'commentaire') as $comment) {
-            $events->push([
-                'type' => 'comment',
-                'date' => $comment->created_at,
-                'user' => $comment->user->name ?? 'Système',
-                'action' => ucfirst($comment->type),
-                'details' => $comment->contenu,
-                'icon' => 'comment',
-                'color' => 'info'
+                'priorite' => $request->priorite_modification,
+                'date_limite' => now()->addDays($request->delai_modification),
+                'statut' => 'en_attente',
+                'email_envoye' => $request->envoyer_email_modification,
+                'rappels_actives' => $request->rappel_automatique
             ]);
-        }
-        
-        // Ajouter les validations
-        foreach ($dossier->validations as $validation) {
-            $events->push([
-                'type' => 'validation',
-                'date' => $validation->created_at,
-                'user' => $validation->user->name ?? 'Système',
-                'action' => ucfirst($validation->type_validation),
-                'details' => $validation->commentaire,
-                'icon' => $validation->statut === 'approuve' ? 'check' : 'times',
-                'color' => $validation->statut === 'approuve' ? 'success' : 'danger'
+
+            // Ajouter un commentaire détaillé
+            $commentaireModification = "**Modifications demandées**\n\n";
+            $commentaireModification .= "**Types de modifications:**\n";
+            foreach ($request->modifications as $modification) {
+                $commentaireModification .= "- " . ucfirst(str_replace('_', ' ', $modification)) . "\n";
+            }
+            $commentaireModification .= "\n**Détails:** " . $request->details_modifications;
+            $commentaireModification .= "\n\n**Délai accordé:** " . $request->delai_modification . " jour(s)";
+            $commentaireModification .= "\n**Date limite:** " . now()->addDays($request->delai_modification)->format('d/m/Y');
+
+            $dossier->operations()->create([
+                'type_operation' => 'retour_pour_correction',
+                'user_id' => auth()->id(),
+                'description' => $commentaireModification,
+                'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
+                'nouveau_statut' => 'retour_modification',
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
             ]);
+
+            // Envoyer notification email si demandé
+            $userEmail = $dossier->organisation->email ?? ($dossier->assignedAgent->email ?? null);
+            if ($request->envoyer_email_modification && $userEmail) {
+                try {
+                    // TODO: Implémenter l'envoi d'email de demande de modification
+                    \Log::info('Email de demande modification à envoyer à: ' . $userEmail);
+                } catch (\Exception $e) {
+                    \Log::warning('Erreur envoi email modification: ' . $e->getMessage());
+                }
+            }
+
+            // Programmer les rappels automatiques si activés
+            if ($request->rappel_automatique) {
+                // TODO: Programmer les tâches de rappel
+                \Log::info('Rappels automatiques programmés pour le dossier: ' . $dossier->numero_dossier);
+            }
+
+            // Log de l'activité
+            activity()
+                ->performedOn($dossier)
+                ->causedBy(auth()->user())
+                ->withProperties([
+                    'modifications' => $request->modifications,
+                    'delai_jours' => $request->delai_modification,
+                    'priorite' => $request->priorite_modification
+                ])
+                ->log('Modifications demandées');
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Demande de modification envoyée avec succès',
+                'date_limite' => now()->addDays($request->delai_modification)->format('d/m/Y')
+            ]);
+
+        } catch (ValidationException $e) {
+            DB::rollback();
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur de validation',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Erreur DossierController@requestModification: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la demande de modification'
+            ], 500);
         }
-        
-        // Trier par date décroissante
-        $events = $events->sortByDesc('date')->values();
-        
-        return response()->json([
-            'success' => true,
-            'events' => $events
-        ]);
-        
-    } catch (\Exception $e) {
-        \Log::error('Erreur historique dossier: ' . $e->getMessage());
-        return response()->json(['error' => 'Erreur lors du chargement de l\'historique'], 500);
-    }
-}
-
-/**
- * Enrichit un dossier selon l'architecture SGLP réelle
- */
-private function enrichDossierDataArchitecture($dossier)
-{
-    // Calcul de la priorité
-    $dossier->priorite_calculee = $this->calculatePriorityArchitecture($dossier);
-    
-    // Calcul du délai d'attente
-    $dossier->delai_attente = Carbon::parse($dossier->created_at)->diffInDays(now());
-    
-    // Indicateur de retard
-    $dossier->en_retard = $dossier->delai_attente > 7;
-    
-    // Nombre de documents - Compter directement depuis la DB
-    $dossier->nb_documents = DB::table('documents')
-        ->where('dossier_id', $dossier->id)
-        ->count();
-
-    // Accès à l'utilisateur via l'organisation (architecture SGLP)
-    if ($dossier->organisation && $dossier->organisation->user_id) {
-        $dossier->user_organisation = User::find($dossier->organisation->user_id);
     }
 
-    return $dossier;
-}
+    /**
+     * Télécharge un document du dossier
+     * Route: GET /admin/dossiers/{id}/documents/{documentId}/download
+     */
+    public function downloadDocument($dossierId, $documentId)
+    {
+        try {
+            $dossier = Dossier::findOrFail($dossierId);
+            $document = $dossier->documents()->findOrFail($documentId);
 
-/**
- * Calcule la priorité selon l'architecture SGLP
- */
-private function calculatePriorityArchitecture($dossier)
-{
-    // Priorité haute si :
-    // - Parti politique (toujours prioritaire)
-    // - Dossier en attente depuis plus de 7 jours
-    if ($dossier->organisation && $dossier->organisation->type === 'parti_politique') {
-        return 'haute';
+            $cheminComplet = storage_path('app/' . $document->chemin_fichier);
+
+            if (!file_exists($cheminComplet)) {
+                return response()->json(['error' => 'Fichier introuvable'], 404);
+            }
+
+            // Log de l'activité de téléchargement
+            activity()
+                ->performedOn($document)
+                ->causedBy(auth()->user())
+                ->log('Document téléchargé');
+
+            return response()->download($cheminComplet, $document->nom_original);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur téléchargement document: ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur lors du téléchargement'], 500);
+        }
     }
-    
-    $delai = Carbon::parse($dossier->created_at)->diffInDays(now());
-    return $delai > 7 ? 'haute' : 'normale';
-}
 
-/**
- * Compte le nombre de dossiers à priorité haute
- */
-private function calculateHighPriorityCountArchitecture()
-{
-    return Dossier::whereIn('statut', ['soumis', 'en_cours'])
-        ->where(function($q) {
-            $q->whereNull('assigned_to')->orWhere('statut', 'soumis');
-        })
-        ->where(function($q) {
-            $q->where('created_at', '<=', now()->subDays(7))
-              ->orWhereHas('organisation', function($org) {
-                  $org->where('type', 'parti_politique');
-              });
-        })
-        ->count();
-}
+    /**
+     * Prévisualise un document du dossier
+     * Route: GET /admin/dossiers/{id}/documents/{documentId}/preview
+     */
+    public function previewDocument($dossierId, $documentId)
+    {
+        try {
+            $dossier = Dossier::findOrFail($dossierId);
+            $document = $dossier->documents()->findOrFail($documentId);
 
-/**
- * Calcule le délai moyen d'attente
- */
-/**
+            $cheminComplet = storage_path('app/' . $document->chemin_fichier);
+
+            if (!file_exists($cheminComplet)) {
+                abort(404, 'Fichier introuvable');
+            }
+
+            // Log de l'activité de prévisualisation
+            activity()
+                ->performedOn($document)
+                ->causedBy(auth()->user())
+                ->log('Document prévisualisé');
+
+            return response()->file($cheminComplet, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $document->nom_original . '"'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur prévisualisation document: ' . $e->getMessage());
+            abort(500, 'Erreur lors de la prévisualisation');
+        }
+    }
+
+    /**
+     * Génère un PDF du dossier complet
+     * Route: GET /admin/dossiers/{id}/pdf
+     */
+    public function generatePDF($id)
+    {
+        try {
+            $dossier = Dossier::with([
+                'organisation',
+                'user',
+                'documents',
+                'operations.user',
+                'validations.user'
+            ])->findOrFail($id);
+
+            if ($this->pdfService) {
+                $pdfPath = $this->pdfService->generateDossierComplet($dossier);
+                return response()->download($pdfPath, 'dossier_' . $dossier->numero_dossier . '.pdf');
+            }
+
+            return response()->json(['error' => 'Service PDF non disponible'], 503);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur génération PDF dossier: ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur lors de la génération PDF'], 500);
+        }
+    }
+
+    /**
+     * Obtient l'historique complet d'un dossier
+     * Route: GET /admin/dossiers/{id}/history
+     */
+    public function history($id)
+    {
+        try {
+            $dossier = Dossier::with([
+                'operations.user',
+                'validations.user',
+                'modifications.user'
+            ])->findOrFail($id);
+
+            // Combiner tous les événements avec timestamps
+            $events = collect();
+
+            // Ajouter les commentaires
+            foreach ($dossier->operations->where('type_operation', 'commentaire') as $comment) {
+                $events->push([
+                    'type' => 'comment',
+                    'date' => $comment->created_at,
+                    'user' => $comment->user->name ?? 'Système',
+                    'action' => ucfirst($comment->type),
+                    'details' => $comment->contenu,
+                    'icon' => 'comment',
+                    'color' => 'info'
+                ]);
+            }
+
+            // Ajouter les validations
+            foreach ($dossier->validations as $validation) {
+                $events->push([
+                    'type' => 'validation',
+                    'date' => $validation->created_at,
+                    'user' => $validation->user->name ?? 'Système',
+                    'action' => ucfirst($validation->type_validation),
+                    'details' => $validation->commentaire,
+                    'icon' => $validation->statut === 'approuve' ? 'check' : 'times',
+                    'color' => $validation->statut === 'approuve' ? 'success' : 'danger'
+                ]);
+            }
+
+            // Trier par date décroissante
+            $events = $events->sortByDesc('date')->values();
+
+            return response()->json([
+                'success' => true,
+                'events' => $events
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur historique dossier: ' . $e->getMessage());
+            return response()->json(['error' => 'Erreur lors du chargement de l\'historique'], 500);
+        }
+    }
+
+    /**
+     * Enrichit un dossier selon l'architecture SGLP réelle
+     */
+    private function enrichDossierDataArchitecture($dossier)
+    {
+        // Calcul de la priorité
+        $dossier->priorite_calculee = $this->calculatePriorityArchitecture($dossier);
+
+        // Calcul du délai d'attente
+        $dossier->delai_attente = Carbon::parse($dossier->created_at)->diffInDays(now());
+
+        // Indicateur de retard
+        $dossier->en_retard = $dossier->delai_attente > 7;
+
+        // Nombre de documents - Compter directement depuis la DB
+        $dossier->nb_documents = DB::table('documents')
+            ->where('dossier_id', $dossier->id)
+            ->count();
+
+        // Accès à l'utilisateur via l'organisation (architecture SGLP)
+        if ($dossier->organisation && $dossier->organisation->user_id) {
+            $dossier->user_organisation = User::find($dossier->organisation->user_id);
+        }
+
+        return $dossier;
+    }
+
+    /**
+     * Calcule la priorité selon l'architecture SGLP
+     */
+    private function calculatePriorityArchitecture($dossier)
+    {
+        // Priorité haute si :
+        // - Parti politique (toujours prioritaire)
+        // - Dossier en attente depuis plus de 7 jours
+        if ($dossier->organisation && $dossier->organisation->type === 'parti_politique') {
+            return 'haute';
+        }
+
+        $delai = Carbon::parse($dossier->created_at)->diffInDays(now());
+        return $delai > 7 ? 'haute' : 'normale';
+    }
+
+    /**
+     * Compte le nombre de dossiers à priorité haute
+     */
+    private function calculateHighPriorityCountArchitecture()
+    {
+        return Dossier::whereIn('statut', ['soumis', 'en_cours'])
+            ->where(function ($q) {
+                $q->whereNull('assigned_to')->orWhere('statut', 'soumis');
+            })
+            ->where(function ($q) {
+                $q->where('created_at', '<=', now()->subDays(7))
+                    ->orWhereHas('organisation', function ($org) {
+                        $org->where('type', 'parti_politique');
+                    });
+            })
+            ->count();
+    }
+
+    /**
+     * Calcule le délai moyen d'attente
+     */
+    /**
      * Calcule le délai moyen d'attente
      */
     private function calculateAverageWaitingTimeArchitecture()
     {
         $dossiers = Dossier::whereIn('statut', ['soumis', 'en_cours'])
-            ->where(function($q) {
+            ->where(function ($q) {
                 $q->whereNull('assigned_to')->orWhere('statut', 'soumis');
             })
             ->select('id', 'created_at')
@@ -2371,7 +2440,7 @@ private function calculateHighPriorityCountArchitecture()
             return 0;
         }
 
-        $totalDelai = $dossiers->sum(function($dossier) {
+        $totalDelai = $dossiers->sum(function ($dossier) {
             return Carbon::parse($dossier->created_at)->diffInDays(now());
         });
 
@@ -2383,7 +2452,7 @@ private function calculateHighPriorityCountArchitecture()
      * NOUVELLE MÉTHODE : RÉCÉPISSÉ PROVISOIRE
      * ==========================================
      */
-    
+
     /**
      * Télécharger le récépissé provisoire PDF
      * 
@@ -2392,17 +2461,17 @@ private function calculateHighPriorityCountArchitecture()
      * @param int $id ID du dossier
      * @return \Illuminate\Http\Response
      */
-  public function downloadRecepisseProvisoire($id)
+    public function downloadRecepisseProvisoire($id)
     {
         try {
             // CORRECTION : Charger avec organisation.fondateurs
             $dossier = Dossier::with(['organisation.fondateurs'])->findOrFail($id);
-            
+
             // Vérifier que le dossier peut générer un récépissé provisoire
             if (!$this->canGenerateRecepisseProvisoire($dossier)) {
                 return back()->with('error', 'Le récépissé provisoire n\'est pas disponible pour ce dossier.');
             }
-            
+
             // Vérifier que le dossier a des données supplémentaires JSON
             if (empty($dossier->donnees_supplementaires)) {
                 return back()->with('error', 'Impossible de générer le récépissé : informations du déclarant manquantes.');
@@ -2411,13 +2480,13 @@ private function calculateHighPriorityCountArchitecture()
             // CORRECTION : Le récépissé provisoire utilise les données JSON du déclarant, pas les fondateurs
             // Générer le PDF de récépissé provisoire sans vérifier les fondateurs
             $pdf = $this->pdfService->generateRecepisseProvisoire($dossier);
-            
+
             // Nom de fichier sécurisé
             $filename = $this->sanitizeFilename("recepisse_provisoire_{$dossier->organisation->nom}_{$dossier->numero_dossier}") . "_" . now()->format('Ymd') . ".pdf";
-            
+
             // CORRECTION : donnees_supplementaires est déjà un array
-            $donneesSupp = is_array($dossier->donnees_supplementaires) 
-                ? $dossier->donnees_supplementaires 
+            $donneesSupp = is_array($dossier->donnees_supplementaires)
+                ? $dossier->donnees_supplementaires
                 : json_decode($dossier->donnees_supplementaires, true);
             $declarant = $donneesSupp['demandeur'] ?? [];
             \Log::info("Génération récépissé provisoire PDF pour dossier {$dossier->id}", [
@@ -2440,7 +2509,7 @@ private function calculateHighPriorityCountArchitecture()
                     ])
                     ->log('Téléchargement récépissé provisoire');
             }
-            
+
             return $pdf->download($filename);
 
         } catch (\Exception $e) {
@@ -2449,7 +2518,7 @@ private function calculateHighPriorityCountArchitecture()
                 'user' => auth()->user()->name ?? 'Système',
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return back()->with('error', 'Erreur lors de la génération du récépissé provisoire: ' . $e->getMessage());
         }
     }
@@ -2470,10 +2539,10 @@ private function calculateHighPriorityCountArchitecture()
     {
         // Remplacer les caractères spéciaux par des underscores
         $filename = preg_replace('/[^a-zA-Z0-9\-_]/', '_', $filename);
-        
+
         // Supprimer les underscores multiples
         $filename = preg_replace('/_+/', '_', $filename);
-        
+
         // Supprimer les underscores en début et fin
         return trim($filename, '_');
     }
@@ -2488,10 +2557,10 @@ private function calculateHighPriorityCountArchitecture()
     {
         // Statuts autorisés pour le récépissé provisoire
         $statutsAutorises = ['soumis', 'en_cours', 'en_attente'];
-        
-        return in_array($dossier->statut, $statutsAutorises) && 
-               $dossier->organisation &&
-               !empty($dossier->donnees_supplementaires);
+
+        return in_array($dossier->statut, $statutsAutorises) &&
+            $dossier->organisation &&
+            !empty($dossier->donnees_supplementaires);
     }
 
 
@@ -2508,7 +2577,7 @@ private function calculateHighPriorityCountArchitecture()
     private function getAvailableActionsUpdated($dossier)
     {
         $actions = [];
-        
+
         // Accusé de réception - Toujours disponible
         $actions['accuse'] = [
             'disponible' => true,
@@ -2517,7 +2586,7 @@ private function calculateHighPriorityCountArchitecture()
             'couleur' => 'primary',
             'icone' => 'fas fa-file-alt'
         ];
-        
+
         // Récépissé provisoire - Selon statut
         $actions['recepisse_provisoire'] = [
             'disponible' => $this->canGenerateRecepisseProvisoire($dossier),
@@ -2526,7 +2595,7 @@ private function calculateHighPriorityCountArchitecture()
             'couleur' => 'warning',
             'icone' => 'fas fa-file-signature'
         ];
-        
+
         // Récépissé définitif - Seulement si approuvé
         $actions['recepisse_definitif'] = [
             'disponible' => $dossier->statut === 'approuve',
@@ -2535,7 +2604,7 @@ private function calculateHighPriorityCountArchitecture()
             'couleur' => 'success',
             'icone' => 'fas fa-certificate'
         ];
-        
+
         return $actions;
     }
 
@@ -2553,37 +2622,37 @@ private function calculateHighPriorityCountArchitecture()
     {
         // Récupérer le dernier dossier de l'organisation
         $dernierDossier = $organisation->dossiers->first();
-        
+
         // Ajouter les informations du dernier dossier
         $organisation->dernier_dossier = $dernierDossier;
         $organisation->dernier_dossier_numero = $dernierDossier->numero_dossier ?? null;
         $organisation->dernier_dossier_statut = $dernierDossier->statut ?? null;
         $organisation->dernier_dossier_date = $dernierDossier->created_at ?? null;
-        
+
         // Calculer la priorité si le dossier est en attente
         if ($dernierDossier && in_array($dernierDossier->statut, ['soumis', 'en_cours'])) {
             $organisation->priorite = $this->calculatePriorityArchitecture($dernierDossier);
-            
+
             // Calculer le délai d'attente en jours
             $organisation->delai_attente = Carbon::parse($dernierDossier->created_at)->diffInDays(now());
         } else {
             $organisation->priorite = null;
             $organisation->delai_attente = null;
         }
-        
+
         // Compter le nombre total de dossiers
         $organisation->nombre_dossiers = Dossier::where('organisation_id', $organisation->id)->count();
-        
+
         // Badge de statut avec couleur
         $organisation->statut_badge = $this->getStatutBadge($organisation->statut);
-        
+
         // Badge de type avec couleur
         $organisation->type_badge = $this->getTypeBadge($organisation->type);
-        
+
         // Formater les dates pour l'affichage
         $organisation->created_at_formatted = Carbon::parse($organisation->created_at)->format('d/m/Y H:i');
         $organisation->updated_at_formatted = Carbon::parse($organisation->updated_at)->format('d/m/Y H:i');
-        
+
         return $organisation;
     }
 
@@ -2602,9 +2671,9 @@ private function calculateHighPriorityCountArchitecture()
             'approuve' => ['class' => 'success', 'icon' => 'fas fa-check-circle', 'text' => 'Approuvé'],
             'rejete' => ['class' => 'danger', 'icon' => 'fas fa-times-circle', 'text' => 'Rejeté']
         ];
-        
+
         $badge = $badges[$statut] ?? ['class' => 'secondary', 'icon' => 'fas fa-question', 'text' => ucfirst($statut)];
-        
+
         return [
             'class' => $badge['class'],
             'icon' => $badge['icon'],
@@ -2626,9 +2695,9 @@ private function calculateHighPriorityCountArchitecture()
             'parti_politique' => ['class' => 'danger', 'icon' => 'fas fa-flag', 'text' => 'Parti Politique'],
             'confession_religieuse' => ['class' => 'info', 'icon' => 'fas fa-church', 'text' => 'Confession Religieuse']
         ];
-        
+
         $badge = $badges[$type] ?? ['class' => 'secondary', 'icon' => 'fas fa-building', 'text' => ucfirst($type)];
-        
+
         return [
             'class' => $badge['class'],
             'icon' => $badge['icon'],
@@ -2698,7 +2767,7 @@ private function calculateHighPriorityCountArchitecture()
 
             // ✅ ÉTAPE 1 : Charger les règles métier depuis organisation_types
             $organisationType = OrganisationType::findOrFail($request->organisation_type_id);
-            
+
             Log::info('📋 Règles métier chargées', [
                 'type' => $organisationType->code,
                 'min_fondateurs' => $organisationType->nb_min_fondateurs_majeurs,
@@ -2714,7 +2783,7 @@ private function calculateHighPriorityCountArchitecture()
                 'objet' => 'required|string',
                 'siege_social' => 'required|string',
                 'date_creation' => 'nullable|date',
-                
+
                 // ✅ Géolocalisation (Foreign Keys CORRECTS)
                 'province_ref_id' => 'required|exists:provinces,id',
                 'departement_ref_id' => 'required|exists:departements,id',
@@ -2723,17 +2792,17 @@ private function calculateHighPriorityCountArchitecture()
                 'canton_ref_id' => 'nullable|exists:cantons,id',
                 'regroupement_ref_id' => 'nullable|exists:regroupements,id',
                 'localite_ref_id' => 'nullable|exists:localites,id',
-                
+
                 // ✅ Zone type et champs conditionnels
                 'zone_type' => 'required|in:urbaine,rurale',
                 'quartier' => 'nullable|string|max:255',
                 'village' => 'nullable|string|max:255',
                 'lieu_dit' => 'nullable|string|max:255',
-                
+
                 // Contact
                 'telephone' => 'required|string|max:20',
                 'email' => 'nullable|email|max:255',
-                
+
                 // ✅ Fondateurs (validation dynamique)
                 'fondateurs' => 'required|array|min:' . $organisationType->nb_min_fondateurs_majeurs,
                 'fondateurs.*.nip' => 'required|string|size:14',
@@ -2753,7 +2822,7 @@ private function calculateHighPriorityCountArchitecture()
                 Log::warning('❌ Validation échouée création organisation Admin', [
                     'errors' => $validator->errors()->toArray()
                 ]);
-                
+
                 return redirect()->back()
                     ->withErrors($validator)
                     ->withInput();
@@ -2763,7 +2832,7 @@ private function calculateHighPriorityCountArchitecture()
 
             // ✅ ÉTAPE 3 : Récupérer les noms géographiques depuis les tables
             $geoData = $this->buildGeographicData($request);
-            
+
             Log::info('🗺️ Données géographiques construites', $geoData);
 
             // ✅ ÉTAPE 4 : Créer l'organisation avec TOUTES les colonnes
@@ -2776,17 +2845,17 @@ private function calculateHighPriorityCountArchitecture()
                 'objet' => $request->objet,
                 'siege_social' => $request->siege_social,
                 'date_creation' => $request->date_creation ?? now(),
-                
+
                 // ✅ Contact
                 'telephone' => $request->telephone,
                 'email' => $request->email,
-                
+
                 // ✅ Anciens champs texte (obligatoires pour compatibilité)
                 'province' => $geoData['province_nom'],
                 'prefecture' => $geoData['prefecture_nom'],
                 'departement' => $geoData['departement_nom'],
                 'zone_type' => $request->zone_type,
-                
+
                 // ✅ Champs conditionnels selon zone_type
                 'ville_commune' => $geoData['ville_commune'],
                 'arrondissement' => $geoData['arrondissement'],
@@ -2795,7 +2864,7 @@ private function calculateHighPriorityCountArchitecture()
                 'regroupement' => $geoData['regroupement'],
                 'village' => $request->village,
                 'lieu_dit' => $request->lieu_dit,
-                
+
                 // ✅ Foreign Keys (noms corrects)
                 'province_ref_id' => $request->province_ref_id,
                 'departement_ref_id' => $request->departement_ref_id,
@@ -2804,7 +2873,7 @@ private function calculateHighPriorityCountArchitecture()
                 'canton_ref_id' => $request->canton_ref_id,
                 'regroupement_ref_id' => $request->regroupement_ref_id,
                 'localite_ref_id' => $request->localite_ref_id,
-                
+
                 // Métadonnées
                 'user_id' => Auth::id(),
                 'statut' => 'soumis',
@@ -3118,10 +3187,10 @@ private function calculateHighPriorityCountArchitecture()
 
             if ($request->regroupement_id) {
                 $query->where('regroupement_id', $request->regroupement_id)
-                      ->where('type', 'village');
+                    ->where('type', 'village');
             } elseif ($request->arrondissement_id) {
                 $query->where('arrondissement_id', $request->arrondissement_id)
-                      ->where('type', 'quartier');
+                    ->where('type', 'quartier');
             }
 
             $localites = $query->orderBy('nom')->get(['id', 'nom', 'type']);
@@ -3140,114 +3209,116 @@ private function calculateHighPriorityCountArchitecture()
 
 
     /**
- * ============================================
- * MÉTHODE À AJOUTER/REMPLACER DANS :
- * app/Http/Controllers/Admin/DossierController.php
- * ============================================
- * 
- * Cette méthode retourne toutes les configurations d'un type d'organisation
- * incluant : fondateurs min, adhérents min, documents requis, guide, loi
- */
+     * ============================================
+     * MÉTHODE À AJOUTER/REMPLACER DANS :
+     * app/Http/Controllers/Admin/DossierController.php
+     * ============================================
+     * 
+     * Cette méthode retourne toutes les configurations d'un type d'organisation
+     * incluant : fondateurs min, adhérents min, documents requis, guide, loi
+     */
 
-/**
- * API : Récupérer les règles métier complètes d'un type d'organisation
- * Route: GET /admin/api/geo/organisation-types/{organisation_type_id}/rules
- * 
- * @param int $organisation_type_id
- * @return \Illuminate\Http\JsonResponse
- */
-public function getOrganisationTypeRules($organisation_type_id)
-{
-    try {
-        // Charger le type avec ses documents requis
-        $orgType = \App\Models\OrganisationType::with(['documentTypes' => function($query) {
-            $query->where('is_active', true)
-                  ->orderBy('document_type_organisation_type.ordre', 'asc');
-        }])->findOrFail($organisation_type_id);
+    /**
+     * API : Récupérer les règles métier complètes d'un type d'organisation
+     * Route: GET /admin/api/geo/organisation-types/{organisation_type_id}/rules
+     * 
+     * @param int $organisation_type_id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getOrganisationTypeRules($organisation_type_id)
+    {
+        try {
+            // Charger le type avec ses documents requis
+            $orgType = \App\Models\OrganisationType::with([
+                'documentTypes' => function ($query) {
+                    $query->where('is_active', true)
+                        ->orderBy('document_type_organisation_type.ordre', 'asc');
+                }
+            ])->findOrFail($organisation_type_id);
 
-        // Formater les documents requis
-        $documentsRequis = $orgType->documentTypes->map(function($doc) {
-            return [
-                'id' => $doc->id,
-                'code' => $doc->code,
-                'nom' => $doc->libelle ?? $doc->nom,
-                'description' => $doc->description,
-                'format_accepte' => $doc->format_accepte ?? 'pdf,jpg,jpeg,png',
-                'taille_max_mo' => $doc->taille_max ?? 5,
-                'is_obligatoire' => (bool) ($doc->pivot->is_obligatoire ?? true),
-                'ordre' => $doc->pivot->ordre ?? 0,
-                'aide_texte' => $doc->pivot->aide_texte ?? null,
-            ];
-        });
+            // Formater les documents requis
+            $documentsRequis = $orgType->documentTypes->map(function ($doc) {
+                return [
+                    'id' => $doc->id,
+                    'code' => $doc->code,
+                    'nom' => $doc->libelle ?? $doc->nom,
+                    'description' => $doc->description,
+                    'format_accepte' => $doc->format_accepte ?? 'pdf,jpg,jpeg,png',
+                    'taille_max_mo' => $doc->taille_max ?? 5,
+                    'is_obligatoire' => (bool) ($doc->pivot->is_obligatoire ?? true),
+                    'ordre' => $doc->pivot->ordre ?? 0,
+                    'aide_texte' => $doc->pivot->aide_texte ?? null,
+                ];
+            });
 
-        // Séparer documents obligatoires et facultatifs
-        $docsObligatoires = $documentsRequis->where('is_obligatoire', true)->values();
-        $docsFacultatifs = $documentsRequis->where('is_obligatoire', false)->values();
+            // Séparer documents obligatoires et facultatifs
+            $docsObligatoires = $documentsRequis->where('is_obligatoire', true)->values();
+            $docsFacultatifs = $documentsRequis->where('is_obligatoire', false)->values();
 
-        return response()->json([
-            'success' => true,
-            'data' => [
-                // Informations de base
-                'id' => $orgType->id,
-                'code' => $orgType->code,
-                'nom' => $orgType->nom,
-                'description' => $orgType->description,
-                'couleur' => $orgType->couleur,
-                'icone' => $orgType->icone,
-                
-                // Règles métier
-                'nb_min_fondateurs' => $orgType->nb_min_fondateurs_majeurs ?? 2,
-                'nb_min_adherents' => $orgType->nb_min_adherents_creation ?? 0,
-                'is_lucratif' => (bool) ($orgType->is_lucratif ?? false),
-                
-                // Textes légaux et guide
-                'guide_creation' => $orgType->guide_creation,
-                'texte_legislatif' => $orgType->texte_legislatif,
-                'loi_reference' => $orgType->loi_reference,
-                
-                // Documents requis
-                'documents_requis' => $documentsRequis,
-                'documents_obligatoires' => $docsObligatoires,
-                'documents_facultatifs' => $docsFacultatifs,
-                'nb_documents_obligatoires' => $docsObligatoires->count(),
-                'nb_documents_facultatifs' => $docsFacultatifs->count(),
-                
-                // Flags pour l'interface
-                'require_fondateurs' => ($orgType->nb_min_fondateurs_majeurs ?? 0) > 0,
-                'require_adherents' => ($orgType->nb_min_adherents_creation ?? 0) > 0,
-                'require_documents' => $docsObligatoires->count() > 0,
-            ],
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    // Informations de base
+                    'id' => $orgType->id,
+                    'code' => $orgType->code,
+                    'nom' => $orgType->nom,
+                    'description' => $orgType->description,
+                    'couleur' => $orgType->couleur,
+                    'icone' => $orgType->icone,
 
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Type d\'organisation non trouvé',
-        ], 404);
-        
-    } catch (\Exception $e) {
-        \Log::error('Erreur getOrganisationTypeRules: ' . $e->getMessage(), [
-            'organisation_type_id' => $organisation_type_id,
-            'trace' => $e->getTraceAsString()
-        ]);
-        
-        return response()->json([
-            'success' => false,
-            'message' => 'Erreur lors du chargement des règles',
-        ], 500);
+                    // Règles métier
+                    'nb_min_fondateurs' => $orgType->nb_min_fondateurs_majeurs ?? 2,
+                    'nb_min_adherents' => $orgType->nb_min_adherents_creation ?? 0,
+                    'is_lucratif' => (bool) ($orgType->is_lucratif ?? false),
+
+                    // Textes légaux et guide
+                    'guide_creation' => $orgType->guide_creation,
+                    'texte_legislatif' => $orgType->texte_legislatif,
+                    'loi_reference' => $orgType->loi_reference,
+
+                    // Documents requis
+                    'documents_requis' => $documentsRequis,
+                    'documents_obligatoires' => $docsObligatoires,
+                    'documents_facultatifs' => $docsFacultatifs,
+                    'nb_documents_obligatoires' => $docsObligatoires->count(),
+                    'nb_documents_facultatifs' => $docsFacultatifs->count(),
+
+                    // Flags pour l'interface
+                    'require_fondateurs' => ($orgType->nb_min_fondateurs_majeurs ?? 0) > 0,
+                    'require_adherents' => ($orgType->nb_min_adherents_creation ?? 0) > 0,
+                    'require_documents' => $docsObligatoires->count() > 0,
+                ],
+            ]);
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Type d\'organisation non trouvé',
+            ], 404);
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur getOrganisationTypeRules: ' . $e->getMessage(), [
+                'organisation_type_id' => $organisation_type_id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors du chargement des règles',
+            ], 500);
+        }
     }
-}
 
 
-/**
- * ============================================
- * MÉTHODES API GÉOLOCALISATION - À AJOUTER
- * Dans app/Http/Controllers/Admin/DossierController.php
- * ============================================
- * 
- * Ajouter ces méthodes dans la section API du DossierController
- * Après les méthodes existantes : getCantons(), getRegroupements()
- */
+    /**
+     * ============================================
+     * MÉTHODES API GÉOLOCALISATION - À AJOUTER
+     * Dans app/Http/Controllers/Admin/DossierController.php
+     * ============================================
+     * 
+     * Ajouter ces méthodes dans la section API du DossierController
+     * Après les méthodes existantes : getCantons(), getRegroupements()
+     */
 
     /**
      * ========================================
@@ -3267,13 +3338,13 @@ public function getOrganisationTypeRules($organisation_type_id)
                 ->orderBy('nom')
                 ->select('id', 'nom', 'code')
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $quartiers,
                 'count' => $quartiers->count()
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('Erreur getQuartiers: ' . $e->getMessage());
             return response()->json([
@@ -3302,13 +3373,13 @@ public function getOrganisationTypeRules($organisation_type_id)
                 ->orderBy('nom')
                 ->select('id', 'nom', 'code')
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $villages,
                 'count' => $villages->count()
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('Erreur getVillages: ' . $e->getMessage());
             return response()->json([
@@ -3320,22 +3391,22 @@ public function getOrganisationTypeRules($organisation_type_id)
     }
 
 
-/**
- * ============================================
- * VÉRIFICATION DES MÉTHODES EXISTANTES
- * ============================================
- * 
- * Assurez-vous que ces méthodes existent également :
- * 
- * - getProvinces()
- * - getDepartements($province_id)
- * - getCommunes($departement_id)
- * - getArrondissements($commune_id)
- * - getCantons($departement_id)
- * - getRegroupements($canton_id)
- * 
- * Si elles n'existent pas, voici leurs implémentations :
- */
+    /**
+     * ============================================
+     * VÉRIFICATION DES MÉTHODES EXISTANTES
+     * ============================================
+     * 
+     * Assurez-vous que ces méthodes existent également :
+     * 
+     * - getProvinces()
+     * - getDepartements($province_id)
+     * - getCommunes($departement_id)
+     * - getArrondissements($commune_id)
+     * - getCantons($departement_id)
+     * - getRegroupements($canton_id)
+     * 
+     * Si elles n'existent pas, voici leurs implémentations :
+     */
 
     /**
      * API : Obtenir les cantons d'un département (Zone Rurale)
@@ -3349,13 +3420,13 @@ public function getOrganisationTypeRules($organisation_type_id)
                 ->orderBy('nom')
                 ->select('id', 'nom', 'code')
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $cantons,
                 'count' => $cantons->count()
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('Erreur getCantons: ' . $e->getMessage());
             return response()->json([
@@ -3378,13 +3449,13 @@ public function getOrganisationTypeRules($organisation_type_id)
                 ->orderBy('nom')
                 ->select('id', 'nom', 'code')
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $regroupements,
                 'count' => $regroupements->count()
             ]);
-            
+
         } catch (\Exception $e) {
             \Log::error('Erreur getRegroupements: ' . $e->getMessage());
             return response()->json([

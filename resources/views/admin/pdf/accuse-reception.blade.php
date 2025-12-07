@@ -213,7 +213,7 @@ h1 {
 
     <!-- Date et lieu -->
     <div class="date-location">
-        Fait à Libreville, le {{ $date_generation ?? now()->format('d/m/Y') }}
+        Fait à Libreville, le ..........................
     </div>
 
     <!-- Signature -->
@@ -230,16 +230,16 @@ h1 {
         </p>
     </p>
 
-    <!-- ✅ SECTION QR CODE OPTIMISÉE AVEC BASE64 -->
+    <!-- ✅ SECTION QR CODE OPTIMISÉE AVEC BASE64 - MÉTHODE CORRIGÉE -->
     <div class="qr-section">
         <div class="qr-content">
             <div class="qr-left">
                 <div class="qr-box">
                     @if(isset($qr_code) && $qr_code)
                         @php
-                            // Utiliser le service QrCodeService avec méthode optimisée
+                            // ✅ CORRECTION : Utiliser getQrCodeBase64ForPdf au lieu de getQrCodeForPdf
                             $qrService = app(\App\Services\QrCodeService::class);
-                            $qrBase64 = $qrService->getQrCodeForPdf($qr_code);
+                            $qrBase64 = $qrService->getQrCodeBase64ForPdf($qr_code);
                         @endphp
 
                         {{-- ✅ QR CODE EN BASE64 (solution optimale) --}}
@@ -257,7 +257,7 @@ h1 {
                             <div style="width: 100px; height: 100px; margin: 0 auto 10px auto; overflow: hidden;">
                                 {!! str_replace(['width="150"', 'height="150"'], ['width="100"', 'height="100"'], $qr_code->svg_content) !!}
                             </div>
-                            <div class="qr-text">Vérification en lign 2</div>
+                            <div class="qr-text">Vérification en ligne</div>
                             <div class="qr-code-id">{{ $qr_code->code }}</div>
                             
                         {{-- ✅ FALLBACK: Placeholder si tout échoue --}}
@@ -291,11 +291,8 @@ h1 {
                     @endif
                 </div>
             </div>
-
-           
         </div>
     </div>
-
 
 </body>
 </html>
