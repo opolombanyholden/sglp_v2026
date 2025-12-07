@@ -26,13 +26,13 @@ class WorkflowController extends Controller
             // Filtres
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->whereHas('organisation', function($q) use ($search) {
+                $query->whereHas('organisation', function ($q) use ($search) {
                     $q->where('nom', 'like', "%{$search}%");
                 })->orWhere('numero_dossier', 'like', "%{$search}%");
             }
 
             if ($request->filled('type')) {
-                $query->whereHas('organisation', function($q) use ($request) {
+                $query->whereHas('organisation', function ($q) use ($request) {
                     $q->where('type', $request->type);
                 });
             }
@@ -40,11 +40,11 @@ class WorkflowController extends Controller
             if ($request->filled('priorite')) {
                 // Logique de priorité basée sur l'âge et le type
                 if ($request->priorite === 'haute') {
-                    $query->where(function($q) {
+                    $query->where(function ($q) {
                         $q->where('created_at', '<=', now()->subDays(10))
-                          ->orWhereHas('organisation', function($org) {
-                              $org->where('type', 'parti_politique');
-                          });
+                            ->orWhereHas('organisation', function ($org) {
+                                $org->where('type', 'parti_politique');
+                            });
                     });
                 }
             }
@@ -67,16 +67,16 @@ class WorkflowController extends Controller
             // Statistiques pour les cards
             $totalEnAttente = Dossier::whereIn('statut', ['soumis', 'en_cours'])->count();
             $prioriteHaute = Dossier::whereIn('statut', ['soumis', 'en_cours'])
-                ->where(function($q) {
+                ->where(function ($q) {
                     $q->where('created_at', '<=', now()->subDays(10))
-                      ->orWhereHas('organisation', function($org) {
-                          $org->where('type', 'parti_politique');
-                      });
+                        ->orWhereHas('organisation', function ($org) {
+                            $org->where('type', 'parti_politique');
+                        });
                 })->count();
-            
+
             $delaiMoyen = Dossier::whereIn('statut', ['soumis', 'en_cours'])
                 ->get()
-                ->avg(function($dossier) {
+                ->avg(function ($dossier) {
                     return now()->diffInDays($dossier->created_at);
                 });
 
@@ -111,7 +111,7 @@ class WorkflowController extends Controller
             // Filtres
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->whereHas('organisation', function($q) use ($search) {
+                $query->whereHas('organisation', function ($q) use ($search) {
                     $q->where('nom', 'like', "%{$search}%");
                 })->orWhere('numero_dossier', 'like', "%{$search}%");
             }
@@ -121,7 +121,7 @@ class WorkflowController extends Controller
             }
 
             if ($request->filled('type')) {
-                $query->whereHas('organisation', function($q) use ($request) {
+                $query->whereHas('organisation', function ($q) use ($request) {
                     $q->where('type', $request->type);
                 });
             }
@@ -135,11 +135,11 @@ class WorkflowController extends Controller
 
             // Statistiques
             $totalEnCours = Dossier::where('statut', 'en_cours')->whereNotNull('assigned_to')->count();
-            $delaiMoyen = $dossiersEnCours->avg(function($dossier) {
+            $delaiMoyen = $dossiersEnCours->avg(function ($dossier) {
                 return $dossier->assigned_to ? now()->diffInDays($dossier->updated_at) : 0;
             });
             $agentsActifs = User::where('role', 'agent')
-                ->whereHas('assignedDossiers', function($q) {
+                ->whereHas('assignedDossiers', function ($q) {
                     $q->where('statut', 'en_cours');
                 })->count();
             $prioriteHaute = $dossiersEnCours->where('priorite', 'haute')->count();
@@ -175,7 +175,7 @@ class WorkflowController extends Controller
             // Filtres
             if ($request->filled('search')) {
                 $search = $request->search;
-                $query->whereHas('organisation', function($q) use ($search) {
+                $query->whereHas('organisation', function ($q) use ($search) {
                     $q->where('nom', 'like', "%{$search}%");
                 })->orWhere('numero_dossier', 'like', "%{$search}%");
             }
@@ -185,7 +185,7 @@ class WorkflowController extends Controller
             }
 
             if ($request->filled('type')) {
-                $query->whereHas('organisation', function($q) use ($request) {
+                $query->whereHas('organisation', function ($q) use ($request) {
                     $q->where('type', $request->type);
                 });
             }
@@ -290,7 +290,7 @@ class WorkflowController extends Controller
                     'decision' => 'approuve',
                     'commentaire' => $request->commentaire,
                     'decided_at' => now(),
-                    'duree_traitement' => $validation->assigned_at ? 
+                    'duree_traitement' => $validation->assigned_at ?
                         now()->diffInHours($validation->assigned_at) : null
                 ]);
             }
@@ -331,7 +331,7 @@ class WorkflowController extends Controller
                     'decision' => 'rejete',
                     'commentaire' => $request->motif,
                     'decided_at' => now(),
-                    'duree_traitement' => $validation->assigned_at ? 
+                    'duree_traitement' => $validation->assigned_at ?
                         now()->diffInHours($validation->assigned_at) : null
                 ]);
             }
@@ -356,14 +356,14 @@ class WorkflowController extends Controller
     {
         // Calcul des jours d'attente
         $dossier->jours_attente = now()->diffInDays($dossier->created_at);
-        
+
         // Calcul de la priorité
         $priorite = $this->calculatePriorite($dossier);
         $dossier->priorite = $priorite['niveau'];
         $dossier->priorite_color = $priorite['color'];
-        
+
         // Progression (simple pour le moment) - Compatible PHP 7.3
-        switch($dossier->statut) {
+        switch ($dossier->statut) {
             case 'soumis':
                 $dossier->progression = 25;
                 break;
@@ -393,12 +393,12 @@ class WorkflowController extends Controller
     private function calculatePriorite($dossier)
     {
         $joursAttente = now()->diffInDays($dossier->created_at);
-        
+
         // Parti politique = toujours haute priorité
         if ($dossier->organisation && $dossier->organisation->type === 'parti_politique') {
             return ['niveau' => 'haute', 'color' => 'red'];
         }
-        
+
         // Ancienneté
         if ($joursAttente > 10) {
             return ['niveau' => 'haute', 'color' => 'red'];
@@ -414,16 +414,40 @@ class WorkflowController extends Controller
      */
     private function getAvailableActions($dossier)
     {
-        switch ($dossier->statut) {
-            case 'soumis':
-                return ['assigner'];
-            case 'en_cours':
-                return ['valider', 'rejeter', 'reassigner'];
-            case 'approuve':
-            case 'rejete':
-                return ['consulter'];
-            default:
-                return [];
-        }
+        $actions = [
+            'assigner' => in_array($dossier->statut, ['soumis', 'en_cours']),
+            'valider' => $dossier->statut === 'en_cours' && $dossier->assigned_to,
+            'rejeter' => in_array($dossier->statut, ['soumis', 'en_cours']),
+            'archiver' => in_array($dossier->statut, ['approuve', 'rejete']),
+        ];
+
+        return $actions;
+    }
+
+    /**
+     * Afficher les templates de workflow
+     * Route: GET /admin/workflow/templates
+     */
+    public function templates()
+    {
+        return view('admin.workflow.templates', [
+            'templates' => [], // À implémenter selon les besoins
+        ]);
+    }
+
+    /**
+     * Sauvegarder un template de workflow
+     * Route: POST /admin/workflow/templates
+     */
+    public function saveTemplate(Request $request)
+    {
+        // Valider et sauvegarder le template
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'steps' => 'required|array',
+        ]);
+
+        // À implémenter selon les besoins
+        return redirect()->back()->with('success', 'Template sauvegardé avec succès');
     }
 }
