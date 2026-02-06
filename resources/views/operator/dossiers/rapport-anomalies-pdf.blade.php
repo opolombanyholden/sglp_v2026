@@ -179,7 +179,7 @@
         <!-- Pied de page officiel -->
         <div class="footer-officiel">
             <div style="font-weight: bold; color: #003f7f;">
-                Rapport généré automatiquement le {{ $stats['date_generation'] }} par le Système de Gestion des Libertés Publiques.
+                Rapport généré automatiquement le {{ $stats['date_generation'] ?? ($metadata['genere_le'] ?? now()->format('d/m/Y à H:i')) }} par le Système de Gestion des Libertés Publiques.
             </div>
         
             <div class="footer-ministeriel">

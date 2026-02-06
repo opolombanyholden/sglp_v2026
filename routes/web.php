@@ -477,18 +477,33 @@ Route::middleware(['web', 'auth', 'verified', 'operator'])->prefix('operator')->
     |--------------------------------------------------------------------------
     */
     Route::prefix('dossiers')->name('dossiers.')->group(function () {
+        // ========== ROUTES AVEC CHEMINS FIXES EN PREMIER ==========
         Route::get('/', [DossierController::class, 'index'])->name('index');
         Route::get('/create', [DossierController::class, 'create'])->name('create');
         Route::get('/create/{type}', [DossierController::class, 'create'])->name('create-type');
         Route::post('/', [DossierController::class, 'store'])->name('store');
+
+        // Gestion des anomalies (liste globale)
+        Route::get('/anomalies', [DossierController::class, 'anomalies'])->name('anomalies');
+        Route::post('/anomalies/resolve/{adherent}', [DossierController::class, 'resolveAnomalie'])->name('anomalies.resolve');
+
+        // ========== ROUTES AVEC PARAMÈTRES DYNAMIQUES ==========
         Route::get('/{dossier}', [DossierController::class, 'show'])->name('show');
         Route::get('/{dossier}/edit', [DossierController::class, 'edit'])->name('edit');
         Route::put('/{dossier}', [DossierController::class, 'update'])->name('update');
         Route::delete('/{dossier}', [DossierController::class, 'destroy'])->name('destroy');
-        
-        // Gestion des anomalies
-        Route::get('/anomalies', [DossierController::class, 'anomalies'])->name('anomalies');
-        Route::post('/anomalies/resolve/{adherent}', [DossierController::class, 'resolveAnomalie'])->name('anomalies.resolve');
+
+        // Routes Phase 2 - Import des adhérents après création organisation
+        Route::get('/{dossier}/adherents-import', [DossierController::class, 'adherentsImportPage'])->name('adherents-import');
+        Route::post('/{dossier}/store-adherents', [DossierController::class, 'storeAdherentsPhase2'])->name('store-adherents');
+
+        // Routes Finalisation Phase 2
+        Route::post('/{dossier}/finalize-now', [DossierController::class, 'finalizeNow'])->name('finalize-now');
+        Route::post('/{dossier}/finalize-later', [DossierController::class, 'finalizeLater'])->name('finalize-later');
+
+        // Routes Anomalies par dossier (consultation et rapport PDF)
+        Route::get('/{dossier}/rapport-anomalies', [DossierController::class, 'rapportAnomalies'])->name('rapport-anomalies');
+        Route::get('/{dossier}/consulter-anomalies', [DossierController::class, 'consulterAnomalies'])->name('consulter-anomalies');
     });
     
     /*

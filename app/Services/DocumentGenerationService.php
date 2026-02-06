@@ -10,7 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Mpdf\Mpdf;
+use Mpdf\Output\Destination;
 
 /**
  * SERVICE DE GÉNÉRATION DE DOCUMENTS
@@ -119,11 +120,14 @@ class DocumentGenerationService
                 'user_agent' => request()->userAgent(),
             ]);
 
-            // 8. Générer le HTML avec variables
+            // 8. Générer QR Code Base64 pour le PDF (Footer)
+            $qrCodeBase64 = $qrCode ? $this->qrCodeService->getQrCodeBase64ForPdf($qrCode) : '';
+
+            // 9. Générer le HTML avec variables
             $html = $this->renderTemplate($template, $variables, $qrCode);
 
-            // 9. Générer le PDF en mémoire
-            $pdf = $this->generatePDF($html, $template);
+            // 10. Générer le PDF en mémoire
+            $pdf = $this->generatePDF($html, $template, $qrCodeBase64);
 
             Log::info('Document généré avec succès', [
                 'template_id' => $template->id,
@@ -177,8 +181,11 @@ class DocumentGenerationService
         // Générer le HTML avec les variables sauvegardées
         $html = $this->renderTemplate($template, $generation->variables_data, $qrCode);
 
+        // Générer QR Code Base64 pour le PDF
+        $qrCodeBase64 = $qrCode ? $this->qrCodeService->getQrCodeBase64ForPdf($qrCode) : '';
+
         // Générer le PDF
-        $pdf = $this->generatePDF($html, $template);
+        $pdf = $this->generatePDF($html, $template, $qrCodeBase64);
 
         Log::info('Document régénéré', [
             'generation_id' => $generation->id,
@@ -208,19 +215,65 @@ class DocumentGenerationService
         // Charger l'organisation avec toutes ses relations
         $organisation = Organisation::with([
             'organisationType',
-            'fondateurs' => function($query) {
+            'domaineActivite',
+            'fondateurs' => function ($query) {
                 $query->orderBy('ordre')->limit(10);
             },
             'adherentsActifs',
             'etablissements',
             'dossiers'
         ])->findOrFail($data['organisation_id']);
-        
+
         $dossier = isset($data['dossier_id']) ? Dossier::find($data['dossier_id']) : null;
 
         // ========================================
         // VARIABLES DE BASE
         // ========================================
+
+        // ✅ CORRIGÉ : Récupérer le déclarant depuis les données du dossier (étape 2 du formulaire)
+        $presidentNom = null;
+        $presidentCivilite = null;
+        $presidentFonction = null;
+
+        // D'abord, essayer de récupérer depuis donnees_supplementaires du dossier
+        if ($dossier && !empty($dossier->donnees_supplementaires)) {
+            $donneesSupp = is_array($dossier->donnees_supplementaires)
+                ? $dossier->donnees_supplementaires
+                : json_decode($dossier->donnees_supplementaires, true);
+
+            $demandeur = $donneesSupp['demandeur'] ?? null;
+
+            if ($demandeur) {
+                $presidentNom = trim(($demandeur['prenom'] ?? '') . ' ' . ($demandeur['nom'] ?? ''));
+                $presidentCivilite = $demandeur['civilite'] ?? 'M.';
+                $presidentFonction = $demandeur['role'] ?? $demandeur['fonction'] ?? 'Président(e)';
+            }
+        }
+
+        // Fallback : si pas de demandeur dans le dossier, chercher dans les fondateurs
+        if (empty($presidentNom)) {
+            $president = $organisation->fondateurs()
+                ->where('fonction', 'LIKE', '%président%')
+                ->orWhere('fonction', 'LIKE', '%president%')
+                ->first();
+
+            if ($president) {
+                $presidentNom = trim(($president->prenom ?? '') . ' ' . ($president->nom ?? ''));
+                $presidentFonction = $president->fonction ?? 'Président(e)';
+
+                // Chercher la civilité depuis l'adherent correspondant
+                $adherentPresident = \App\Models\Adherent::where('organisation_id', $organisation->id)
+                    ->where('nip', $president->nip)
+                    ->first();
+
+                if ($adherentPresident && !empty($adherentPresident->civilite)) {
+                    $presidentCivilite = $adherentPresident->civilite;
+                } else {
+                    $presidentCivilite = ($president->sexe === 'F') ? 'Mme' : 'M.';
+                }
+            }
+        }
+
         $variables = [
             // Organisation (enrichie)
             'organisation' => [
@@ -232,21 +285,28 @@ class DocumentGenerationService
                 'numero_recepisse' => $organisation->numero_recepisse ?? 'En cours',
                 'date_creation' => $this->formatDateSafe($organisation->date_creation) ?? 'N/A',
                 'objet' => $organisation->objet ?? 'Non spécifié',
-                
+
+                // Nouveaux champs pour récépissé provisoire
+                'president_nom' => $presidentNom,
+                'president_civilite' => $presidentCivilite,
+                'president_fonction' => $presidentFonction,
+                'domaine' => $organisation->domaineActivite->nom ?? $organisation->objet ?? 'Social',
+
                 // Adresse complète
                 'siege_social' => $organisation->siege_social ?? '',
                 'adresse_complete' => $this->formatAdresseComplete($organisation),
                 'province' => $organisation->province ?? '',
                 'departement' => $organisation->departement ?? '',
                 'commune' => $organisation->commune ?? '',
+                'ville_commune' => $organisation->ville_commune ?? $organisation->commune ?? '',
                 'quartier' => $organisation->quartier ?? '',
                 'boite_postale' => $organisation->boite_postale ?? '',
-                
+
                 // Contacts
                 'telephone' => $organisation->telephone ?? 'Non renseigné',
                 'email' => $organisation->email ?? '',
                 'site_web' => $organisation->site_web ?? '',
-                
+
                 // Statuts
                 'statut' => $organisation->statut ?? '',
                 'is_active' => $organisation->is_active ?? false,
@@ -258,11 +318,16 @@ class DocumentGenerationService
             'dirigeants' => $this->getDirigeantsSecure($organisation),
 
             // ========================================
+            // ✅ MEMBRES DU BUREAU (Pour Récépissé Définitif)
+            // ========================================
+            'organisation_membres' => $this->getMembresBureauPourRecepisse($organisation),
+
+            // ========================================
             // FONDATEURS
             // ========================================
             'fondateurs' => [
                 'nombre' => $organisation->fondateurs->count(),
-                'liste' => $organisation->fondateurs->map(function($fondateur) {
+                'liste' => $organisation->fondateurs->map(function ($fondateur) {
                     return [
                         'nom' => $fondateur->nom,
                         'prenom' => $fondateur->prenom,
@@ -283,7 +348,7 @@ class DocumentGenerationService
                 'total' => $organisation->adherentsActifs->count(),
                 'hommes' => $organisation->adherentsActifs->where('sexe', 'M')->count(),
                 'femmes' => $organisation->adherentsActifs->where('sexe', 'F')->count(),
-                'pourcentage_femmes' => $organisation->adherentsActifs->count() > 0 
+                'pourcentage_femmes' => $organisation->adherentsActifs->count() > 0
                     ? round(($organisation->adherentsActifs->where('sexe', 'F')->count() / $organisation->adherentsActifs->count()) * 100, 1)
                     : 0,
             ],
@@ -393,6 +458,153 @@ class DocumentGenerationService
             'armoiries' => $this->imageHelper->getBackgroundArmoiriesGabon(),
         ];
 
+        // ========================================
+        // IMAGE DE FOND (pour mPDF)
+        // ========================================
+        $bgImagePath = public_path('storage/images/bg-pied-page.png');
+        $variables['bg_pied_page_base64'] = '';
+
+        if (file_exists($bgImagePath)) {
+            $imageData = file_get_contents($bgImagePath);
+            $variables['bg_pied_page_base64'] = 'data:image/png;base64,' . base64_encode($imageData);
+        } else {
+            Log::warning('Image de fond bg-pied-page.png introuvable', ['path' => $bgImagePath]);
+        }
+
+        // ========================================
+        // ⭐ NOUVEAU : DONNÉES DE MODIFICATION
+        // Pour les dossiers de type 'modification'
+        // ========================================
+        if ($dossier && $dossier->type_operation === 'modification') {
+            // ✅ FIX: Forcer le décodage JSON avec gestion d'erreur
+            $rawData = $dossier->getAttributes()['donnees_supplementaires'] ?? null;
+
+            Log::debug('Données brutes donnees_supplementaires', [
+                'type' => gettype($rawData),
+                'length' => is_string($rawData) ? strlen($rawData) : 'N/A'
+            ]);
+
+            $donneesSupp = [];
+            if (is_string($rawData) && !empty($rawData)) {
+                $decoded = json_decode($rawData, true);
+                if (json_last_error() === JSON_ERROR_NONE) {
+                    // ✅ FIX: Gérer le cas de double encodage JSON
+                    // Si le premier décodage retourne une string, décoder à nouveau
+                    if (is_string($decoded)) {
+                        $decoded = json_decode($decoded, true);
+                        if (json_last_error() !== JSON_ERROR_NONE) {
+                            Log::error('Erreur 2ème décodage JSON donnees_supplementaires', [
+                                'error' => json_last_error_msg()
+                            ]);
+                            $decoded = [];
+                        }
+                    }
+                    $donneesSupp = $decoded;
+                } else {
+                    Log::error('Erreur décodage JSON donnees_supplementaires', [
+                        'error' => json_last_error_msg(),
+                        'raw_preview' => substr($rawData, 0, 100)
+                    ]);
+                }
+            } elseif (is_array($rawData)) {
+                $donneesSupp = $rawData;
+            }
+
+            Log::info('Données supplementaires décodées', [
+                'dossier_id' => $dossier->id,
+                'type_modification' => $donneesSupp['type_modification'] ?? 'non défini',
+                'has_modifications' => !empty($donneesSupp['modifications']),
+                'has_bureau_modifications' => !empty($donneesSupp['bureau_modifications']),
+            ]);
+
+            // Récupérer les nouvelles valeurs des modifications
+            $nouvellesValeurs = $donneesSupp['modifications'] ?? [];
+            $bureauMembres = $donneesSupp['bureau_modifications'] ?? [];
+
+            // ✅ APPLIQUER LES NOUVELLES VALEURS À L'ORGANISATION
+            // Créer une copie modifiée des données organisation avec les nouvelles valeurs
+            if (!empty($nouvellesValeurs)) {
+                // Appliquer chaque modification aux données d'organisation
+                if (!empty($nouvellesValeurs['nom'])) {
+                    $variables['organisation']['nom'] = $nouvellesValeurs['nom'];
+                }
+                if (!empty($nouvellesValeurs['sigle'])) {
+                    $variables['organisation']['sigle'] = $nouvellesValeurs['sigle'];
+                }
+                if (!empty($nouvellesValeurs['objet'])) {
+                    $variables['organisation']['objet'] = $nouvellesValeurs['objet'];
+                }
+                if (!empty($nouvellesValeurs['siege_social'])) {
+                    $variables['organisation']['siege_social'] = $nouvellesValeurs['siege_social'];
+                }
+                if (!empty($nouvellesValeurs['province'])) {
+                    $variables['organisation']['province'] = $nouvellesValeurs['province'];
+                }
+                if (!empty($nouvellesValeurs['departement'])) {
+                    $variables['organisation']['departement'] = $nouvellesValeurs['departement'];
+                }
+                if (!empty($nouvellesValeurs['ville_commune'])) {
+                    $variables['organisation']['ville_commune'] = $nouvellesValeurs['ville_commune'];
+                }
+                if (!empty($nouvellesValeurs['commune'])) {
+                    $variables['organisation']['commune'] = $nouvellesValeurs['commune'];
+                }
+                if (!empty($nouvellesValeurs['quartier'])) {
+                    $variables['organisation']['quartier'] = $nouvellesValeurs['quartier'];
+                }
+                if (!empty($nouvellesValeurs['telephone'])) {
+                    $variables['organisation']['telephone'] = $nouvellesValeurs['telephone'];
+                }
+                if (!empty($nouvellesValeurs['email'])) {
+                    $variables['organisation']['email'] = $nouvellesValeurs['email'];
+                }
+                if (!empty($nouvellesValeurs['site_web'])) {
+                    $variables['organisation']['site_web'] = $nouvellesValeurs['site_web'];
+                }
+                if (!empty($nouvellesValeurs['boite_postale'])) {
+                    $variables['organisation']['boite_postale'] = $nouvellesValeurs['boite_postale'];
+                }
+
+                Log::info('Nouvelles valeurs appliquées à l\'organisation pour le PDF', [
+                    'dossier_id' => $dossier->id,
+                    'champs_modifies' => array_keys($nouvellesValeurs),
+                ]);
+            }
+
+            // ✅ APPLIQUER LES NOUVEAUX MEMBRES DU BUREAU
+            if (!empty($bureauMembres)) {
+                $variables['organisation_membres'] = collect($bureauMembres)->map(function ($membre) {
+                    return [
+                        'nom' => $membre['nom'] ?? '',
+                        'prenom' => $membre['prenom'] ?? '',
+                        'nom_complet' => trim(($membre['prenom'] ?? '') . ' ' . ($membre['nom'] ?? '')),
+                        'fonction' => $membre['fonction'] ?? '',
+                        'contact' => $membre['telephone'] ?? '',
+                    ];
+                });
+
+                Log::info('Nouveaux membres du bureau appliqués pour le PDF', [
+                    'dossier_id' => $dossier->id,
+                    'nombre_membres' => count($bureauMembres),
+                ]);
+            }
+
+            $variables['modifications'] = [
+                'type_modification' => $donneesSupp['type_modification'] ?? null,
+                'justification' => $donneesSupp['justification'] ?? null,
+                'modifications' => $nouvellesValeurs,
+                'articles_modifies' => $donneesSupp['articles'] ?? [],
+                'bureau_modifications' => $bureauMembres,
+            ];
+
+            Log::info('Données de modification ajoutées aux variables PDF', [
+                'dossier_id' => $dossier->id,
+                'type_modification' => $variables['modifications']['type_modification'] ?? 'non défini',
+            ]);
+        } else {
+            $variables['modifications'] = null;
+        }
+
         return $variables;
     }
 
@@ -408,7 +620,7 @@ class DocumentGenerationService
                 Log::warning('Relation personnes() manquante sur Organisation', [
                     'organisation_id' => $organisation->id
                 ]);
-                
+
                 return [
                     'president' => null,
                     'vice_president' => null,
@@ -452,7 +664,7 @@ class DocumentGenerationService
                 Log::warning('Relation personnes() manquante pour mandataire', [
                     'organisation_id' => $organisation->id
                 ]);
-                
+
                 // Fallback : utiliser le premier fondateur
                 if ($organisation->fondateurs->isNotEmpty()) {
                     $fondateur = $organisation->fondateurs->first();
@@ -466,7 +678,7 @@ class DocumentGenerationService
                         'role' => 'Représentant légal',
                     ];
                 }
-                
+
                 return null;
             }
 
@@ -496,21 +708,23 @@ class DocumentGenerationService
             }
 
             $result = $organisation->personnes();
-            
+
             // Si c'est un Query Builder, récupérer les résultats
-            if ($result instanceof \Illuminate\Database\Eloquent\Builder || 
-                $result instanceof \Illuminate\Database\Eloquent\Relations\Relation) {
+            if (
+                $result instanceof \Illuminate\Database\Eloquent\Builder ||
+                $result instanceof \Illuminate\Database\Eloquent\Relations\Relation
+            ) {
                 return $result->get();
             }
-            
+
             // Si c'est déjà une Collection, la retourner
             if ($result instanceof \Illuminate\Support\Collection) {
                 return $result;
             }
-            
+
             // Sinon, convertir en collection
             return collect($result);
-            
+
         } catch (\Exception $e) {
             Log::error('Erreur getPersonnesCollection', [
                 'organisation_id' => $organisation->id,
@@ -528,7 +742,7 @@ class DocumentGenerationService
         try {
             // Utiliser le helper pour récupérer les personnes
             $personnes = $this->getPersonnesCollection($organisation);
-            
+
             // Filtrer et récupérer la première personne correspondante
             $personne = $personnes
                 ->where('role', $role)
@@ -561,12 +775,12 @@ class DocumentGenerationService
         try {
             // Utiliser le helper pour récupérer les personnes
             $personnes = $this->getPersonnesCollection($organisation);
-            
+
             // Filtrer les dirigeants
             return $personnes
                 ->where('is_active', true)
                 ->whereIn('role', ['president', 'vice_president', 'secretaire_general', 'tresorier'])
-                ->map(function($personne) {
+                ->map(function ($personne) {
                     return [
                         'nom' => $personne->nom,
                         'prenom' => $personne->prenom,
@@ -588,6 +802,38 @@ class DocumentGenerationService
     }
 
     /**
+     * Obtenir les membres du bureau pour le récépissé définitif
+     * 
+     * @param Organisation $organisation
+     * @return \Illuminate\Support\Collection
+     */
+    protected function getMembresBureauPourRecepisse(Organisation $organisation)
+    {
+        try {
+            // Charger les membres du bureau marqués pour le récépissé, ordonnés
+            return $organisation->membresBureauPourRecepisse()
+                ->get()
+                ->map(function ($membre) {
+                    return [
+                        'nom' => $membre->nom,
+                        'prenom' => $membre->prenom,
+                        'nom_complet' => trim($membre->prenom . ' ' . $membre->nom),
+                        'fonction' => $membre->fonction,
+                        'contact' => $membre->contact,
+                        'domicile' => $membre->domicile,
+                        'nip' => $membre->nip,
+                    ];
+                });
+        } catch (\Exception $e) {
+            Log::error('Erreur getMembresBureauPourRecepisse', [
+                'organisation_id' => $organisation->id,
+                'error' => $e->getMessage()
+            ]);
+            return collect([]);
+        }
+    }
+
+    /**
      * Obtenir le mandataire (représentant légal)
      */
     protected function getMandataire(Organisation $organisation): ?array
@@ -595,7 +841,7 @@ class DocumentGenerationService
         try {
             // Utiliser le helper pour récupérer les personnes
             $personnes = $this->getPersonnesCollection($organisation);
-            
+
             // Chercher un mandataire désigné
             $mandataire = $personnes
                 ->where('is_mandataire', true)
@@ -705,9 +951,18 @@ class DocumentGenerationService
             }
 
             $mois = [
-                1 => 'janvier', 2 => 'février', 3 => 'mars', 4 => 'avril',
-                5 => 'mai', 6 => 'juin', 7 => 'juillet', 8 => 'août',
-                9 => 'septembre', 10 => 'octobre', 11 => 'novembre', 12 => 'décembre'
+                1 => 'janvier',
+                2 => 'février',
+                3 => 'mars',
+                4 => 'avril',
+                5 => 'mai',
+                6 => 'juin',
+                7 => 'juillet',
+                8 => 'août',
+                9 => 'septembre',
+                10 => 'octobre',
+                11 => 'novembre',
+                12 => 'décembre'
             ];
 
             $jour = $date->format('j');
@@ -743,7 +998,7 @@ class DocumentGenerationService
         }
 
         if (!empty($missingVars)) {
-            throw new \Exception('Variables requises manquantes : ' . 
+            throw new \Exception('Variables requises manquantes : ' .
                 implode(', ', $missingVars));
         }
     }
@@ -783,7 +1038,7 @@ class DocumentGenerationService
         $backgroundCss = '';
         if (!empty($template->metadata['background']['enabled'])) {
             $backgroundType = $template->metadata['background']['type'] ?? 'armoiries';
-            
+
             if ($backgroundType === 'armoiries') {
                 $opacity = $template->metadata['background']['opacity'] ?? 0.05;
                 $backgroundCss = $this->imageHelper->getBackgroundArmoiriesGabon($opacity);
@@ -795,16 +1050,22 @@ class DocumentGenerationService
             }
         }
 
+        // ✅ Encoder l'image de pied de page pour mPDF
+        $bgPiedPageBase64 = $this->getBackgroundImageBase64();
+
         // Rendre le template Blade
         $html = View::make($template->template_path, [
             ...$variables,
             'qr_code_svg' => $qrCodeSvg,
-            'has_qr_code' => $template->has_qr_code,
+            // ⚠️ FIX: Désactiver le QR code dans le layout Blade car il est géré par mPDF dans le footer
+            'has_qr_code' => false,
             'has_signature' => $template->has_signature,
+            'signature_text' => $template->signature_text ?? '',
             'has_watermark' => $template->has_watermark,
             'watermark_css' => $watermarkCss,
             'background_css' => $backgroundCss,
             'has_background' => !empty($backgroundCss),
+            'bg_pied_page_base64' => $bgPiedPageBase64,  // ✅ NOUVEAU
             'signature_path' => $template->getSignatureFullPath(),
         ])->render();
 
@@ -830,22 +1091,51 @@ class DocumentGenerationService
      * 
      * @param string $html HTML à convertir
      * @param DocumentTemplate $template Template
-     * @return \Barryvdh\DomPDF\PDF
+     * @param string|null $qrCodeBase64 Image base64 du QR Code pour le footer
+     * @return \Mpdf\Mpdf
      */
-    protected function generatePDF(string $html, DocumentTemplate $template)
+    protected function generatePDF(string $html, DocumentTemplate $template, ?string $qrCodeBase64 = null)
     {
-        $margins = $template->getPdfMargins();
+        Log::info('DocumentGenerationService::generatePDF', [
+            'has_qr_code_base64' => !empty($qrCodeBase64),
+            'qr_code_length' => strlen($qrCodeBase64 ?? ''),
+            'template_id' => $template->id
+        ]);
 
-        $pdf = Pdf::loadHTML($html)
-            ->setPaper($template->getPdfFormat(), $template->getPdfOrientation())
-            ->setOption('margin_top', $margins['top'])
-            ->setOption('margin_bottom', $margins['bottom'])
-            ->setOption('margin_left', $margins['left'])
-            ->setOption('margin_right', $margins['right'])
-            ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isRemoteEnabled', true);
+        // Options pour PdfTemplateHelper (si le template a des headers/footers personnalisés)
+        $pdfOptions = [
+            'header_text' => $template->header_text ?? '',
+            'signature_text' => $template->signature_text ?? '',
+            'qr_code_base64' => $qrCodeBase64 ?? '', // Passer le QR Code au helper mPDF
+        ];
 
-        return $pdf;
+        // Pour le récépissé définitif (document multi-pages), header uniquement sur première page
+        if (
+            stripos($template->template_path, 'recepisse-definitif') !== false ||
+            stripos($template->nom, 'récépissé définitif') !== false
+        ) {
+            $pdfOptions['header_first_page_only'] = true;
+            $pdfOptions['bg_in_footer'] = true; // Utiliser le footer pour répéter l'image sur toutes les pages
+        }
+
+        // Pour le récépissé provisoire, activer aussi l'image de fond
+        if (
+            stripos($template->template_path, 'recepisse-provisoire') !== false ||
+            stripos($template->nom, 'récépissé provisoire') !== false
+        ) {
+            $pdfOptions['bg_in_footer'] = true; // Image de fond pour le récépissé provisoire aussi
+        }
+
+        // Utiliser PdfTemplateHelper pour générer le PDF avec mPDF
+        // Note: Les marges seront celles par défaut de mPDF (15mm)
+        $mpdf = \App\Helpers\PdfTemplateHelper::generatePdf(
+            $html,
+            $template->getPdfOrientation(),
+            $template->getPdfFormat(),
+            $pdfOptions
+        );
+
+        return $mpdf;
     }
 
     /**
@@ -859,7 +1149,7 @@ class DocumentGenerationService
     {
         $slug = \Str::slug($template->nom);
         $cleanNumber = str_replace(['/', '\\', '-'], '_', $numeroDocument);
-        
+
         return "{$slug}_{$cleanNumber}.pdf";
     }
 
@@ -885,17 +1175,17 @@ class DocumentGenerationService
     protected function flattenArray(array $array, string $prefix = ''): array
     {
         $result = [];
-        
+
         foreach ($array as $key => $value) {
             $newKey = $prefix === '' ? $key : $prefix . '.' . $key;
-            
+
             if (is_array($value) && !empty($value)) {
                 $result = array_merge($result, $this->flattenArray($value, $newKey));
             } else {
                 $result[$newKey] = $value;
             }
         }
-        
+
         return $result;
     }
 
@@ -970,7 +1260,7 @@ class DocumentGenerationService
         ];
 
         $typeDocument = $template->type_document;
-        
+
         // Chercher une correspondance
         foreach ($defaults as $key => $text) {
             if (stripos($typeDocument, $key) !== false) {
@@ -994,7 +1284,7 @@ class DocumentGenerationService
         // Chercher la balise </head> pour injecter le CSS avant
         if (stripos($html, '</head>') !== false) {
             $html = str_ireplace('</head>', $watermarkCss . "\n</head>", $html);
-        } 
+        }
         // Si pas de </head>, chercher <style>
         elseif (stripos($html, '<style>') !== false) {
             $html = str_ireplace('<style>', '<style>' . "\n" . $watermarkCss, $html);
@@ -1024,7 +1314,7 @@ class DocumentGenerationService
             'size' => $template->metadata['watermark']['size'] ?? '400px',
             'rotation' => $template->metadata['watermark']['rotation'] ?? -45,
         ];
-        
+
         return $this->imageHelper->generateImageWatermark($imagePath, $options);
     }
 
@@ -1040,7 +1330,7 @@ class DocumentGenerationService
         // Chercher la balise </head> pour injecter le CSS avant
         if (stripos($html, '</head>') !== false) {
             $html = str_ireplace('</head>', $backgroundCss . "\n</head>", $html);
-        } 
+        }
         // Si pas de </head>, chercher <style>
         elseif (stripos($html, '<style>') !== false) {
             $html = str_ireplace('<style>', '<style>' . "\n" . $backgroundCss, $html);
@@ -1051,5 +1341,32 @@ class DocumentGenerationService
         }
 
         return $html;
+    }
+
+    /**
+     * ✅ NOUVEAU : Encoder l'image de pied de page en base64
+     * Pour utilisation avec mPDF dans les templates
+     */
+    protected function getBackgroundImageBase64(): ?string
+    {
+        try {
+            $imagePath = public_path('storage/images/bg-pied-page.png');
+
+            if (!file_exists($imagePath)) {
+                Log::warning('Image bg-pied-page.png introuvable', ['path' => $imagePath]);
+                return null;
+            }
+
+            $imageData = file_get_contents($imagePath);
+            $base64 = base64_encode($imageData);
+
+            return 'data:image/png;base64,' . $base64;
+
+        } catch (\Exception $e) {
+            Log::error('Erreur encodage image bg-pied-page.png', [
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
     }
 }

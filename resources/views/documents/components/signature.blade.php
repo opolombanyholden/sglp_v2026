@@ -1,17 +1,26 @@
 @if($has_signature ?? false)
-<div style="margin-top: 30px;">
-    <p style="margin-bottom: 10px;"><strong>Le Directeur Général</strong></p>
-    
-    @if(isset($signature_path) && file_exists($signature_path))
-        <img src="{{ $signature_path }}" alt="Signature" class="signature-image">
+    @if(!empty($signature_text))
+        {{-- Signature dynamique depuis le template --}}
+        <div style="margin-top:5px;">
+
+            {!! $signature_text !!}
+        </div>
     @else
-        <div style="height: 60px; border: 1px dashed #ccc; display: flex; align-items: center; justify-content: center; color: #999; font-size: 9pt;">
-            [Signature électronique]
+        {{-- Signature par défaut --}}
+        <div style="margin-top: 40px;">
+            <p style="margin-bottom: 10px;">
+                <strong>Fait à {{ $geographie['lieu_edition'] ?? 'Libreville' }}, le {{ now()->format('d/m/Y') }}</strong>
+            </p>
+
+            <p style="margin-top: 30px; margin-bottom: 5px;">
+                <strong>{{ $ministere['nom_court'] ?? 'Le Ministre de l\'Intérieur' }}</strong>
+            </p>
+
+            @if(!empty($signature_path) && file_exists($signature_path))
+                <div style="margin-top: 20px;">
+                    <img src="{{ $signature_path }}" alt="Signature" style="max-width: 200px; height: auto;" />
+                </div>
+            @endif
         </div>
     @endif
-    
-    <p style="margin-top: 10px;">
-        <strong>{{ $agent['nom'] ?? 'Direction Générale' }}</strong>
-    </p>
-</div>
 @endif

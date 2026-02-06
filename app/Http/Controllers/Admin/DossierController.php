@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\Validator;
 use App\Services\PDFService;
 use App\Services\FifoPriorityService;
 use App\Services\WorkflowService;
-use App\Services\QrCodeService;
+use App\Services\QRCodeService;
 
 
 class DossierController extends Controller
@@ -39,7 +39,7 @@ class DossierController extends Controller
     public function __construct(
         PDFService $pdfService,
         WorkflowService $workflowService,
-        QrCodeService $qrCodeService,
+        QRCodeService $qrCodeService,
         FifoPriorityService $fifoPriorityService
     ) {
         $this->middleware(['auth', 'verified', 'admin']);
@@ -170,6 +170,47 @@ class DossierController extends Controller
         }
     }
 
+    /**
+     * ========================================
+     * SHOW ORGANISATION - Afficher les détails d'une organisation
+     * ========================================
+     * Route: GET /admin/organisations/{organisation}
+     */
+    public function showOrganisation($id)
+    {
+        try {
+            $organisation = Organisation::with([
+                'dossiers' => function ($query) {
+                    $query->orderBy('created_at', 'desc');
+                },
+                'user',
+                'fondateurs',
+                'organisationType'
+            ])->findOrFail($id);
+
+            // Récupérer le dernier dossier
+            $dernierDossier = $organisation->dossiers->first();
+
+            // Statistiques de l'organisation
+            $stats = [
+                'total_dossiers' => $organisation->dossiers->count(),
+                'dossiers_approuves' => $organisation->dossiers->where('statut', 'approuve')->count(),
+                'dossiers_en_cours' => $organisation->dossiers->whereIn('statut', ['soumis', 'en_cours'])->count(),
+                'dossiers_rejetes' => $organisation->dossiers->where('statut', 'rejete')->count(),
+            ];
+
+            return view('admin.organisations.show', compact(
+                'organisation',
+                'dernierDossier',
+                'stats'
+            ));
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur showOrganisation: ' . $e->getMessage());
+            return back()->with('error', 'Organisation introuvable.');
+        }
+    }
+
     /*
     |--------------------------------------------------------------------------
     | 📝 CRÉATION DE DOSSIER (ADMIN)
@@ -200,14 +241,322 @@ class DossierController extends Controller
                 ->orderBy('ordre_affichage')
                 ->get();
 
+            // Domaines d'activité pour le dropdown
+            $domainesActivite = \App\Models\DomaineActivite::actif()
+                ->ordered()
+                ->get();
+
             return view('admin.dossiers.create', compact(
                 'typesOrganisation',
-                'provinces'
+                'provinces',
+                'domainesActivite'
             ));
 
         } catch (\Exception $e) {
             \Log::error('Erreur DossierController@create: ' . $e->getMessage());
             return back()->with('error', 'Erreur lors du chargement du formulaire.');
+        }
+    }
+    /**
+     * ========================================
+     * EDIT - Formulaire de modification de dossier (Admin)
+     * ========================================
+     * Route: GET /admin/dossiers/{dossier}/edit
+     * 
+     * Affiche le formulaire d'édition si le dossier est en brouillon.
+     * Sinon, redirige vers la page show.
+     */
+    public function edit($id)
+    {
+        try {
+            // Charger le dossier avec ses relations
+            $dossier = Dossier::with([
+                'organisation.fondateurs',
+                'organisation.membresBureau',
+                'organisation.adherents',
+                'documents.documentType',
+            ])->findOrFail($id);
+
+            // Vérifier si le dossier peut être édité
+            if (!$dossier->canBeEdited()) {
+                \Log::info('Tentative d\'édition d\'un dossier non éditable', [
+                    'user_id' => auth()->id(),
+                    'dossier_id' => $id,
+                    'dossier_statut' => $dossier->statut
+                ]);
+
+                return redirect()->route('admin.dossiers.show', $id)
+                    ->with('warning', 'Ce dossier ne peut pas être modifié car il n\'est plus en brouillon. Seuls les dossiers en brouillon peuvent être édités.');
+            }
+
+            \Log::info('Admin accède au formulaire d\'édition de dossier', [
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name ?? 'Unknown',
+                'dossier_id' => $id,
+                'dossier_numero' => $dossier->numero_dossier
+            ]);
+
+            // Types d'organisations avec leurs configurations
+            $typesOrganisation = OrganisationType::where('is_active', true)
+                ->orderBy('ordre')
+                ->get();
+
+            // Provinces pour géolocalisation
+            $provinces = Province::where('is_active', true)
+                ->orderBy('ordre_affichage')
+                ->get();
+
+            // Domaines d'activité pour le dropdown
+            $domainesActivite = \App\Models\DomaineActivite::actif()
+                ->ordered()
+                ->get();
+
+            // Agents pour assignation
+            $agents = User::where('role', 'agent')
+                ->orWhere('role', 'admin')
+                ->orderBy('name')
+                ->get();
+
+            // Extraire les données du déclarant depuis donnees_supplementaires
+            $declarant = null;
+            if (!empty($dossier->donnees_supplementaires)) {
+                $donneesSupplementaires = is_array($dossier->donnees_supplementaires)
+                    ? $dossier->donnees_supplementaires
+                    : json_decode($dossier->donnees_supplementaires, true);
+                $declarant = $donneesSupplementaires['demandeur'] ?? null;
+            }
+
+            return view('admin.dossiers.edit', compact(
+                'dossier',
+                'typesOrganisation',
+                'provinces',
+                'domainesActivite',
+                'agents',
+                'declarant'
+            ));
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            \Log::warning("Tentative d'édition d'un dossier inexistant: {$id}", [
+                'user_id' => auth()->id(),
+                'ip' => request()->ip()
+            ]);
+            return redirect()->route('admin.dossiers.index')
+                ->with('error', 'Dossier non trouvé.');
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur DossierController@edit: ' . $e->getMessage(), [
+                'dossier_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Erreur lors du chargement du formulaire d\'édition.');
+        }
+    }
+
+    /**
+     * ========================================
+     * UPDATE - Mettre à jour un dossier existant (Admin)
+     * ========================================
+     * Route: PUT /admin/dossiers/{dossier}
+     */
+    public function update(Request $request, $id)
+    {
+        try {
+            $dossier = Dossier::with('organisation')->findOrFail($id);
+
+            // Vérifier si le dossier peut être édité
+            if (!$dossier->canBeEdited()) {
+                return redirect()->route('admin.dossiers.show', $dossier->id)
+                    ->with('error', 'Ce dossier ne peut pas être modifié (statut: ' . $dossier->statut_label . ')');
+            }
+
+            // Validation des données
+            $validated = $request->validate([
+                // Déclarant
+                'demandeur_nip' => 'required|string|max:20',
+                'demandeur_nom' => 'required|string|max:100',
+                'demandeur_prenom' => 'required|string|max:100',
+                'demandeur_telephone' => 'required|string|max:20',
+                'demandeur_email' => 'nullable|email|max:255',
+                'demandeur_civilite' => 'nullable|string|max:10',
+
+                // Organisation
+                'org_nom' => 'required|string|max:255',
+                'org_sigle' => 'nullable|string|max:50',
+                'org_objet' => 'required|string',
+                'org_domaine_activite_id' => 'nullable|exists:domaines_activite,id',
+                'org_date_creation' => 'nullable|date',
+                'org_telephone' => 'required|string|max:20',
+                'org_email' => 'nullable|email|max:255',
+
+                // Localisation
+                'org_adresse' => 'required|string|max:500',
+                'org_prefecture' => 'required|string|max:255',
+                'org_sous_prefecture' => 'nullable|string|max:255',
+                'org_lieu_dit' => 'nullable|string|max:255',
+                'org_latitude' => 'nullable|string|max:50',
+                'org_longitude' => 'nullable|string|max:50',
+            ]);
+
+            DB::beginTransaction();
+
+            // Préparer les données du déclarant pour donnees_supplementaires
+            $donneesSupplementaires = is_array($dossier->donnees_supplementaires)
+                ? $dossier->donnees_supplementaires
+                : json_decode($dossier->donnees_supplementaires ?? '{}', true);
+
+            $donneesSupplementaires['demandeur'] = [
+                'nip' => $validated['demandeur_nip'],
+                'nom' => $validated['demandeur_nom'],
+                'prenom' => $validated['demandeur_prenom'],
+                'telephone' => $validated['demandeur_telephone'],
+                'email' => $validated['demandeur_email'] ?? null,
+                'civilite' => $validated['demandeur_civilite'] ?? null,
+                'role' => $request->input('demandeur_role', 'Déclarant'),
+            ];
+
+            // Mettre à jour le dossier avec les données déclarant
+            $dossier->update([
+                'donnees_supplementaires' => $donneesSupplementaires,
+            ]);
+
+            // Mettre à jour l'organisation liée
+            if ($dossier->organisation) {
+                $dossier->organisation->update([
+                    'nom' => $validated['org_nom'],
+                    'sigle' => $validated['org_sigle'] ?? null,
+                    'objet' => $validated['org_objet'],
+                    'domaine_activite_id' => $validated['org_domaine_activite_id'] ?? null,
+                    'date_creation' => $validated['org_date_creation'] ?? null,
+                    'telephone' => $validated['org_telephone'],
+                    'email' => $validated['org_email'] ?? null,
+                    'siege_social' => $validated['org_adresse'],
+                    'prefecture' => $validated['org_prefecture'],
+                    'sous_prefecture' => $validated['org_sous_prefecture'] ?? null,
+                    'lieu_dit' => $validated['org_lieu_dit'] ?? null,
+                    'latitude' => $validated['org_latitude'] ?? null,
+                    'longitude' => $validated['org_longitude'] ?? null,
+                ]);
+
+                // IMPORTANT: Supprimer les adhérents AVANT les fondateurs pour éviter les violations de clés étrangères
+                // Les adhérents peuvent avoir une référence vers fondateur_id
+                if ($request->has('adherents') && is_array($request->adherents)) {
+                    // Supprimer les anciens et recréer
+                    $dossier->organisation->adherents()->delete();
+                    foreach ($request->adherents as $adherent) {
+                        if (!empty($adherent['nom']) || !empty($adherent['prenom'])) {
+                            $dossier->organisation->adherents()->create([
+                                'nip' => $adherent['nip'] ?? null,
+                                'nom' => $adherent['nom'] ?? '',
+                                'prenom' => $adherent['prenom'] ?? '',
+                                'profession' => $adherent['profession'] ?? null,
+                            ]);
+                        }
+                    }
+                }
+
+                // Mettre à jour les fondateurs si fournis
+                if ($request->has('fondateurs') && is_array($request->fondateurs)) {
+                    // Supprimer les anciens et recréer
+                    $dossier->organisation->fondateurs()->delete();
+                    foreach ($request->fondateurs as $fondateur) {
+                        if (!empty($fondateur['nom']) || !empty($fondateur['prenom'])) {
+                            $dossier->organisation->fondateurs()->create([
+                                'nip' => $fondateur['nip'] ?? null,
+                                'civilite' => $fondateur['civilite'] ?? 'M',
+                                'nom' => $fondateur['nom'] ?? '',
+                                'prenom' => $fondateur['prenom'] ?? '',
+                                'fonction' => $fondateur['fonction'] ?? null,
+                            ]);
+                        }
+                    }
+                }
+
+                // Mettre à jour les membres du bureau si fournis
+                if ($request->has('membres_bureau') && is_array($request->membres_bureau)) {
+                    // Supprimer les anciens et recréer
+                    $dossier->organisation->membresBureau()->delete();
+                    foreach ($request->membres_bureau as $membre) {
+                        if (!empty($membre['nom']) || !empty($membre['prenom'])) {
+                            $dossier->organisation->membresBureau()->create([
+                                'nip' => $membre['nip'] ?? null,
+                                'nom' => $membre['nom'] ?? '',
+                                'prenom' => $membre['prenom'] ?? '',
+                                'fonction' => $membre['fonction'] ?? null,
+                                'contact' => $membre['contact'] ?? null,
+                                'domicile' => $membre['domicile'] ?? null,
+                                'afficher_recepisse' => isset($membre['afficher_recepisse']) ? 1 : 0,
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // Enregistrer l'opération dans l'historique
+            if (method_exists($dossier, 'operations')) {
+                $dossier->operations()->create([
+                    'type_operation' => 'modification',
+                    'user_id' => auth()->id(),
+                    'description' => 'Dossier modifié par l\'administrateur',
+                    'ancien_statut' => $dossier->statut,
+                    'nouveau_statut' => $dossier->statut,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            }
+
+            // Gérer l'action (brouillon ou soumettre)
+            $action = $request->input('action', 'brouillon');
+            $successMessage = 'Dossier enregistré comme brouillon avec succès.';
+
+            if ($action === 'soumettre') {
+                // Mettre à jour le statut à 'soumis'
+                $dossier->update([
+                    'statut' => Dossier::STATUT_SOUMIS,
+                    'date_soumission' => now(),
+                ]);
+
+                // Enregistrer l'opération de soumission
+                if (method_exists($dossier, 'operations')) {
+                    $dossier->operations()->create([
+                        'type_operation' => 'soumission',
+                        'user_id' => auth()->id(),
+                        'description' => 'Dossier soumis par l\'administrateur',
+                        'ancien_statut' => Dossier::STATUT_BROUILLON,
+                        'nouveau_statut' => Dossier::STATUT_SOUMIS,
+                        'ip_address' => request()->ip(),
+                        'user_agent' => request()->userAgent()
+                    ]);
+                }
+
+                $successMessage = 'Dossier soumis avec succès. Il est maintenant en attente de traitement.';
+            }
+
+            DB::commit();
+
+            \Log::info("Dossier {$dossier->id} mis à jour", [
+                'dossier_numero' => $dossier->numero_dossier,
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name,
+                'action' => $action
+            ]);
+
+            return redirect()->route('admin.dossiers.show', $dossier->id)
+                ->with('success', $successMessage);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return back()->withErrors($e->errors())->withInput();
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return redirect()->route('admin.dossiers.index')
+                ->with('error', 'Dossier non trouvé.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Erreur DossierController@update: ' . $e->getMessage(), [
+                'dossier_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Erreur lors de la mise à jour du dossier: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -237,6 +586,7 @@ class DossierController extends Controller
                 'org_nom' => 'required|string|max:255',
                 'org_sigle' => 'nullable|string|max:20',
                 'org_objet' => 'required|string',
+                'org_domaine_activite_id' => 'required|exists:domaines_activite,id',
                 'org_date_creation' => 'required|date',
                 'org_telephone' => 'required|string|max:20',
                 'org_email' => 'nullable|email|max:255',
@@ -286,6 +636,10 @@ class DossierController extends Controller
             $commune = isset($validated['org_commune_id']) ? CommuneVille::find($validated['org_commune_id']) : null;
             $arrondissement = isset($validated['org_arrondissement_id']) ? Arrondissement::find($validated['org_arrondissement_id']) : null;
 
+            // Déterminer le statut basé sur l'action
+            $actionRequest = $request->input('action', 'brouillon');
+            $orgStatut = ($actionRequest === 'soumettre') ? 'soumis' : 'brouillon';
+
             // Créer l'organisation
             $organisation = Organisation::create([
                 'user_id' => auth()->id(),
@@ -294,6 +648,7 @@ class DossierController extends Controller
                 'nom' => $validated['org_nom'],
                 'sigle' => $validated['org_sigle'] ?? null,
                 'objet' => $validated['org_objet'],
+                'domaine_activite_id' => $validated['org_domaine_activite_id'],
                 'siege_social' => $validated['org_adresse'], // Mapping correct vers siege_social
                 'province' => $province->nom ?? null,
                 'departement' => $departement->nom ?? null,
@@ -312,7 +667,7 @@ class DossierController extends Controller
                 'email' => $validated['org_email'] ?? null,
                 'site_web' => $validated['org_site_web'] ?? null,
                 'date_creation' => $validated['org_date_creation'],
-                'statut' => 'soumis',
+                'statut' => $orgStatut,
                 'is_active' => true,
             ]);
 
@@ -320,13 +675,17 @@ class DossierController extends Controller
             $numeroRecepisse = $this->generateRecepisseNumberAdmin($orgType->code);
             $organisation->update(['numero_recepisse' => $numeroRecepisse]);
 
+            // Créer le dossier avec le statut basé sur l'action
+            $dossierStatut = ($actionRequest === 'soumettre') ? Dossier::STATUT_SOUMIS : Dossier::STATUT_BROUILLON;
+
             // Créer le dossier
             $dossier = Dossier::create([
                 'organisation_id' => $organisation->id,
                 'numero_dossier' => $this->generateNumeroDossierAdmin(),
                 'numero_recepisse' => $numeroRecepisse,
                 'type_operation' => 'creation',
-                'statut' => 'soumis',
+                'statut' => $dossierStatut,
+                'date_soumission' => ($actionRequest === 'soumettre') ? now() : null,
                 'donnees_supplementaires' => json_encode([
                     'demandeur' => [
                         'nip' => $validated['demandeur_nip'],
@@ -363,6 +722,23 @@ class DossierController extends Controller
                     'telephone' => $fondateurData['telephone'] ?? null,
                     'email' => $fondateurData['email'] ?? null,
                 ]);
+            }
+
+            // Créer les membres du bureau
+            if (!empty($request->membresBureau)) {
+                foreach ($request->membresBureau as $index => $membreData) {
+                    \App\Models\MembreBureau::create([
+                        'organisation_id' => $organisation->id,
+                        'nip' => $membreData['nip'],
+                        'nom' => strtoupper($membreData['nom']),
+                        'prenom' => $membreData['prenom'],
+                        'fonction' => $membreData['fonction'],
+                        'contact' => $membreData['contact'] ?? null,
+                        'domicile' => $membreData['domicile'] ?? null,
+                        'afficher_recepisse' => ($membreData['afficher_recepisse'] ?? '0') === '1',
+                        'ordre' => $index + 1,
+                    ]);
+                }
             }
 
             // Créer les adhérents si fournis
@@ -420,10 +796,16 @@ class DossierController extends Controller
                 'type' => $orgType->code,
                 'admin_id' => auth()->id(),
                 'admin_name' => auth()->user()->name,
+                'action' => $actionRequest,
             ]);
 
+            // Message de succès basé sur l'action
+            $successMessage = ($actionRequest === 'soumettre')
+                ? 'Dossier créé et soumis avec succès. Numéro: ' . $dossier->numero_dossier . '. Il est maintenant en attente de traitement.'
+                : 'Dossier créé et enregistré comme brouillon. Numéro: ' . $dossier->numero_dossier;
+
             return redirect()->route('admin.dossiers.show', $dossier->id)
-                ->with('success', 'Dossier créé avec succès. Numéro: ' . $dossier->numero_dossier);
+                ->with('success', $successMessage);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
@@ -748,7 +1130,7 @@ class DossierController extends Controller
             }
 
             // Générer le PDF d'accusé de réception
-            $pdf = $this->pdfService->generateAccuseReception($dossier);
+            $mpdf = $this->pdfService->generateAccuseReception($dossier);
 
             // Nom de fichier sécurisé
             $filename = $this->sanitizeFilename("accuse_reception_{$dossier->numero_dossier}") . "_" . now()->format('Ymd') . ".pdf";
@@ -766,7 +1148,10 @@ class DossierController extends Controller
                 'user' => auth()->user()->name
             ]);
 
-            return $pdf->download($filename);
+            // mPDF: Utiliser Output pour le téléchargement
+            return response($mpdf->Output($filename, \Mpdf\Output\Destination::STRING_RETURN))
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
 
         } catch (\Exception $e) {
             \Log::error('Erreur génération accusé PDF: ' . $e->getMessage(), [
@@ -819,7 +1204,7 @@ class DossierController extends Controller
                 'user' => auth()->user()->name
             ]);
 
-            return $pdf->download($filename);
+            return \App\Helpers\PdfTemplateHelper::downloadPdf($pdf, $filename);
 
         } catch (\Exception $e) {
             \Log::error('Erreur génération récépissé définitif PDF: ' . $e->getMessage(), [
@@ -842,6 +1227,10 @@ class DossierController extends Controller
     public function downloadRecepisseDefinitif($id)
     {
         try {
+            // Augmenter les limites pour la génération PDF
+            set_time_limit(120);
+            ini_set('memory_limit', '256M');
+
             // Charger le dossier avec ses relations
             $dossier = Dossier::with(['organisation.fondateurs'])->findOrFail($id);
 
@@ -853,8 +1242,26 @@ class DossierController extends Controller
             // Générer le PDF du récépissé définitif
             $pdf = $this->pdfService->generateRecepisseDefinitif($dossier);
 
-            // Nom de fichier sécurisé
-            $filename = $this->sanitizeFilename("recepisse_definitif_{$dossier->organisation->nom}_{$dossier->numero_dossier}") . "_" . now()->format('Ymd') . ".pdf";
+            // Nom de fichier sécurisé avec timestamp unique
+            $filename = $this->sanitizeFilename("recepisse_definitif_{$dossier->organisation->nom}_{$dossier->numero_dossier}") . "_" . now()->format('YmdHis') . ".pdf";
+
+            // Sauvegarder dans public/storage/documents (accessible directement)
+            $publicPath = public_path('storage/documents/' . $filename);
+
+            // S'assurer que le dossier existe
+            if (!file_exists(public_path('storage/documents'))) {
+                mkdir(public_path('storage/documents'), 0755, true);
+            }
+
+            // Sauvegarder le PDF
+            $pdf->Output($publicPath, \Mpdf\Output\Destination::FILE);
+
+            if (!file_exists($publicPath)) {
+                throw new \Exception('Le fichier PDF n\'a pas pu être créé');
+            }
+
+            $fileSize = filesize($publicPath);
+            \Log::info("PDF sauvegardé en public, taille: {$fileSize} octets, fichier: {$filename}");
 
             // Log de l'activité
             \Log::info("Téléchargement récépissé définitif pour dossier {$dossier->id}", [
@@ -864,7 +1271,10 @@ class DossierController extends Controller
                 'user' => auth()->user()->name
             ]);
 
-            return $pdf->download($filename);
+            // Rediriger vers le fichier pour téléchargement direct
+            $fileUrl = asset('storage/documents/' . $filename);
+
+            return redirect($fileUrl);
 
         } catch (\Exception $e) {
             \Log::error('Erreur téléchargement récépissé définitif: ' . $e->getMessage(), [
@@ -2118,26 +2528,12 @@ class DossierController extends Controller
                 ], 400);
             }
 
-            // Mettre à jour le statut si suspension demandée
-            if ($request->suspendre_traitement) {
-                $dossier->update([
-                    'statut' => 'en_attente_modification',
-                    'modification_requested_at' => now(),
-                    'modification_deadline' => now()->addDays($request->delai_modification)
-                ]);
-            }
-
-            // Créer l'enregistrement de demande de modification
-            $dossier->modifications()->create([
-                'user_id' => auth()->id(),
-                'type_modifications' => $request->modifications,
-                'details' => $request->details_modifications,
-                'delai_jours' => $request->delai_modification,
-                'priorite' => $request->priorite_modification,
-                'date_limite' => now()->addDays($request->delai_modification),
-                'statut' => 'en_attente',
-                'email_envoye' => $request->envoyer_email_modification,
-                'rappels_actives' => $request->rappel_automatique
+            // Mettre à jour le statut vers brouillon pour permettre les modifications
+            $ancienStatut = $dossier->statut;
+            $dossier->update([
+                'statut' => 'brouillon',
+                'modification_requested_at' => now(),
+                'modification_deadline' => now()->addDays($request->delai_modification)
             ]);
 
             // Ajouter un commentaire détaillé
@@ -2154,8 +2550,8 @@ class DossierController extends Controller
                 'type_operation' => 'retour_pour_correction',
                 'user_id' => auth()->id(),
                 'description' => $commentaireModification,
-                'ancien_statut' => $dossier->getOriginal('statut') ?? 'en_cours',
-                'nouveau_statut' => 'retour_modification',
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => 'brouillon',
                 'ip_address' => request()->ip(),
                 'user_agent' => request()->userAgent()
             ]);
@@ -2210,6 +2606,327 @@ class DossierController extends Controller
                 'success' => false,
                 'message' => 'Erreur lors de la demande de modification'
             ], 500);
+        }
+    }
+
+    /**
+     * Remettre un dossier en brouillon (Admin uniquement)
+     * Route: POST /admin/dossiers/{id}/set-brouillon
+     * 
+     * Permet à un administrateur de remettre un dossier soumis ou en cours
+     * en mode brouillon pour que le propriétaire puisse le modifier.
+     */
+    public function setBrouillon(Request $request, $id)
+    {
+        try {
+            $request->validate([
+                'motif' => 'nullable|string|max:1000'
+            ]);
+
+            DB::beginTransaction();
+
+            $dossier = Dossier::with('organisation')->findOrFail($id);
+
+            // Vérifier que le dossier peut être remis en brouillon
+            if (in_array($dossier->statut, ['approuve', 'rejete'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Impossible de remettre en brouillon un dossier approuvé ou rejeté'
+                ], 400);
+            }
+
+            // Sauvegarder l'ancien statut
+            $ancienStatut = $dossier->statut;
+
+            // Mettre à jour le statut
+            $dossier->update([
+                'statut' => 'brouillon'
+            ]);
+
+            // Ajouter une opération dans l'historique
+            $motif = $request->motif ?? 'Remise en brouillon par l\'administrateur';
+            $dossier->operations()->create([
+                'type_operation' => 'modification',
+                'user_id' => auth()->id(),
+                'description' => "Dossier remis en brouillon. Motif: {$motif}",
+                'ancien_statut' => $ancienStatut,
+                'nouveau_statut' => 'brouillon',
+                'ip_address' => request()->ip(),
+                'user_agent' => request()->userAgent()
+            ]);
+
+            DB::commit();
+
+            \Log::info("Dossier {$dossier->numero_dossier} remis en brouillon par " . auth()->user()->name);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Dossier remis en brouillon avec succès. Le propriétaire peut maintenant le modifier.'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Erreur DossierController@setBrouillon: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la remise en brouillon'
+            ], 500);
+        }
+    }
+
+    /**
+     * Liste les dossiers en brouillon (en attente de soumission)
+     * Route: GET /admin/dossiers/brouillons
+     */
+    public function brouillons(Request $request)
+    {
+        try {
+            // Récupérer les dossiers en brouillon avec pagination
+            $query = Dossier::with(['organisation', 'assignedAgent'])
+                ->where('statut', 'brouillon')
+                ->orderBy('updated_at', 'desc');
+
+            // Filtres optionnels
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('numero_dossier', 'like', "%{$search}%")
+                        ->orWhereHas('organisation', function ($org) use ($search) {
+                            $org->where('nom', 'like', "%{$search}%")
+                                ->orWhere('sigle', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            $dossiers = $query->paginate(15);
+
+            // Enrichir les dossiers avec des données supplémentaires
+            $dossiers->getCollection()->transform(function ($dossier) {
+                return $this->enrichDossierData($dossier);
+            });
+
+            // Statistiques
+            $stats = [
+                'total_brouillons' => Dossier::where('statut', 'brouillon')->count(),
+                'en_attente_plus_7_jours' => Dossier::where('statut', 'brouillon')
+                    ->where('updated_at', '<', now()->subDays(7))
+                    ->count()
+            ];
+
+            return view('admin.dossiers.brouillons', compact('dossiers', 'stats'));
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur DossierController@brouillons: ' . $e->getMessage());
+            return back()->with('error', 'Erreur lors du chargement des dossiers en brouillon');
+        }
+    }
+
+    /**
+     * Liste les dossiers annulés (corbeille)
+     * Route: GET /admin/dossiers/annules
+     */
+    public function annules(Request $request)
+    {
+        try {
+            // Récupérer les dossiers annulés avec pagination
+            $query = Dossier::with(['organisation', 'assignedAgent'])
+                ->where('statut', Dossier::STATUT_ANNULE)
+                ->orderBy('updated_at', 'desc');
+
+            // Filtres optionnels
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('numero_dossier', 'like', "%{$search}%")
+                        ->orWhereHas('organisation', function ($org) use ($search) {
+                            $org->where('nom', 'like', "%{$search}%")
+                                ->orWhere('sigle', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            $dossiers = $query->paginate(15);
+
+            // Enrichir les dossiers avec des données supplémentaires
+            $dossiers->getCollection()->transform(function ($dossier) {
+                return $this->enrichDossierData($dossier);
+            });
+
+            // Statistiques
+            $stats = [
+                'total_annules' => Dossier::where('statut', Dossier::STATUT_ANNULE)->count(),
+                'annules_ce_mois' => Dossier::where('statut', Dossier::STATUT_ANNULE)
+                    ->where('updated_at', '>=', now()->startOfMonth())
+                    ->count()
+            ];
+
+            return view('admin.dossiers.annules', compact('dossiers', 'stats'));
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur DossierController@annules: ' . $e->getMessage());
+            return back()->with('error', 'Erreur lors du chargement des dossiers annulés');
+        }
+    }
+
+    /**
+     * Annuler un dossier (changer le statut vers 'annule')
+     * Route: POST /admin/dossiers/{dossier}/cancel
+     */
+    public function cancel(Request $request, $id)
+    {
+        try {
+            $dossier = Dossier::findOrFail($id);
+
+            // Vérifier si le dossier peut être annulé
+            if (!$dossier->canBeCancelled()) {
+                return back()->with('error', 'Ce dossier ne peut pas être annulé (statut: ' . $dossier->statut_label . ')');
+            }
+
+            $ancienStatut = $dossier->statut;
+
+            DB::beginTransaction();
+
+            // Mettre à jour le statut
+            $dossier->update([
+                'statut' => Dossier::STATUT_ANNULE,
+                'motif_rejet' => $request->input('motif', 'Annulé par l\'administrateur')
+            ]);
+
+            // Enregistrer l'opération dans l'historique
+            if (method_exists($dossier, 'operations')) {
+                $dossier->operations()->create([
+                    'type_operation' => 'archivage', // Utiliser 'archivage' car 'annulation' n'est pas dans l'ENUM
+                    'user_id' => auth()->id(),
+                    'description' => 'Dossier annulé. Motif: ' . ($request->input('motif', 'Non spécifié')),
+                    'ancien_statut' => $ancienStatut,
+                    'nouveau_statut' => Dossier::STATUT_ANNULE,
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            }
+
+            DB::commit();
+
+            \Log::info("Dossier {$dossier->id} annulé", [
+                'dossier_numero' => $dossier->numero_dossier,
+                'ancien_statut' => $ancienStatut,
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name
+            ]);
+
+            return redirect()->route('admin.dossiers.annules')
+                ->with('success', 'Dossier annulé avec succès.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Erreur DossierController@cancel: ' . $e->getMessage(), [
+                'dossier_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Erreur lors de l\'annulation du dossier: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Liste les dossiers supprimés (soft deleted) - Super Admin uniquement
+     * Route: GET /admin/dossiers/supprimes
+     */
+    public function supprimes(Request $request)
+    {
+        try {
+            // Vérifier les permissions (super_admin uniquement)
+            $user = auth()->user();
+            if (!in_array($user->role, ['super_admin', 'superadmin'])) {
+                return redirect()->route('admin.dossiers.index')
+                    ->with('error', 'Vous n\'avez pas les permissions pour accéder à cette page.');
+            }
+
+            // Récupérer les dossiers soft-deleted seulement
+            $query = Dossier::onlyTrashed()
+                ->with(['organisation', 'assignedAgent'])
+                ->orderBy('deleted_at', 'desc');
+
+            // Filtres optionnels
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('numero_dossier', 'like', "%{$search}%")
+                        ->orWhereHas('organisation', function ($org) use ($search) {
+                            $org->where('nom', 'like', "%{$search}%")
+                                ->orWhere('sigle', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            $dossiers = $query->paginate(15);
+
+            // Statistiques
+            $stats = [
+                'total_supprimes' => Dossier::onlyTrashed()->count(),
+                'supprimes_ce_mois' => Dossier::onlyTrashed()
+                    ->where('deleted_at', '>=', now()->startOfMonth())
+                    ->count()
+            ];
+
+            return view('admin.dossiers.supprimes', compact('dossiers', 'stats'));
+
+        } catch (\Exception $e) {
+            \Log::error('Erreur DossierController@supprimes: ' . $e->getMessage());
+            return back()->with('error', 'Erreur lors du chargement des dossiers supprimés');
+        }
+    }
+
+    /**
+     * Suppression logique définitive (soft delete) d'un dossier annulé
+     * Route: DELETE /admin/dossiers/{dossier}/delete-permanently
+     */
+    public function deletePermanently($id)
+    {
+        try {
+            // Récupérer le dossier (incluant les annulés)
+            $dossier = Dossier::where('id', $id)
+                ->where('statut', Dossier::STATUT_ANNULE)
+                ->firstOrFail();
+
+            DB::beginTransaction();
+
+            // Enregistrer l'opération avant la suppression
+            if (method_exists($dossier, 'operations')) {
+                $dossier->operations()->create([
+                    'type_operation' => 'archivage', // Utiliser 'archivage' car 'suppression' n'est pas dans l'ENUM
+                    'user_id' => auth()->id(),
+                    'description' => 'Dossier supprimé définitivement (soft delete)',
+                    'ancien_statut' => $dossier->statut,
+                    'nouveau_statut' => 'supprime',
+                    'ip_address' => request()->ip(),
+                    'user_agent' => request()->userAgent()
+                ]);
+            }
+
+            // Soft delete
+            $dossier->delete();
+
+            DB::commit();
+
+            \Log::info("Dossier {$dossier->id} supprimé (soft delete)", [
+                'dossier_numero' => $dossier->numero_dossier,
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name
+            ]);
+
+            return redirect()->route('admin.dossiers.annules')
+                ->with('success', 'Dossier supprimé avec succès.');
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return back()->with('error', 'Dossier non trouvé ou non annulé. Seuls les dossiers annulés peuvent être supprimés.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Erreur DossierController@deletePermanently: ' . $e->getMessage(), [
+                'dossier_id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Erreur lors de la suppression du dossier: ' . $e->getMessage());
         }
     }
 
@@ -2510,7 +3227,7 @@ class DossierController extends Controller
                     ->log('Téléchargement récépissé provisoire');
             }
 
-            return $pdf->download($filename);
+            return \App\Helpers\PdfTemplateHelper::downloadPdf($pdf, $filename);
 
         } catch (\Exception $e) {
             \Log::error('Erreur génération récépissé provisoire PDF: ' . $e->getMessage(), [
@@ -2556,7 +3273,7 @@ class DossierController extends Controller
     private function canGenerateRecepisseProvisoire($dossier)
     {
         // Statuts autorisés pour le récépissé provisoire
-        $statutsAutorises = ['soumis', 'en_cours', 'en_attente'];
+        $statutsAutorises = ['soumis', 'en_cours', 'en_attente', 'approuve'];
 
         return in_array($dossier->statut, $statutsAutorises) &&
             $dossier->organisation &&
@@ -2728,6 +3445,11 @@ class DossierController extends Controller
                 ->orderBy('ordre_affichage')
                 ->get();
 
+            // Domaines d'activité pour le dropdown
+            $domainesActivite = \App\Models\DomaineActivite::actif()
+                ->ordered()
+                ->get();
+
             // Statistiques pour contexte
             $stats = [
                 'total_organisations' => Organisation::count(),
@@ -2739,7 +3461,7 @@ class DossierController extends Controller
                 'user_name' => Auth::user()->name
             ]);
 
-            return view('admin.dossiers.create', compact('typesOrganisation', 'provinces'));
+            return view('admin.dossiers.create', compact('typesOrganisation', 'provinces', 'domainesActivite'));
 
         } catch (\Exception $e) {
             Log::error('Erreur affichage formulaire création organisation (Admin)', [
@@ -3466,5 +4188,151 @@ class DossierController extends Controller
         }
     }
 
+    /**
+     * Consultation en ligne des anomalies - Admin
+     */
+    public function consulterAnomalies($dossierId)
+    {
+        try {
+            Log::info('ADMIN - Consultation anomalies en ligne', [
+                'dossier_id' => $dossierId,
+                'admin_id' => auth()->id()
+            ]);
+
+            $dossier = Dossier::with(['organisation'])->findOrFail($dossierId);
+
+            $anomalies = DB::table('adherent_anomalies as aa')
+                ->join('adherents as a', 'aa.adherent_id', '=', 'a.id')
+                ->where('a.organisation_id', $dossier->organisation->id)
+                ->select([
+                    'aa.*',
+                    'a.nip',
+                    'a.nom',
+                    'a.prenom',
+                    'a.civilite'
+                ])
+                ->orderBy('aa.priorite')
+                ->orderBy('aa.created_at', 'desc')
+                ->paginate(20);
+
+            $stats = $this->calculateAdherentsStatsAdmin($dossier->organisation);
+
+            return view('admin.dossiers.consulter-anomalies', [
+                'dossier' => $dossier,
+                'organisation' => $dossier->organisation,
+                'anomalies' => $anomalies,
+                'stats' => $stats
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('ADMIN - Erreur consultation anomalies', [
+                'dossier_id' => $dossierId,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->with('error', 'Erreur lors de la consultation des anomalies : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Rapport PDF des anomalies - Admin
+     */
+    public function rapportAnomalies($dossierId)
+    {
+        try {
+            Log::info('ADMIN - Génération rapport PDF anomalies', [
+                'dossier_id' => $dossierId,
+                'admin_id' => auth()->id()
+            ]);
+
+            $dossier = Dossier::with(['organisation'])->findOrFail($dossierId);
+            $organisation = $dossier->organisation;
+
+            $anomalies = DB::table('adherent_anomalies as aa')
+                ->join('adherents as a', 'aa.adherent_id', '=', 'a.id')
+                ->where('a.organisation_id', $organisation->id)
+                ->select([
+                    'aa.*',
+                    'a.nip',
+                    'a.nom',
+                    'a.prenom',
+                    'a.civilite'
+                ])
+                ->orderBy('aa.priorite')
+                ->orderBy('aa.created_at', 'desc')
+                ->get();
+
+            $stats = $this->calculateAdherentsStatsAdmin($organisation);
+
+            $rapportData = [
+                'dossier' => $dossier,
+                'organisation' => $organisation,
+                'anomalies' => $anomalies,
+                'stats' => $stats,
+                'metadata' => [
+                    'genere_le' => now()->format('d/m/Y à H:i'),
+                    'genere_par' => auth()->user()->name ?? 'Administrateur',
+                    'nombre_anomalies' => $anomalies->count(),
+                ]
+            ];
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('operator.dossiers.rapport-anomalies-pdf', $rapportData);
+
+            $filename = 'rapport-anomalies-' . $dossier->numero_dossier . '-' . now()->format('Ymd-His') . '.pdf';
+
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            Log::error('ADMIN - Erreur génération PDF anomalies', [
+                'dossier_id' => $dossierId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return back()->with('error', 'Impossible de générer le PDF. ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Calcul statistiques adhérents pour admin
+     */
+    private function calculateAdherentsStatsAdmin($organisation)
+    {
+        $totalAdherents = DB::table('adherents')
+            ->where('organisation_id', $organisation->id)
+            ->count();
+
+        $adherentsAvecAnomalies = DB::table('adherent_anomalies as aa')
+            ->join('adherents as a', 'aa.adherent_id', '=', 'a.id')
+            ->where('a.organisation_id', $organisation->id)
+            ->distinct('aa.adherent_id')
+            ->count('aa.adherent_id');
+
+        $anomaliesCritiques = DB::table('adherent_anomalies as aa')
+            ->join('adherents as a', 'aa.adherent_id', '=', 'a.id')
+            ->where('a.organisation_id', $organisation->id)
+            ->where('aa.priorite', 'critique')
+            ->count();
+
+        $anomaliesParType = DB::table('adherent_anomalies as aa')
+            ->join('adherents as a', 'aa.adherent_id', '=', 'a.id')
+            ->where('a.organisation_id', $organisation->id)
+            ->select('aa.type_anomalie', DB::raw('count(*) as count'))
+            ->groupBy('aa.type_anomalie')
+            ->pluck('count', 'type_anomalie')
+            ->toArray();
+
+        return [
+            'total' => $totalAdherents,
+            'valides' => $totalAdherents - $adherentsAvecAnomalies,
+            'avec_anomalies' => $adherentsAvecAnomalies,
+            'anomalies_critiques' => $anomaliesCritiques,
+            'pourcentage_valides' => $totalAdherents > 0
+                ? round((($totalAdherents - $adherentsAvecAnomalies) / $totalAdherents) * 100, 1)
+                : 0,
+            'par_type' => $anomaliesParType,
+            'date_generation' => now()->format('d/m/Y à H:i'),
+        ];
+    }
 
 }

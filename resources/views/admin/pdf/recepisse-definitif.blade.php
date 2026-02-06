@@ -9,245 +9,259 @@
             @page {
                 margin: 2cm 1.5cm;
                 size: A4;
-            }
 
-            body {
-                font-family: 'Times New Roman', serif;
-                font-size: 11pt;
-                line-height: 1.4;
-                color: #000;
-                margin: 0;
-                padding: 0;
-                position: relative;
-            }
+                    {
+                        {
+                        -- mPDF doesn't support background-image in @page reliably --}}
 
-            /* ===== STYLES QR CODE HARMONISÉS AVEC L'ACCUSÉ ET LE RÉCÉPISSÉ PROVISOIRE ===== */
-            .qr-section {
-                margin-top: 70px;
-                margin-left: -150px;
-                padding-top: 20px;
-                width: 120px;
-                position: relative;
-            }
+                    }
 
-            .qr-content {
-                display: table;
-                width: 100%;
-            }
+                    body {
+                        font-family: 'Times New Roman', serif;
+                        font-size: 11pt;
+                        line-height: 1.4;
+                        color: #000;
+                        margin: 0;
+                        padding: 0;
+                        position: relative;
+                    }
 
-            .qr-left {
-                display: table-cell;
-                width: 150px;
-                vertical-align: top;
-                padding: 10px;
-            }
+                    /* ===== STYLES QR CODE HARMONISÉS AVEC L'ACCUSÉ ET LE RÉCÉPISSÉ PROVISOIRE ===== */
+                    .qr-section {
+                        margin-top: 70px;
+                        margin-left: -150px;
+                        padding-top: 20px;
+                        width: 120px;
+                        position: relative;
+                    }
 
-            .qr-right {
-                display: table-cell;
-                vertical-align: top;
-                text-align: center;
-                padding: 10px;
-            }
+                    .qr-content {
+                        display: table;
+                        width: 100%;
+                    }
 
-            .qr-box {
-                text-align: center;
-                width: 100px;
-            }
+                    .qr-left {
+                        display: table-cell;
+                        width: 150px;
+                        vertical-align: top;
+                        padding: 10px;
+                    }
 
-            .qr-image {
-                display: block;
-                margin: auto;
-                color: #000000;
-            }
+                    .qr-right {
+                        display: table-cell;
+                        vertical-align: top;
+                        text-align: center;
+                        padding: 10px;
+                    }
 
-            .qr-text {
-                font-size: 8pt;
-                color: #000000;
-                font-weight: bold;
-                text-transform: uppercase;
-                margin: 5px 0;
-            }
+                    .qr-box {
+                        text-align: center;
+                        width: 100px;
+                    }
 
-            .qr-code-id {
-                font-size: 7pt;
-                color: #666;
-                font-family: monospace;
-                margin: 5px 0;
-            }
+                    .qr-image {
+                        display: block;
+                        margin: auto;
+                        color: #000000;
+                    }
 
-            .qr-url {
-                font-size: 6pt;
-                color: #666;
-                word-break: break-all;
-                margin-top: 5px;
-            }
+                    .qr-text {
+                        font-size: 8pt;
+                        color: #000000;
+                        font-weight: bold;
+                        text-transform: uppercase;
+                        margin: 5px 0;
+                    }
 
-            .footer-content {
-                font-size: 10pt;
-                line-height: 1.3;
-            }
+                    .qr-code-id {
+                        font-size: 7pt;
+                        color: #666;
+                        font-family: monospace;
+                        margin: 5px 0;
+                    }
 
-            .footer-content strong {
-                color: #003f7f;
-            }
+                    .qr-url {
+                        font-size: 6pt;
+                        color: #666;
+                        word-break: break-all;
+                        margin-top: 5px;
+                    }
 
-            .footer-content em {
-                font-style: italic;
-                color: #666;
-                font-size: 9pt;
-            }
+                    .footer-content {
+                        font-size: 10pt;
+                        line-height: 1.3;
+                    }
 
-            /* En-tête harmonisé avec les autres documents */
-            .header-table {
-                width: 100%;
-                margin-bottom: 20px;
-                border-collapse: collapse;
-            }
+                    .footer-content strong {
+                        color: #003f7f;
+                    }
 
-            .header-left {
-                color: #000000;
-                font-weight: bold;
-                font-size: 14px;
-                vertical-align: top;
-                width: 400px;
-                text-align: left;
-            }
+                    .footer-content em {
+                        font-style: italic;
+                        color: #666;
+                        font-size: 9pt;
 
-            .header-right {
-                color: #003f7f;
-                font-weight: bold;
-                font-size: 12px;
-                text-align: center;
-                vertical-align: top;
-            }
+                    }
 
-            .document-title {
-                text-align: center;
-                font-size: 13pt;
-                font-weight: bold;
-                text-decoration: underline;
-                margin: 25px 0;
-                text-transform: uppercase;
-            }
+                    /* En-tête harmonisé avec les autres documents */
+                    .header-table {
+                        width: 100%;
+                        margin-bottom: 20px;
+                        border-collapse: collapse;
+                    }
 
-            .content {
-                text-align: justify;
-                margin: 20px 0;
-                line-height: 1.5;
-            }
+                    .header-left {
+                        color: #000000;
+                        font-weight: bold;
+                        font-size: 14px;
+                        vertical-align: top;
+                        width: 400px;
+                        text-align: left;
+                    }
 
-            .content p {
-                margin-bottom: 12px;
-            }
+                    .header-right {
+                        color: #003f7f;
+                        font-weight: bold;
+                        font-size: 12px;
+                        text-align: center;
+                        vertical-align: top;
+                    }
 
-            .organization-details {
-                margin: 20px 0;
-            }
+                    .document-title {
+                        text-align: center;
+                        font-size: 13pt;
+                        font-weight: bold;
+                        text-decoration: underline;
+                        margin: 25px 0;
+                        text-transform: uppercase;
+                    }
 
-            .detail-line {
-                margin-bottom: 8px;
-            }
+                    .content {
+                        text-align: justify;
+                        margin: 20px 0;
+                        line-height: 1.5;
+                    }
 
-            .dirigeants-section {
-                margin: 15px 0;
-            }
+                    .content p {
+                        margin-bottom: 12px;
+                    }
 
-            .dirigeant-line {
-                margin-bottom: 5px;
-            }
+                    .organization-details {
+                        margin: 20px 0;
+                    }
 
-            .pieces-section {
-                margin: 20px 0;
-            }
+                    .detail-line {
+                        margin-bottom: 8px;
+                    }
 
-            .pieces-title {
-                font-weight: bold;
-                text-decoration: underline;
-                margin-bottom: 10px;
-            }
+                    .dirigeants-section {
+                        margin: 15px 0;
+                    }
 
-            .pieces-list {
-                margin-left: 20px;
-                text-align: justify;
-            }
+                    .dirigeant-line {
+                        margin-bottom: 5px;
+                    }
 
-            .prescriptions-section {
-                margin: 25px 0;
-            }
+                    .pieces-section {
+                        margin: 20px 0;
+                    }
 
-            .prescription-title {
-                font-weight: bold;
-                text-decoration: underline;
-                margin-bottom: 10px;
-            }
+                    .pieces-title {
+                        font-weight: bold;
+                        text-decoration: underline;
+                        margin-bottom: 10px;
+                    }
 
-            .prescription-content {
-                text-align: justify;
-                line-height: 1.4;
-                margin-bottom: 15px;
-            }
+                    .pieces-list {
+                        margin-left: 20px;
+                        text-align: justify;
+                    }
 
-            .signature-section {
-                margin-top: 40px;
-                text-align: right;
-            }
+                    .prescriptions-section {
+                        margin: 25px 0;
+                    }
 
-            .signature-location {
-                margin-bottom: 20px;
-            }
+                    .prescription-title {
+                        font-weight: bold;
+                        text-decoration: underline;
+                        margin-bottom: 10px;
+                    }
 
-            .minister-title {
-                font-weight: bold;
-                margin: 20px 0;
-            }
+                    .prescription-content {
+                        text-align: justify;
+                        line-height: 1.4;
+                        margin-bottom: 15px;
+                    }
 
-            .minister-name {
-                font-weight: bold;
-                margin-top: 60px;
-            }
+                    .signature-section {
+                        margin-top: 40px;
+                        text-align: right;
+                    }
 
-            .ampliations-section {
-                margin-top: 30px;
-                font-weight: bold;
-                text-decoration: underline;
-            }
+                    .signature-location {
+                        margin-bottom: 20px;
+                    }
 
-            .ampliations-list {
-                margin-left: 20px;
-                font-weight: normal;
-                display: flex;
-                flex-wrap: wrap;
-                gap: 40px;
-            }
+                    .minister-title {
+                        font-weight: bold;
+                        margin: 20px 0;
+                    }
 
-            .ampliation-item {
-                display: flex;
-                justify-content: space-between;
-                width: 120px;
-            }
+                    .minister-name {
+                        font-weight: bold;
+                        margin-top: 60px;
+                    }
 
-            .clearfix::after {
-                content: "";
-                display: table;
-                clear: both;
-            }
+                    .ampliations-section {
+                        margin-top: 30px;
+                        font-weight: bold;
+                        text-decoration: underline;
+                    }
 
-            .highlight {
-                font-weight: bold;
-            }
+                    .ampliations-list {
+                        margin-left: 20px;
+                        font-weight: normal;
+                        display: flex;
+                        flex-wrap: wrap;
+                        gap: 40px;
+                    }
 
-            ul {
-                margin: 0;
-                padding-left: 20px;
-            }
+                    .ampliation-item {
+                        display: flex;
+                        justify-content: space-between;
+                        width: 120px;
+                    }
 
-            li {
-                margin-bottom: 3px;
-            }
+                    .clearfix::after {
+                        content: "";
+                        display: table;
+                        clear: both;
+                    }
+
+                    .highlight {
+                        font-weight: bold;
+                    }
+
+                    ul {
+                        margin: 0;
+                        padding-left: 20px;
+                    }
+
+                    li {
+                        margin-bottom: 3px;
+                        ```
+                    }
         </style>
     </head>
 
     <body>
+        {{-- Image de fond - Pleine largeur A4 (21cm) avec marge négative gauche --}}
+        @if(isset($bg_pied_page_base64) && $bg_pied_page_base64)
+            <div style="position: fixed; bottom: -2cm; left: -1.5cm; width: 21cm; margin: 0; padding: 0; z-index: -1;">
+                <img src="{{ $bg_pied_page_base64 }}" alt="Pied de page"
+                    style="width: 100%; height: auto; display: block; margin: 0; padding: 0;">
+            </div>
+        @endif
 
         <!-- En-tête harmonisé avec l'accusé et le récépissé provisoire -->
         <table class="header-table">

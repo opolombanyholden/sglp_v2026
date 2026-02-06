@@ -62,6 +62,7 @@ class Organisation extends Model
     protected $fillable = [
         'user_id',
         'organisation_type_id',  // ← NOUVEAU système
+        'domaine_activite_id',   // ← Domaine d'activité (référentiel)
         'type',                   // ← ANCIEN système (à retirer plus tard)
         'nom',
         'sigle',
@@ -175,6 +176,16 @@ class Organisation extends Model
     }
 
     /**
+     * Relation : Domaine d'activité
+     * 
+     * @return BelongsTo
+     */
+    public function domaineActivite(): BelongsTo
+    {
+        return $this->belongsTo(DomaineActivite::class, 'domaine_activite_id');
+    }
+
+    /**
      * Relation : Dossiers de l'organisation
      * 
      * @return HasMany
@@ -207,6 +218,29 @@ class Organisation extends Model
     }
 
     /**
+     * Relation : Membres du bureau de l'organisation
+     * 
+     * @return HasMany
+     */
+    public function membresBureau(): HasMany
+    {
+        return $this->hasMany(MembreBureau::class);
+    }
+
+    /**
+     * Relation : Membres du bureau à afficher sur le récépissé (max 3)
+     * 
+     * @return HasMany
+     */
+    public function membresBureauPourRecepisse(): HasMany
+    {
+        return $this->hasMany(MembreBureau::class)
+            ->where('afficher_recepisse', true)
+            ->orderBy('ordre')
+            ->limit(3);
+    }
+
+    /**
      * Relation : Adhérents de l'organisation
      * 
      * @return HasMany
@@ -230,16 +264,16 @@ class Organisation extends Model
     public function personnes()
     {
         // Retourner une collection fusionnant fondateurs et adhérents
-        $fondateurs = $this->fondateurs()->get()->map(function($f) {
+        $fondateurs = $this->fondateurs()->get()->map(function ($f) {
             $f->setAttribute('type_personne', 'fondateur');
             return $f;
         });
-        
-        $adherents = $this->adherents()->get()->map(function($a) {
+
+        $adherents = $this->adherents()->get()->map(function ($a) {
             $a->setAttribute('type_personne', 'adherent');
             return $a;
         });
-        
+
         return $fondateurs->merge($adherents);
     }
 
@@ -411,7 +445,7 @@ class Organisation extends Model
         if (in_array($this->type, [self::TYPE_PARTI, self::TYPE_CONFESSION])) {
             return $this->is_active && $this->isApprouvee();
         }
-        
+
         return $this->isApprouvee();
     }
 
@@ -577,7 +611,7 @@ class Organisation extends Model
     {
         $color = $this->statut_color;
         $label = $this->statut_label;
-        
+
         return "<span class='badge bg-{$color}'>{$label}</span>";
     }
 
@@ -590,9 +624,9 @@ class Organisation extends Model
             $couleur = $this->organisationType->couleur;
             $nom = $this->organisationType->nom;
             $icone = $this->organisationType->icone;
-            
+
             $iconeHtml = $icone ? "<i class='fas {$icone}'></i> " : '';
-            
+
             return "<span class='badge' style='background-color: {$couleur}; color: white;'>{$iconeHtml}{$nom}</span>";
         }
 
@@ -609,19 +643,19 @@ class Organisation extends Model
      * Obtenir le nombre de fondateurs majeurs
      */
     /**
- * Obtenir le nombre de fondateurs majeurs
- */
-/**
- * Obtenir le nombre de fondateurs majeurs (>= 18 ans)
- * Calcul basé sur la date de naissance
- */
-public function getNombreFondateursMajeursAttribute(): int
-{
-    return $this->fondateurs()
-        ->whereNotNull('date_naissance')
-        ->where(DB::raw('TIMESTAMPDIFF(YEAR, date_naissance, CURDATE())'), '>=', 18)
-        ->count();
-}
+     * Obtenir le nombre de fondateurs majeurs
+     */
+    /**
+     * Obtenir le nombre de fondateurs majeurs (>= 18 ans)
+     * Calcul basé sur la date de naissance
+     */
+    public function getNombreFondateursMajeursAttribute(): int
+    {
+        return $this->fondateurs()
+            ->whereNotNull('date_naissance')
+            ->where(DB::raw('TIMESTAMPDIFF(YEAR, date_naissance, CURDATE())'), '>=', 18)
+            ->count();
+    }
 
     /**
      * Vérifier si l'organisation a le nombre minimum de fondateurs requis
@@ -689,8 +723,7 @@ public function getNombreFondateursMajeursAttribute(): int
                 if ($orgType) {
                     $organisation->type = $orgType->code;
                 }
-            }
-            elseif ($organisation->isDirty('type')) {
+            } elseif ($organisation->isDirty('type')) {
                 $orgType = OrganisationType::where('code', $organisation->type)->first();
                 if ($orgType) {
                     $organisation->organisation_type_id = $orgType->id;
