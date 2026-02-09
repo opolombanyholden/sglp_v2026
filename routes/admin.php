@@ -33,8 +33,17 @@ use App\Http\Controllers\Admin\ValidationEntityController;
 use App\Http\Controllers\Admin\GeographyController;
 use App\Http\Controllers\Admin\WorkflowStepController;
 use App\Http\Controllers\Admin\OperationController;
+use App\Http\Controllers\Auth\LoginController;
 
-
+/*
+|--------------------------------------------------------------------------
+| Routes de connexion Admin (portail séparé)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')->name('admin.')->middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+});
 
 /*
 |--------------------------------------------------------------------------

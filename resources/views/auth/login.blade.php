@@ -1,6 +1,10 @@
 @extends('layouts.public')
 
-@section('title', 'Connexion - PNGDI')
+@php
+    $isAdmin = ($loginType ?? 'operator') === 'admin';
+@endphp
+
+@section('title', $isAdmin ? 'Connexion Administration - PNGDI' : 'Connexion - PNGDI')
 
 @section('content')
     <div class="container my-5">
@@ -36,16 +40,18 @@
                 @endif
 
                 <div class="card shadow-lg border-0">
-                    <div class="card-header bg-primary text-white text-center py-4">
+                    <div class="card-header {{ $isAdmin ? 'bg-dark' : 'bg-primary' }} text-white text-center py-4">
                         <h3 class="mb-0">
-                            <i class="fas fa-sign-in-alt me-2"></i>
-                            Connexion
+                            <i class="fas {{ $isAdmin ? 'fa-user-shield' : 'fa-sign-in-alt' }} me-2"></i>
+                            {{ $isAdmin ? 'Portail Administrateur' : 'Espace Opérateur' }}
                         </h3>
-                        <p class="mb-0 mt-2 small">Accédez à votre espace</p>
+                        <p class="mb-0 mt-2 small">
+                            {{ $isAdmin ? 'Accès réservé aux administrateurs' : 'Accédez à votre espace opérateur' }}
+                        </p>
                     </div>
 
                     <div class="card-body p-4">
-                        <form method="POST" action="{{ route('login') }}" id="loginForm">
+                        <form method="POST" action="{{ $isAdmin ? route('admin.login.submit') : route('login') }}" id="loginForm">
                             @csrf
 
                             <!-- Email -->
@@ -114,15 +120,38 @@
 
                         <hr class="my-4">
 
-                        <!-- Lien vers l'inscription -->
-                        <div class="text-center">
-                            <p class="mb-0">
-                                Pas encore de compte ?
-                                <a href="{{ route('register') }}" class="text-primary fw-bold">
-                                    Créer un compte
-                                </a>
-                            </p>
-                        </div>
+                        @if($isAdmin)
+                            <!-- Lien vers le portail opérateur -->
+                            <div class="text-center">
+                                <p class="mb-0 text-muted small">
+                                    <i class="fas fa-user me-1"></i>
+                                    Vous êtes opérateur ?
+                                    <a href="{{ route('login') }}" class="text-primary">
+                                        Accéder au portail opérateur
+                                    </a>
+                                </p>
+                            </div>
+                        @else
+                            <!-- Lien vers l'inscription -->
+                            <div class="text-center">
+                                <p class="mb-0">
+                                    Pas encore de compte ?
+                                    <a href="{{ route('register') }}" class="text-primary fw-bold">
+                                        Créer un compte
+                                    </a>
+                                </p>
+                            </div>
+                            <!-- Lien vers le portail admin -->
+                            <div class="text-center mt-2">
+                                <p class="mb-0 text-muted small">
+                                    <i class="fas fa-user-shield me-1"></i>
+                                    Vous êtes administrateur ?
+                                    <a href="{{ route('admin.login') }}" class="text-secondary">
+                                        Accéder au portail admin
+                                    </a>
+                                </p>
+                            </div>
+                        @endif
                     </div>
                 </div>
 

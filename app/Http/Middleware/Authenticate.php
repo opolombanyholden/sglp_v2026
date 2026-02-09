@@ -16,13 +16,17 @@ class Authenticate extends Middleware
     protected function redirectTo($request)
     {
         if (!$request->expectsJson()) {
-            // Debug: Log quand un utilisateur non authentifié essaie d'accéder
             Log::warning('Utilisateur non authentifié redirigé vers login', [
                 'url' => $request->fullUrl(),
                 'method' => $request->method(),
                 'session_id' => session()->getId(),
                 'has_session' => session()->isStarted(),
             ]);
+
+            // Rediriger vers le portail admin si l'URL demandée est sous /admin
+            if ($request->is('admin/*') || $request->is('admin')) {
+                return route('admin.login');
+            }
 
             return route('login');
         }

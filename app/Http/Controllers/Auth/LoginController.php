@@ -12,11 +12,21 @@ use Illuminate\Validation\ValidationException;
 class LoginController extends Controller
 {
     /**
+     * Déterminer le type de portail depuis le nom de la route
+     */
+    protected function getLoginType(Request $request): string
+    {
+        $routeName = $request->route()?->getName() ?? '';
+        return str_starts_with($routeName, 'admin.login') ? 'admin' : 'operator';
+    }
+
+    /**
      * Afficher le formulaire de connexion
      */
-    public function showLoginForm()
+    public function showLoginForm(Request $request)
     {
-        return view('auth.login');
+        $loginType = $this->getLoginType($request);
+        return view('auth.login', compact('loginType'));
     }
 
     /**
@@ -49,6 +59,28 @@ class LoginController extends Controller
 
         // Tentative de connexion
         if ($this->attemptLogin($request)) {
+            $loginType = $this->getLoginType($request);
+            $authenticatedUser = Auth::user();
+
+            // Vérifier que le rôle correspond au portail utilisé
+            if ($loginType === 'operator' && in_array($authenticatedUser->role, ['admin', 'agent'])) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                throw ValidationException::withMessages([
+                    'email' => ['Ce portail est réservé aux opérateurs. Veuillez utiliser le <a href="' . route('admin.login') . '">portail administrateur</a>.'],
+                ]);
+            }
+
+            if ($loginType === 'admin' && !in_array($authenticatedUser->role, ['admin', 'agent'])) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                throw ValidationException::withMessages([
+                    'email' => ['Ce portail est réservé aux administrateurs. Veuillez utiliser le <a href="' . route('login') . '">portail opérateur</a>.'],
+                ]);
+            }
+
             // Réinitialiser les tentatives échouées
             if ($user) {
                 $user->resetFailedAttempts();
