@@ -603,10 +603,16 @@ class Dossier extends Model
      */
     public function hasAllRequiredDocuments(): bool
     {
-        $requiredTypes = DocumentType::where('type_organisation', $this->organisation->type)
+        $opType = OperationType::where('code', $this->type_operation)->first();
+
+        if (!$opType) {
+            return true;
+        }
+
+        $requiredTypes = $opType->documentTypes()
+            ->wherePivot('is_obligatoire', true)
             ->where('is_active', true)
-            ->where('is_obligatoire', true)
-            ->pluck('id');
+            ->pluck('document_types.id');
 
         $providedTypes = $this->documents()->pluck('document_type_id');
 
@@ -618,10 +624,16 @@ class Dossier extends Model
      */
     public function getMissingDocuments()
     {
-        $requiredTypes = DocumentType::where('type_organisation', $this->organisation->type)
+        $opType = OperationType::where('code', $this->type_operation)->first();
+
+        if (!$opType) {
+            return collect();
+        }
+
+        $requiredTypes = $opType->documentTypes()
+            ->wherePivot('is_obligatoire', true)
             ->where('is_active', true)
-            ->where('is_obligatoire', true)
-            ->pluck('id');
+            ->pluck('document_types.id');
 
         $providedTypes = $this->documents()->pluck('document_type_id');
 
@@ -635,16 +647,19 @@ class Dossier extends Model
      */
     public function getNextStep()
     {
+        $orgTypeId = $this->organisation->organisation_type_id;
+        $opTypeId = OperationType::where('code', $this->type_operation)->value('id');
+
         if (!$this->current_step_id) {
-            return WorkflowStep::where('type_organisation', $this->organisation->type)
-                ->where('type_operation', $this->type_operation)
+            return WorkflowStep::where('organisation_type_id', $orgTypeId)
+                ->where('operation_type_id', $opTypeId)
                 ->where('is_active', true)
                 ->orderBy('ordre')
                 ->first();
         }
 
-        return WorkflowStep::where('type_organisation', $this->organisation->type)
-            ->where('type_operation', $this->type_operation)
+        return WorkflowStep::where('organisation_type_id', $orgTypeId)
+            ->where('operation_type_id', $opTypeId)
             ->where('is_active', true)
             ->where('ordre', '>', $this->currentStep->ordre)
             ->orderBy('ordre')
@@ -660,8 +675,11 @@ class Dossier extends Model
             return null;
         }
 
-        return WorkflowStep::where('type_organisation', $this->organisation->type)
-            ->where('type_operation', $this->type_operation)
+        $orgTypeId = $this->organisation->organisation_type_id;
+        $opTypeId = OperationType::where('code', $this->type_operation)->value('id');
+
+        return WorkflowStep::where('organisation_type_id', $orgTypeId)
+            ->where('operation_type_id', $opTypeId)
             ->where('is_active', true)
             ->where('ordre', '<', $this->currentStep->ordre)
             ->orderBy('ordre', 'desc')
@@ -688,8 +706,11 @@ class Dossier extends Model
             return 0;
         }
 
-        $totalSteps = WorkflowStep::where('type_organisation', $this->organisation->type)
-            ->where('type_operation', $this->type_operation)
+        $orgTypeId = $this->organisation->organisation_type_id;
+        $opTypeId = OperationType::where('code', $this->type_operation)->value('id');
+
+        $totalSteps = WorkflowStep::where('organisation_type_id', $orgTypeId)
+            ->where('operation_type_id', $opTypeId)
             ->where('is_active', true)
             ->count();
 

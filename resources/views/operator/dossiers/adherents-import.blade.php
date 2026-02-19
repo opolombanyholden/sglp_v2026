@@ -922,9 +922,9 @@ window.Phase2Config = {
         storeAdherents: '{{ $urls["store_adherents"] ?? "#" }}',
         confirmation: '{{ $urls["confirmation"] ?? "#" }}',
         templateDownload: '{{ $urls["template_download"] ?? "#" }}',
-        processChunk: '{{ route("operator.chunking.process-chunk") }}',
-        refreshCSRF: '{{ route("operator.chunking.csrf-refresh") }}',
-        healthCheck: '{{ route("operator.chunking.health") }}'
+        processChunk: '{{ route("operator.chunking.upload-chunk") }}',
+        refreshCSRF: '{{ url("/csrf-token") }}',
+        healthCheck: '{{ url("/operator/chunking/status/health") }}'
     },
     upload: {
         chunkSize: {{ $upload_config['chunk_size'] ?? 500 }},

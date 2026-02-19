@@ -68,7 +68,7 @@ class LoginController extends Controller
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
                 throw ValidationException::withMessages([
-                    'email' => ['Ce portail est réservé aux opérateurs. Veuillez utiliser le <a href="' . route('admin.login') . '">portail administrateur</a>.'],
+                    'email' => ['Cette adresse n\'est pas appropriée pour une connexion administrateur. Connectez-vous sur la bonne adresse.'],
                 ]);
             }
 
@@ -77,7 +77,7 @@ class LoginController extends Controller
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
                 throw ValidationException::withMessages([
-                    'email' => ['Ce portail est réservé aux administrateurs. Veuillez utiliser le <a href="' . route('login') . '">portail opérateur</a>.'],
+                    'email' => ['Cette adresse n\'est pas appropriée pour une connexion opérateur. Connectez-vous sur la bonne adresse.'],
                 ]);
             }
 

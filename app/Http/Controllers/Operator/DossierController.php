@@ -19,6 +19,16 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 use App\Models\Adherent;
+use App\Models\Province;
+use App\Models\Departement;
+use App\Models\CommuneVille;
+use App\Models\Arrondissement;
+use App\Models\Canton;
+use App\Models\Regroupement;
+use App\Models\Localite;
+use App\Models\DomaineActivite;
+use App\Models\Fonction;
+use App\Models\OrganisationType;
 use Exception;
 
 class DossierController extends Controller
@@ -86,7 +96,7 @@ class DossierController extends Controller
     /**
      * Afficher le formulaire de création selon le type
      */
-    public function create($type)
+    public function create($type = null)
     {
         // Mapper les types courts vers les types complets
         $typeMapping = [
@@ -96,26 +106,64 @@ class DossierController extends Controller
             'confession' => Organisation::TYPE_CONFESSION
         ];
 
-        if (!isset($typeMapping[$type])) {
-            abort(404, 'Type d\'organisation non reconnu');
+        $fullType = null;
+
+        // Si un type est fourni, le valider
+        if ($type) {
+            if (!isset($typeMapping[$type])) {
+                abort(404, 'Type d\'organisation non reconnu');
+            }
+
+            $fullType = $typeMapping[$type];
+
+            // Vérifier les limites de création
+            $limits = $this->checkOrganisationLimits(Auth::user(), $fullType);
+
+            if (!$limits['can_create']) {
+                return redirect()->route('operator.dashboard')
+                    ->with('error', $limits['message']);
+            }
         }
 
-        $fullType = $typeMapping[$type];
+        // Charger les données de référence depuis la base de données
+        $provinces = Province::where('is_active', true)->orderBy('ordre_affichage')->orderBy('nom')->get(['id', 'nom', 'code']);
+        $domainesActivite = DomaineActivite::actif()->ordered()->get(['id', 'nom', 'code']);
+        $typesOrganisation = OrganisationType::actif()->ordered()->with(['documentTypes' => function ($query) {
+            $query->orderBy('document_type_organisation_type.ordre');
+        }])->get();
 
-        // Vérifier les limites de création
-        $limits = $this->checkOrganisationLimits(Auth::user(), $fullType);
+        // Préparer les données JSON des types d'organisation pour le JavaScript
+        $typesOrganisationJson = $typesOrganisation->mapWithKeys(function ($orgType) {
+            return [$orgType->code => [
+                'id' => $orgType->id,
+                'code' => $orgType->code,
+                'nom' => $orgType->nom,
+                'description' => $orgType->description,
+                'couleur' => $orgType->couleur,
+                'icone' => $orgType->icone,
+                'is_lucratif' => $orgType->is_lucratif,
+                'nb_min_fondateurs_majeurs' => $orgType->nb_min_fondateurs_majeurs,
+                'nb_min_adherents_creation' => $orgType->nb_min_adherents_creation,
+                'guide_creation' => $orgType->guide_creation,
+                'texte_legislatif' => $orgType->texte_legislatif,
+                'loi_reference' => $orgType->loi_reference,
+                'documents' => $orgType->documentTypes->map(function ($doc) {
+                    return [
+                        'id' => $doc->id,
+                        'nom' => $doc->nom,
+                        'code' => $doc->code ?? null,
+                        'is_obligatoire' => (bool) $doc->pivot->is_obligatoire,
+                        'ordre' => $doc->pivot->ordre,
+                        'aide_texte' => $doc->pivot->aide_texte,
+                    ];
+                })->values()->toArray(),
+            ]];
+        })->toArray();
 
-        if (!$limits['can_create']) {
-            return redirect()->route('operator.dashboard')
-                ->with('error', $limits['message']);
-        }
+        // Charger les fonctions/rôles dans l'organisation
+        $fonctions = Fonction::active()->ordered()->get(['id', 'code', 'nom', 'categorie', 'is_bureau']);
 
-        // Directement afficher le formulaire de création au lieu de rediriger vers un guide
-        $provinces = $this->getProvinces();
-        $guides = $this->getGuideContent($fullType);
-        $documentTypes = $this->getRequiredDocuments($fullType);
-
-        return view('operator.dossiers.create', compact('type', 'fullType', 'provinces', 'guides', 'documentTypes'));
+        return view('operator.dossiers.create', compact('type', 'fullType', 'provinces', 'domainesActivite', 'typesOrganisation', 'typesOrganisationJson', 'fonctions'));
     }
 
     /**
@@ -195,11 +243,13 @@ class DossierController extends Controller
     public function show($dossier)
     {
         $dossier = Dossier::with([
-            'organisation',
+            'organisation.fondateurs',
+            'organisation.adherents' => function ($query) {
+                $query->take(10);
+            },
             'documents.documentType',
-            'currentStep.validationEntity',
             'validations.validatedBy',
-            'comments.user'
+            'operations.user'
         ])->findOrFail($dossier);
 
         // Vérifier l'accès
@@ -207,10 +257,14 @@ class DossierController extends Controller
             abort(403);
         }
 
-        // Obtenir le statut détaillé
-        $status = $this->dossierService->getDossierStatus($dossier);
+        // Statistiques
+        $stats = [
+            'documents_count' => $dossier->documents ? $dossier->documents->count() : 0,
+            'validations_count' => $dossier->validations ? $dossier->validations->count() : 0,
+            'delai_attente' => Carbon::parse($dossier->created_at)->diffInDays(now()),
+        ];
 
-        return view('operator.dossiers.show', compact('dossier', 'status'));
+        return view('operator.dossiers.show', compact('dossier', 'stats'));
     }
 
     /**
@@ -1216,6 +1270,8 @@ class DossierController extends Controller
                 ->where('a.organisation_id', $dossier->organisation->id)
                 ->select([
                     'aa.*',
+                    'a.id as adherent_id',
+                    'a.organisation_id',
                     'a.nip',
                     'a.nom',
                     'a.prenom',
@@ -1909,7 +1965,7 @@ class DossierController extends Controller
 
             $urls = [
                 'store_adherents' => route('operator.dossiers.store-adherents', $dossier->id),
-                'template_download' => route('operator.templates.adherents-excel'),
+                'template_download' => route('operator.adherents.template.excel'),
                 'confirmation' => route('operator.dossiers.confirmation', $dossier->id)
             ];
 
@@ -2145,38 +2201,6 @@ class DossierController extends Controller
     }
 
     /**
-     * Obtenir le contenu du guide pour un type d'organisation
-     */
-    private function getGuideContent($type)
-    {
-        $guides = [
-            Organisation::TYPE_ASSOCIATION => [
-                'title' => 'Création d\'une association',
-                'description' => 'Formalités pour créer une association au Gabon',
-                'requirements' => [
-                    'Minimum 7 membres fondateurs',
-                    'Objet social déterminé',
-                    'Siège social au Gabon'
-                ]
-            ]
-        ];
-
-        return $guides[$type] ?? $guides[Organisation::TYPE_ASSOCIATION];
-    }
-
-    /**
-     * Obtenir les documents requis selon le type d'organisation
-     */
-    private function getRequiredDocuments($type)
-    {
-        return [
-            'statuts' => ['name' => 'Statuts', 'required' => true],
-            'pv_ag' => ['name' => 'PV Assemblée Générale', 'required' => true],
-            'liste_fondateurs' => ['name' => 'Liste des fondateurs', 'required' => true]
-        ];
-    }
-
-    /**
      * Obtenir la liste des provinces du Gabon
      */
     private function getProvinces(): array
@@ -2290,5 +2314,131 @@ class DossierController extends Controller
     public function getStats()
     {
         return response()->json(['total_dossiers' => 0, 'en_cours' => 0, 'approuves' => 0, 'rejetes' => 0]);
+    }
+
+    // =========================================================================
+    // API GÉOLOCALISATION - Chargement dynamique des listes déroulantes
+    // =========================================================================
+
+    public function getDepartements($province_id)
+    {
+        try {
+            $departements = Departement::where('province_id', $province_id)
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'code', 'chef_lieu']);
+
+            return response()->json(['success' => true, 'data' => $departements]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur chargement départements', 'data' => []], 500);
+        }
+    }
+
+    public function getCommunes($departement_id)
+    {
+        try {
+            $communes = CommuneVille::where('departement_id', $departement_id)
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'type', 'statut']);
+
+            return response()->json(['success' => true, 'data' => $communes]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur chargement communes', 'data' => []], 500);
+        }
+    }
+
+    public function getArrondissements($commune_id)
+    {
+        try {
+            $arrondissements = Arrondissement::where('commune_ville_id', $commune_id)
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'code']);
+
+            return response()->json(['success' => true, 'data' => $arrondissements]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur chargement arrondissements', 'data' => []], 500);
+        }
+    }
+
+    public function getCantons($departement_id)
+    {
+        try {
+            $cantons = Canton::where('departement_id', $departement_id)
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'code']);
+
+            return response()->json(['success' => true, 'data' => $cantons]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur chargement cantons', 'data' => []], 500);
+        }
+    }
+
+    public function getRegroupements($canton_id)
+    {
+        try {
+            $regroupements = Regroupement::where('canton_id', $canton_id)
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'code']);
+
+            return response()->json(['success' => true, 'data' => $regroupements]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur chargement regroupements', 'data' => []], 500);
+        }
+    }
+
+    public function getLocalites($regroupement_id)
+    {
+        try {
+            $localites = Localite::where('regroupement_id', $regroupement_id)
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'type']);
+
+            return response()->json(['success' => true, 'data' => $localites]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Erreur chargement localités', 'data' => []], 500);
+        }
+    }
+
+    /**
+     * API : Obtenir les quartiers d'un arrondissement (Zone Urbaine)
+     */
+    public function getQuartiers($arrondissement_id)
+    {
+        try {
+            $quartiers = Localite::where('arrondissement_id', $arrondissement_id)
+                ->where('type', 'quartier')
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'code']);
+
+            return response()->json(['success' => true, 'data' => $quartiers, 'count' => $quartiers->count()]);
+        } catch (\Exception $e) {
+            Log::error('Erreur getQuartiers: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erreur chargement quartiers', 'data' => []], 500);
+        }
+    }
+
+    /**
+     * API : Obtenir les villages d'un regroupement (Zone Rurale)
+     */
+    public function getVillages($regroupement_id)
+    {
+        try {
+            $villages = Localite::where('regroupement_id', $regroupement_id)
+                ->where('type', 'village')
+                ->where('is_active', true)
+                ->orderBy('nom')
+                ->get(['id', 'nom', 'code']);
+
+            return response()->json(['success' => true, 'data' => $villages, 'count' => $villages->count()]);
+        } catch (\Exception $e) {
+            Log::error('Erreur getVillages: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Erreur chargement villages', 'data' => []], 500);
+        }
     }
 }

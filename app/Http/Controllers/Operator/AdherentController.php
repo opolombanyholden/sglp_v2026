@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 use App\Models\AdherentAnomalie;
+use App\Models\InscriptionLink;
 
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
@@ -102,15 +103,17 @@ class AdherentController extends Controller
             'sexe' => 'nullable|in:M,F',
             'nationalite' => 'nullable|string|max:100',
             'profession' => 'nullable|string|max:255', // ✅ Non obligatoire
-            'adresse' => 'nullable|string|max:255',
+            'adresse_complete' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:100',
             'departement' => 'nullable|string|max:100',
             'telephone' => 'nullable|string|max:20',
             'email' => 'nullable|email|max:255',
             'fonction' => 'required|string|max:100',
-            'motif_adhesion' => 'nullable|string|max:500'
+            'motif_adhesion' => 'nullable|string|max:500',
+            'piece_identite' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048'
         ]);
-        
+
         try {
             // === DÉTECTION DES ANOMALIES ===
             $anomaliesResult = $this->detectAdherentAnomalies($validated, $organisation);
@@ -154,6 +157,25 @@ class AdherentController extends Controller
                 }
             }
             
+            // === UPLOAD DES FICHIERS ===
+            $pieceIdentitePath = null;
+            if ($request->hasFile('piece_identite')) {
+                $uploadResult = $this->fileUploadService->upload(
+                    $request->file('piece_identite'),
+                    'adherents/pieces_identite'
+                );
+                $pieceIdentitePath = $uploadResult['file_path'];
+            }
+
+            $photoPath = null;
+            if ($request->hasFile('photo')) {
+                $uploadResult = $this->fileUploadService->upload(
+                    $request->file('photo'),
+                    'adherents/photos'
+                );
+                $photoPath = $uploadResult['file_path'];
+            }
+
             // === CRÉER L'ADHÉRENT (TOUJOURS) ===
             $adherent = Adherent::create([
                 'organisation_id' => $organisation->id,
@@ -165,13 +187,15 @@ class AdherentController extends Controller
                 'sexe' => $validated['sexe'],
                 'nationalite' => $validated['nationalite'] ?? 'Gabonaise',
                 'profession' => $validated['profession'],
-                'adresse' => $validated['adresse'],
+                'adresse_complete' => $validated['adresse_complete'],
                 'province' => $validated['province'],
                 'departement' => $validated['departement'],
                 'telephone' => $validated['telephone'],
                 'email' => $validated['email'],
                 'fonction' => $validated['fonction'],
                 'motif_adhesion' => $validated['motif_adhesion'],
+                'piece_identite' => $pieceIdentitePath,
+                'photo' => $photoPath,
                 'date_adhesion' => now(),
                 
                 // === STATUT SELON ANOMALIES ===
@@ -179,7 +203,7 @@ class AdherentController extends Controller
                 'is_active' => $statutValidation !== 'en_attente',
                 'has_anomalies' => !empty($anomaliesResult['anomalies']),
                 'anomalies_severity' => $anomaliesResult['severity'],
-                'anomalies_data' => !empty($anomaliesResult['anomalies']) ? json_encode($anomaliesResult['anomalies']) : null,
+                'anomalies_data' => !empty($anomaliesResult['anomalies']) ? $anomaliesResult['anomalies'] : null,
                 
                 // === APPARTENANCE MULTIPLE ===
                 'appartenance_multiple' => in_array('DOUBLE_APPARTENANCE_PARTI', array_column($anomaliesResult['anomalies'], 'code')),
@@ -525,16 +549,7 @@ class AdherentController extends Controller
     private function createAnomalieRecords(Adherent $adherent, array $anomalies): void
     {
         foreach ($anomalies as $anomalie) {
-            AdherentAnomalie::create([
-                'adherent_id' => $adherent->id,
-                'organisation_id' => $adherent->organisation_id,
-                'type_anomalie' => $anomalie['type'], // ✅ CORRECTION : Garder le type original
-                'champ_concerne' => $anomalie['champ'],
-                'valeur_incorrecte' => is_array($anomalie['valeur']) ? json_encode($anomalie['valeur']) : $anomalie['valeur'],
-                'description' => $anomalie['message'],
-                'statut' => 'detectee',
-                'detectee_le' => now()
-            ]);
+            AdherentAnomalie::createFromAdherentData($adherent, $anomalie, 0);
         }
     }
 
@@ -571,11 +586,118 @@ class AdherentController extends Controller
             abort(403);
         }
         
-        $adherent->load(['histories', 'exclusion', 'imports']);
+        $adherent->load(['histories', 'exclusion']);
         
         return view('operator.adherents.show', compact('organisation', 'adherent'));
     }
-    
+
+    /**
+     * Formulaire de modification d'un adhérent
+     */
+    public function edit(Organisation $organisation, Adherent $adherent)
+    {
+        if ($organisation->user_id !== Auth::id() || $adherent->organisation_id !== $organisation->id) {
+            abort(403);
+        }
+
+        return view('operator.adherents.edit', compact('organisation', 'adherent'));
+    }
+
+    /**
+     * Mettre à jour un adhérent
+     */
+    public function update(Request $request, Organisation $organisation, Adherent $adherent)
+    {
+        if ($organisation->user_id !== Auth::id() || $adherent->organisation_id !== $organisation->id) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'nip' => 'nullable|string|max:20',
+            'nom' => 'required|string|max:100',
+            'prenom' => 'required|string|max:100',
+            'date_naissance' => 'nullable|date|before:today',
+            'lieu_naissance' => 'nullable|string|max:255',
+            'sexe' => 'nullable|in:M,F',
+            'nationalite' => 'nullable|string|max:100',
+            'profession' => 'nullable|string|max:255',
+            'adresse_complete' => 'nullable|string|max:255',
+            'province' => 'nullable|string|max:100',
+            'departement' => 'nullable|string|max:100',
+            'telephone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'fonction' => 'required|string|max:100',
+            'piece_identite' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'photo' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
+        ]);
+
+        try {
+            // Upload des fichiers si fournis
+            if ($request->hasFile('piece_identite')) {
+                $uploadResult = $this->fileUploadService->upload(
+                    $request->file('piece_identite'),
+                    'adherents/pieces_identite'
+                );
+                $adherent->piece_identite = $uploadResult['file_path'];
+            }
+
+            if ($request->hasFile('photo')) {
+                $uploadResult = $this->fileUploadService->upload(
+                    $request->file('photo'),
+                    'adherents/photos'
+                );
+                $adherent->photo = $uploadResult['file_path'];
+            }
+
+            $adherent->fill($validated);
+            $adherent->save();
+
+            // Recalculer les anomalies et synchroniser la table adherent_anomalies
+            $adherent->detectAndManageAllAnomalies();
+            $adherent->save();
+            $adherent->syncAnomaliesTable();
+
+            // Historique
+            $adherent->addToHistorique('modification', 'Informations modifiées par l\'opérateur');
+
+            return redirect()->route('operator.adherents.show', [$organisation, $adherent])
+                ->with('success', 'Adhérent modifié avec succès.');
+        } catch (\Exception $e) {
+            Log::error('Erreur modification adhérent: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Erreur lors de la modification.');
+        }
+    }
+
+    /**
+     * Démission / suppression douce d'un adhérent
+     */
+    public function destroy(Organisation $organisation, Adherent $adherent)
+    {
+        if ($organisation->user_id !== Auth::id() || $adherent->organisation_id !== $organisation->id) {
+            abort(403);
+        }
+
+        if ($adherent->is_fondateur) {
+            return back()->with('error', 'Un membre fondateur ne peut pas être retiré de cette manière.');
+        }
+
+        try {
+            $adherent->update([
+                'is_active' => false,
+                'date_exclusion' => now(),
+                'motif_exclusion' => 'Démission',
+            ]);
+
+            $adherent->addToHistorique('demission', 'Démission enregistrée par l\'opérateur');
+
+            return redirect()->route('operator.adherents.index', $organisation)
+                ->with('success', $adherent->nom . ' ' . $adherent->prenom . ' a été retiré(e) (démission).');
+        } catch (\Exception $e) {
+            Log::error('Erreur démission adhérent: ' . $e->getMessage());
+            return back()->with('error', 'Erreur lors de l\'enregistrement de la démission.');
+        }
+    }
+
     /**
      * Importer des adhérents via CSV
      */
@@ -785,7 +907,7 @@ class AdherentController extends Controller
             'sexe' => 'required|in:M,F',
             'nationalite' => 'required|string|max:100',
             'profession' => 'required|string|max:255',
-            'adresse' => 'required|string|max:255',
+            'adresse_complete' => 'required|string|max:255',
             'telephone' => 'required|string|max:20',
             'email' => 'nullable|email|max:255',
             'fonction' => 'required|string|max:100',
@@ -831,42 +953,206 @@ class AdherentController extends Controller
     }
     
     /**
-     * Générer le lien d'auto-enregistrement
+     * Générer le lien d'auto-enregistrement pour une organisation
      */
-    public function generateRegistrationLink(Organisation $organisation)
+    public function generateRegistrationLink(Request $request, Organisation $organisation)
     {
         // Vérifier l'accès
         if ($organisation->user_id !== Auth::id()) {
             abort(403);
         }
-        
+
         // Vérifier que l'organisation est approuvée
         if (!$organisation->isApprouvee()) {
             return response()->json([
                 'success' => false,
-                'message' => 'L\'organisation doit être approuvée pour générer un lien d\'enregistrement'
+                'message' => 'L\'organisation doit être approuvée pour générer un lien d\'enregistrement.'
             ], 403);
         }
-        
+
         try {
-            $result = app(QRCodeService::class)->generateSecureRegistrationLink($organisation);
-            
+            // Vérifier si un lien actif existe déjà
+            $existingLink = $organisation->inscriptionLinks()
+                ->where('is_active', true)
+                ->first();
+
+            if ($existingLink) {
+                $pendingCount = $existingLink->getPendingCount();
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'url' => $existingLink->getPublicUrl(),
+                        'token' => $existingLink->token,
+                        'created_at' => $existingLink->created_at->format('d/m/Y H:i'),
+                        'expires_at' => $existingLink->date_fin ? $existingLink->date_fin->format('d/m/Y H:i') : null,
+                        'inscriptions' => $existingLink->inscriptions_actuelles,
+                        'pending' => $pendingCount,
+                        'is_existing' => true,
+                    ]
+                ]);
+            }
+
+            // Créer un nouveau lien
+            $link = InscriptionLink::create([
+                'organisation_id' => $organisation->id,
+                'token' => InscriptionLink::generateUniqueToken(),
+                'nom_campagne' => 'Adhésion en ligne - ' . $organisation->nom,
+                'description' => 'Lien d\'auto-inscription pour les adhérents de ' . $organisation->nom,
+                'date_debut' => now(),
+                'date_fin' => now()->addMonths(6),
+                'requiert_validation' => true,
+                'is_active' => true,
+                'created_by' => Auth::id(),
+            ]);
+
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'url' => $result['url'],
-                    'short_url' => $result['short_url'],
-                    'expires_at' => $result['expires_at']->format('d/m/Y H:i'),
-                    'qrcode' => $result['qrcode_data']
+                    'url' => $link->getPublicUrl(),
+                    'token' => $link->token,
+                    'created_at' => $link->created_at->format('d/m/Y H:i'),
+                    'expires_at' => $link->date_fin->format('d/m/Y H:i'),
+                    'inscriptions' => 0,
+                    'pending' => 0,
+                    'is_existing' => false,
                 ]
             ]);
-            
+
         } catch (\Exception $e) {
+            \Log::error('Erreur génération lien inscription', [
+                'organisation_id' => $organisation->id,
+                'error' => $e->getMessage()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Erreur lors de la génération : ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Désactiver le lien d'inscription actif
+     */
+    public function deactivateRegistrationLink(Organisation $organisation)
+    {
+        if ($organisation->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $link = $organisation->inscriptionLinks()->where('is_active', true)->first();
+
+        if (!$link) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Aucun lien actif trouvé.'
+            ], 404);
+        }
+
+        $link->deactivate();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Le lien d\'inscription a été désactivé.'
+        ]);
+    }
+
+    /**
+     * Afficher les inscriptions en attente de validation
+     */
+    public function pendingRegistrations(Organisation $organisation)
+    {
+        if ($organisation->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $pendingAdherents = Adherent::where('organisation_id', $organisation->id)
+            ->where('source_inscription', 'auto_inscription')
+            ->where('statut_inscription', 'en_attente_validation')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        $stats = [
+            'en_attente' => Adherent::where('organisation_id', $organisation->id)
+                ->autoInscriptions()->enAttenteValidation()->count(),
+            'validees' => Adherent::where('organisation_id', $organisation->id)
+                ->autoInscriptions()->inscriptionsValidees()->count(),
+            'rejetees' => Adherent::where('organisation_id', $organisation->id)
+                ->autoInscriptions()->inscriptionsRejetees()->count(),
+        ];
+
+        return view('operator.adherents.pending-registrations', compact(
+            'organisation', 'pendingAdherents', 'stats'
+        ));
+    }
+
+    /**
+     * Valider (approuver) une auto-inscription
+     */
+    public function validateRegistration(Request $request, Organisation $organisation, Adherent $adherent)
+    {
+        if ($organisation->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($adherent->organisation_id !== $organisation->id || $adherent->source_inscription !== 'auto_inscription') {
+            abort(404);
+        }
+
+        $adherent->update([
+            'statut_inscription' => 'validee',
+            'is_active' => true,
+            'validee_par' => Auth::id(),
+            'validee_le' => now(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'L\'inscription de ' . $adherent->nom . ' ' . $adherent->prenom . ' a été validée.'
+            ]);
+        }
+
+        return redirect()->back()->with('success',
+            'L\'inscription de ' . $adherent->nom . ' ' . $adherent->prenom . ' a été validée.');
+    }
+
+    /**
+     * Rejeter une auto-inscription
+     */
+    public function rejectRegistration(Request $request, Organisation $organisation, Adherent $adherent)
+    {
+        if ($organisation->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($adherent->organisation_id !== $organisation->id || $adherent->source_inscription !== 'auto_inscription') {
+            abort(404);
+        }
+
+        $request->validate([
+            'motif' => 'required|string|max:500',
+        ], [
+            'motif.required' => 'Veuillez indiquer le motif du rejet.',
+        ]);
+
+        $adherent->update([
+            'statut_inscription' => 'rejetee',
+            'is_active' => false,
+            'motif_rejet_inscription' => $request->motif,
+            'validee_par' => Auth::id(),
+            'validee_le' => now(),
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'L\'inscription de ' . $adherent->nom . ' ' . $adherent->prenom . ' a été rejetée.'
+            ]);
+        }
+
+        return redirect()->back()->with('success',
+            'L\'inscription de ' . $adherent->nom . ' ' . $adherent->prenom . ' a été rejetée.');
     }
 
    /**

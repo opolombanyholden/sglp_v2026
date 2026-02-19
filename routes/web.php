@@ -169,6 +169,28 @@ Route::get('/document-info/{token}', [DocumentVerificationController::class, 'do
 
 /*
 |--------------------------------------------------------------------------
+| Routes Publiques - Auto-inscription aux organisations
+|--------------------------------------------------------------------------
+| Accès sans authentification. Rate limiting appliqué.
+|--------------------------------------------------------------------------
+*/
+use App\Http\Controllers\PublicControllers\PublicRegistrationController;
+
+Route::prefix('inscription')->name('public.inscription.')->group(function () {
+    Route::get('/{token}', [PublicRegistrationController::class, 'showRegistrationForm'])
+        ->name('form')
+        ->middleware('throttle:60,1');
+
+    Route::post('/{token}', [PublicRegistrationController::class, 'submitRegistration'])
+        ->name('submit')
+        ->middleware('throttle:10,1');
+
+    Route::get('/{token}/confirmation', [PublicRegistrationController::class, 'showConfirmation'])
+        ->name('confirmation');
+});
+
+/*
+|--------------------------------------------------------------------------
 | Routes d'authentification
 |--------------------------------------------------------------------------
 */
@@ -215,18 +237,53 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 | ⚠️ Seules les routes essentielles sont définies ici
 |--------------------------------------------------------------------------
 */
+// 🔍 DEBUG ROUTE - Test de connectivité (pas de middleware auth)
+Route::any('/operator/organisations-debug-test', function (Request $request) {
+    \Log::warning('🔍 DEBUG-ROUTE organisations-debug-test atteint', [
+        'method' => $request->method(),
+        'url' => $request->fullUrl(),
+        'path' => $request->path(),
+        'ip' => $request->ip(),
+        'is_ajax' => $request->ajax(),
+        'content_type' => $request->header('Content-Type'),
+        'accept' => $request->header('Accept'),
+    ]);
+    return response()->json(['debug' => true, 'method' => $request->method(), 'message' => 'Debug route atteinte']);
+});
+
+// 🔍 DEBUG ROUTE - Intercepte POST /operator/organisations SANS middleware pour tester
+Route::post('/operator/organisations-debug-post', function (Request $request) {
+    \Log::warning('🔍 DEBUG-POST organisations atteint SANS middleware', [
+        'method' => $request->method(),
+        'url' => $request->fullUrl(),
+        'path' => $request->path(),
+        'all_keys' => array_keys($request->all()),
+        'content_type' => $request->header('Content-Type'),
+        'accept' => $request->header('Accept'),
+        'x_csrf' => $request->header('X-CSRF-TOKEN') ? 'present' : 'absent',
+        'has_token' => $request->has('_token'),
+        'user_agent' => substr($request->header('User-Agent'), 0, 50),
+    ]);
+    return response()->json([
+        'debug' => true,
+        'method' => $request->method(),
+        'message' => 'POST Debug route atteinte sans middleware',
+        'keys_received' => array_keys($request->all()),
+    ]);
+})->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
+
 Route::middleware(['auth', 'verified', 'operator'])->prefix('operator')->name('operator.')->group(function () {
-    
+
     // Profil operator
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    
+
     // Gestion des organisations
     Route::resource('organisations', OrganisationController::class)->except(['index']);
     Route::get('/organisations', [OrganisationController::class, 'index'])->name('organisations.index');
     
     // Page de confirmation après création
-    Route::get('/confirmation/{dossier}', [DossierController::class, 'confirmation'])->name('confirmation');
+    Route::get('/confirmation/{dossier}', [DossierController::class, 'confirmation'])->name('dossiers.confirmation');
     
     // Gestion des dossiers
     Route::resource('dossiers', DossierController::class);
@@ -505,25 +562,61 @@ Route::middleware(['web', 'auth', 'verified', 'operator'])->prefix('operator')->
         Route::get('/{dossier}/rapport-anomalies', [DossierController::class, 'rapportAnomalies'])->name('rapport-anomalies');
         Route::get('/{dossier}/consulter-anomalies', [DossierController::class, 'consulterAnomalies'])->name('consulter-anomalies');
     });
-    
+
     /*
     |--------------------------------------------------------------------------
-    | ðŸ'¥ ADHÃ‰RENTS / MEMBRES - CRUD PRINCIPAL
+    | API GÉOLOCALISATION - Chargement dynamique des listes déroulantes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('members')->name('members.')->group(function () {
+    Route::prefix('api/geo')->name('api.geo.')->group(function () {
+        Route::get('/departements/{province_id}', [DossierController::class, 'getDepartements'])->name('departements');
+        Route::get('/communes/{departement_id}', [DossierController::class, 'getCommunes'])->name('communes');
+        Route::get('/arrondissements/{commune_id}', [DossierController::class, 'getArrondissements'])->name('arrondissements');
+        Route::get('/cantons/{departement_id}', [DossierController::class, 'getCantons'])->name('cantons');
+        Route::get('/regroupements/{canton_id}', [DossierController::class, 'getRegroupements'])->name('regroupements');
+        Route::get('/localites/{regroupement_id}', [DossierController::class, 'getLocalites'])->name('localites');
+        Route::get('/quartiers/{arrondissement_id}', [DossierController::class, 'getQuartiers'])->name('quartiers');
+        Route::get('/villages/{regroupement_id}', [DossierController::class, 'getVillages'])->name('villages');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | MEMBRES - Vue globale (toutes organisations)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('/members', [AdherentController::class, 'indexGlobal'])->name('members.index');
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADHERENTS - CRUD par organisation
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('organisations/{organisation}/adherents')->name('adherents.')->group(function () {
+        // Routes fixes en premier
         Route::get('/', [AdherentController::class, 'index'])->name('index');
         Route::get('/create', [AdherentController::class, 'create'])->name('create');
         Route::post('/', [AdherentController::class, 'store'])->name('store');
+
+        // Import / Export
+        Route::get('/import', [AdherentController::class, 'import'])->name('import');
+        Route::post('/import', [AdherentController::class, 'import'])->name('import.process');
+        Route::get('/import/template', [AdherentController::class, 'downloadTemplate'])->name('import.template');
+        Route::get('/export', [AdherentController::class, 'export'])->name('export');
+
+        // Fondateurs
+        Route::get('/fondateurs', [AdherentController::class, 'fondateurs'])->name('fondateurs');
+        Route::post('/fondateurs', [AdherentController::class, 'addFondateur'])->name('fondateurs.store');
+
+        // Doublons
+        Route::get('/duplicates', [AdherentController::class, 'duplicates'])->name('duplicates');
+
+        // Routes dynamiques (avec {adherent}) en dernier
         Route::get('/{adherent}', [AdherentController::class, 'show'])->name('show');
         Route::get('/{adherent}/edit', [AdherentController::class, 'edit'])->name('edit');
         Route::put('/{adherent}', [AdherentController::class, 'update'])->name('update');
         Route::delete('/{adherent}', [AdherentController::class, 'destroy'])->name('destroy');
-        
-        // Import Excel
-        Route::get('/import', [AdherentController::class, 'import'])->name('import');
-        Route::post('/import', [AdherentController::class, 'processImport'])->name('import.process');
-        Route::get('/import/template', [AdherentController::class, 'downloadTemplate'])->name('import.template');
+        Route::post('/{adherent}/exclude', [AdherentController::class, 'exclude'])->name('exclude');
+        Route::post('/{adherent}/reactivate', [AdherentController::class, 'reactivate'])->name('reactivate');
     });
     
     /*
@@ -626,19 +719,19 @@ Route::middleware(['web', 'auth', 'verified', 'operator'])->prefix('operator')->
         Route::delete('/two-factor', [ProfileController::class, 'disableTwoFactor'])->name('two-factor.disable');
     });
     
+    /* Ancien alias /adherents/ supprimé — utiliser /organisations/{org}/adherents/ */
+
     /*
     |--------------------------------------------------------------------------
-    | ðŸ'¥ ADHÃ‰RENTS (ALIAS members pour compatibilité)
+    | Auto-inscription : Gestion des liens et validations
     |--------------------------------------------------------------------------
     */
-    Route::prefix('adherents')->name('adherents.')->group(function () {
-        Route::get('/', [AdherentController::class, 'index'])->name('index');
-        Route::get('/create', [AdherentController::class, 'create'])->name('create');
-        Route::post('/', [AdherentController::class, 'store'])->name('store');
-        Route::get('/{adherent}', [AdherentController::class, 'show'])->name('show');
-        Route::get('/{adherent}/edit', [AdherentController::class, 'edit'])->name('edit');
-        Route::put('/{adherent}', [AdherentController::class, 'update'])->name('update');
-        Route::delete('/{adherent}', [AdherentController::class, 'destroy'])->name('destroy');
+    Route::prefix('organisations/{organisation}/inscription')->name('inscription.')->group(function () {
+        Route::post('/generate-link', [AdherentController::class, 'generateRegistrationLink'])->name('generate-link');
+        Route::post('/deactivate-link', [AdherentController::class, 'deactivateRegistrationLink'])->name('deactivate-link');
+        Route::get('/pending', [AdherentController::class, 'pendingRegistrations'])->name('pending');
+        Route::post('/{adherent}/validate', [AdherentController::class, 'validateRegistration'])->name('validate');
+        Route::post('/{adherent}/reject', [AdherentController::class, 'rejectRegistration'])->name('reject');
     });
 });
 

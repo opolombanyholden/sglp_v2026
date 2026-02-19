@@ -575,7 +575,7 @@
                                     <a href="{{ route('operator.organisations.index') }}" class="btn btn-light">
                                         <i class="fas fa-arrow-left me-2"></i>Retour
                                     </a>
-                                    <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#helpModal">
+                                    <button class="btn btn-warning" data-toggle="modal" data-target="#helpModal">
                                         <i class="fas fa-question-circle me-2"></i>Aide
                                     </button>
                                 </div>
@@ -655,7 +655,7 @@
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
-                        <form id="organisationForm" action="{{ route('operator.organisations.store') }}" method="POST"
+                        <form id="organisationForm" action="/operator/organisations" method="POST"
                             enctype="multipart/form-data">
                             @csrf
 
@@ -674,211 +674,70 @@
                                 <div class="row justify-content-center">
                                     <div class="col-md-10">
                                         <div class="row">
-                                            <!-- Association -->
-                                            <div class="col-md-6 mb-4">
-                                                <div class="card h-100 border-2 organization-type-card"
-                                                    data-type="association">
-                                                    <div class="card-body text-center p-4">
-                                                        <div class="org-icon mb-3"
-                                                            style="background: linear-gradient(135deg, #009e3f 0%, #00b347 100%);">
-                                                            <i class="fas fa-handshake fa-3x text-white"></i>
-                                                        </div>
-                                                        <h5 class="card-title text-primary">Association</h5>
-                                                        <p class="card-text text-muted">
-                                                            Groupement de personnes réunies autour d'un projet commun ou
-                                                            partageant des activités,
-                                                            sans chercher à réaliser des bénéfices.
-                                                        </p>
-                                                        <div class="features mb-3">
-                                                            <div class="row">
-                                                                <div class="col-6">
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>But
-                                                                        non lucratif
-                                                                    </small>
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Min. 3
-                                                                        fondateurs
-                                                                    </small>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Min.
-                                                                        10 adhérents
-                                                                    </small>
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>AG
-                                                                        annuelle
-                                                                    </small>
+                                            @forelse($typesOrganisation ?? [] as $orgType)
+                                                <div class="col-md-6 mb-4">
+                                                    <div class="card h-100 border-2 organization-type-card"
+                                                        data-type="{{ $orgType->code }}">
+                                                        <div class="card-body text-center p-4">
+                                                            <div class="org-icon mb-3"
+                                                                style="background: linear-gradient(135deg, {{ $orgType->couleur ?? '#009e3f' }} 0%, {{ $orgType->couleur ?? '#00b347' }}dd 100%);">
+                                                                <i
+                                                                    class="fas {{ $orgType->icone ?? 'fa-building' }} fa-3x text-white"></i>
+                                                            </div>
+                                                            <h5 class="card-title"
+                                                                style="color: {{ $orgType->couleur ?? '#009e3f' }};">
+                                                                {{ $orgType->nom }}</h5>
+                                                            <p class="card-text text-muted">
+                                                                {{ $orgType->description ?? 'Type d\'organisation' }}
+                                                            </p>
+                                                            <div class="features mb-3">
+                                                                <div class="row">
+                                                                    <div class="col-6">
+                                                                        <small class="d-block text-muted">
+                                                                            <i
+                                                                                class="fas fa-check text-success me-1"></i>{{ $orgType->is_lucratif ? 'But lucratif' : 'But non lucratif' }}
+                                                                        </small>
+                                                                        <small class="d-block text-muted">
+                                                                            <i class="fas fa-check text-success me-1"></i>Min.
+                                                                            {{ $orgType->nb_min_fondateurs_majeurs }} fondateurs
+                                                                        </small>
+                                                                    </div>
+                                                                    <div class="col-6">
+                                                                        <small class="d-block text-muted">
+                                                                            <i
+                                                                                class="fas {{ $orgType->nb_min_adherents_creation >= 50 ? 'fa-exclamation text-warning' : 'fa-check text-success' }} me-1"></i>Min.
+                                                                            {{ $orgType->nb_min_adherents_creation }} adhérents
+                                                                        </small>
+                                                                        @if($orgType->loi_reference)
+                                                                            <small class="d-block text-muted">
+                                                                                <i
+                                                                                    class="fas fa-gavel text-info me-1"></i>{{ Str::limit($orgType->loi_reference, 25) }}
+                                                                            </small>
+                                                                        @endif
+                                                                    </div>
                                                                 </div>
                                                             </div>
-                                                        </div>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio"
-                                                                name="type_organisation" value="association"
-                                                                id="typeAssociation">
-                                                            <label class="form-check-label fw-bold" for="typeAssociation">
-                                                                Choisir Association
-                                                            </label>
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="radio"
+                                                                    name="type_organisation" value="{{ $orgType->code }}"
+                                                                    id="type{{ Str::studly($orgType->code) }}">
+                                                                <label class="form-check-label fw-bold"
+                                                                    for="type{{ Str::studly($orgType->code) }}">
+                                                                    Choisir {{ $orgType->nom }}
+                                                                </label>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>
-                                            </div>
-
-                                            <!-- ONG -->
-                                            <div class="col-md-6 mb-4">
-                                                <div class="card h-100 border-2 organization-type-card" data-type="ong">
-                                                    <div class="card-body text-center p-4">
-                                                        <div class="org-icon mb-3"
-                                                            style="background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%);">
-                                                            <i class="fas fa-globe-africa fa-3x text-white"></i>
-                                                        </div>
-                                                        <h5 class="card-title text-info">ONG</h5>
-                                                        <p class="card-text text-muted">
-                                                            Organisation Non Gouvernementale à vocation humanitaire,
-                                                            caritative,
-                                                            éducative ou de développement social.
-                                                        </p>
-                                                        <div class="features mb-3">
-                                                            <div class="row">
-                                                                <div class="col-6">
-                                                                    <small class="d-block text-muted">
-                                                                        <i
-                                                                            class="fas fa-check text-success me-1"></i>Mission
-                                                                        sociale
-                                                                    </small>
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Min. 5
-                                                                        fondateurs
-                                                                    </small>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Min.
-                                                                        15 adhérents
-                                                                    </small>
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Projet
-                                                                        social
-                                                                    </small>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio"
-                                                                name="type_organisation" value="ong" id="typeOng">
-                                                            <label class="form-check-label fw-bold" for="typeOng">
-                                                                Choisir ONG
-                                                            </label>
-                                                        </div>
+                                            @empty
+                                                <div class="col-12">
+                                                    <div class="alert alert-warning text-center">
+                                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                                        Aucun type d'organisation n'est disponible pour le moment. Veuillez
+                                                        contacter l'administrateur.
                                                     </div>
                                                 </div>
-                                            </div>
-
-                                            <!-- Parti Politique -->
-                                            <div class="col-md-6 mb-4">
-                                                <div class="card h-100 border-2 organization-type-card"
-                                                    data-type="parti_politique">
-                                                    <div class="card-body text-center p-4">
-                                                        <div class="org-icon mb-3"
-                                                            style="background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);">
-                                                            <i class="fas fa-vote-yea fa-3x text-dark"></i>
-                                                        </div>
-                                                        <h5 class="card-title text-warning">Parti Politique</h5>
-                                                        <p class="card-text text-muted">
-                                                            Organisation politique légalement constituée pour participer à
-                                                            la vie démocratique
-                                                            et aux élections au Gabon.
-                                                        </p>
-                                                        <div class="features mb-3">
-                                                            <div class="row">
-                                                                <div class="col-6">
-                                                                    <small class="d-block text-muted">
-                                                                        <i
-                                                                            class="fas fa-check text-success me-1"></i>Vocation
-                                                                        politique
-                                                                    </small>
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Min. 3
-                                                                        fondateurs
-                                                                    </small>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <small class="d-block text-muted">
-                                                                        <i
-                                                                            class="fas fa-exclamation text-warning me-1"></i>Min.
-                                                                        50 adhérents
-                                                                    </small>
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>3
-                                                                        provinces min.
-                                                                    </small>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio"
-                                                                name="type_organisation" value="parti_politique"
-                                                                id="typeParti">
-                                                            <label class="form-check-label fw-bold" for="typeParti">
-                                                                Choisir Parti Politique
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <!-- Confession Religieuse -->
-                                            <div class="col-md-6 mb-4">
-                                                <div class="card h-100 border-2 organization-type-card"
-                                                    data-type="confession_religieuse">
-                                                    <div class="card-body text-center p-4">
-                                                        <div class="org-icon mb-3"
-                                                            style="background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);">
-                                                            <i class="fas fa-pray fa-3x text-white"></i>
-                                                        </div>
-                                                        <h5 class="card-title text-purple">Confession Religieuse</h5>
-                                                        <p class="card-text text-muted">
-                                                            Organisation religieuse ou spirituelle reconnue pour l'exercice
-                                                            du culte
-                                                            et des activités religieuses au Gabon.
-                                                        </p>
-                                                        <div class="features mb-3">
-                                                            <div class="row">
-                                                                <div class="col-6">
-                                                                    <small class="d-block text-muted">
-                                                                        <i
-                                                                            class="fas fa-check text-success me-1"></i>Vocation
-                                                                        spirituelle
-                                                                    </small>
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Min. 3
-                                                                        fondateurs
-                                                                    </small>
-                                                                </div>
-                                                                <div class="col-6">
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Min.
-                                                                        10 fidèles
-                                                                    </small>
-                                                                    <small class="d-block text-muted">
-                                                                        <i class="fas fa-check text-success me-1"></i>Lieu
-                                                                        de culte
-                                                                    </small>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio"
-                                                                name="type_organisation" value="confession_religieuse"
-                                                                id="typeReligion">
-                                                            <label class="form-check-label fw-bold" for="typeReligion">
-                                                                Choisir Confession Religieuse
-                                                            </label>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+                                            @endforelse
                                         </div>
 
                                         <!-- Type sélectionné -->
@@ -1179,13 +1038,20 @@
                                                         <select class="form-select form-select-lg" id="demandeur_role"
                                                             name="demandeur_role" required>
                                                             <option value="">Sélectionnez votre rôle</option>
-                                                            <option value="president">Président(e)</option>
-                                                            <option value="vice-president">Vice-Président(e)</option>
-                                                            <option value="secretaire-general">Secrétaire Général(e)
-                                                            </option>
-                                                            <option value="tresorier">Trésorier(ère)</option>
-                                                            <option value="fondateur">Membre fondateur</option>
-                                                            <option value="mandataire">Mandataire</option>
+                                                            @foreach($fonctions ?? [] as $fonction)
+                                                                @if($fonction->categorie === 'bureau')
+                                                                    <option value="{{ $fonction->code }}">{{ $fonction->nom }}
+                                                                    </option>
+                                                                @endif
+                                                            @endforeach
+                                                            <optgroup label="Autres fonctions">
+                                                                @foreach($fonctions ?? [] as $fonction)
+                                                                    @if($fonction->categorie !== 'bureau')
+                                                                        <option value="{{ $fonction->code }}">{{ $fonction->nom }}
+                                                                        </option>
+                                                                    @endif
+                                                                @endforeach
+                                                            </optgroup>
                                                         </select>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
@@ -1266,10 +1132,10 @@
                                                         </label>
                                                         <input type="text" class="form-control form-control-lg" id="org_nom"
                                                             name="org_nom" placeholder="Nom complet de votre organisation"
-                                                            required>
+                                                            maxlength="255" required>
                                                         <div class="form-text">
                                                             <i class="fas fa-info me-1"></i>
-                                                            Le nom exact tel qu'il apparaîtra sur les documents officiels
+                                                            Le nom exact tel qu'il apparaîtra sur les documents officiels (max. 255 caractères)
                                                         </div>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
@@ -1293,13 +1159,15 @@
                                                             Objet social / Mission
                                                         </label>
                                                         <textarea class="form-control form-control-lg" id="org_objet"
-                                                            name="org_objet" rows="4"
+                                                            name="org_objet" rows="4" minlength="50"
                                                             placeholder="Décrivez l'objet social et la mission principale de votre organisation..."
-                                                            required></textarea>
-                                                        <div class="form-text">
-                                                            <i class="fas fa-info me-1"></i>
-                                                            Description claire et précise des activités et objectifs
-                                                            (minimum 50 caractères)
+                                                            required oninput="updateCharCount(this, 'org_objet_count', 50)"></textarea>
+                                                        <div class="d-flex justify-content-between">
+                                                            <div class="form-text">
+                                                                <i class="fas fa-info me-1"></i>
+                                                                Minimum <strong>50 caractères</strong> requis
+                                                            </div>
+                                                            <small id="org_objet_count" class="form-text text-danger">0 / 50 min</small>
                                                         </div>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
@@ -1311,19 +1179,11 @@
                                                             Domaine d'activité
                                                         </label>
                                                         <select class="form-select form-select-lg" id="org_domaine"
-                                                            name="org_domaine">
+                                                            name="org_domaine_activite_id">
                                                             <option value="">Sélectionnez un domaine</option>
-                                                            <option value="education">Éducation et Formation</option>
-                                                            <option value="sante">Santé et Social</option>
-                                                            <option value="environnement">Environnement</option>
-                                                            <option value="sport">Sport et Loisirs</option>
-                                                            <option value="culture">Culture et Arts</option>
-                                                            <option value="developpement">Développement rural/urbain
-                                                            </option>
-                                                            <option value="droits_humains">Droits de l'Homme</option>
-                                                            <option value="jeunesse">Jeunesse et Enfance</option>
-                                                            <option value="femmes">Promotion de la femme</option>
-                                                            <option value="autre">Autre</option>
+                                                            @foreach($domainesActivite ?? [] as $domaine)
+                                                                <option value="{{ $domaine->id }}">{{ $domaine->nom }}</option>
+                                                            @endforeach
                                                         </select>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
@@ -1428,92 +1288,226 @@
 
                                 <div class="row justify-content-center">
                                     <div class="col-md-10">
-                                        <!-- Adresse du siège social -->
+
+                                        <!-- Sélection du type de zone -->
                                         <div class="card border-0 shadow-sm mb-4">
                                             <div class="card-header bg-info text-white">
                                                 <h6 class="mb-0">
+                                                    <i class="fas fa-map-signs me-2"></i>
+                                                    Type de zone
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row justify-content-center">
+                                                    <div class="col-md-5">
+                                                        <div class="card text-center p-3 border-2 zone-type-btn"
+                                                            id="zoneCardUrbaine" data-zone="urbaine"
+                                                            style="cursor:pointer; border-color: #17a2b8; background-color: #17a2b810;">
+                                                            <div class="form-check d-flex justify-content-end mb-2">
+                                                                <input class="form-check-input zone-radio" type="radio"
+                                                                    name="zone_type_radio" id="radioUrbaine" value="urbaine"
+                                                                    checked style="pointer-events:none;">
+                                                            </div>
+                                                            <i class="fas fa-city fa-2x text-info mb-2"></i>
+                                                            <h6 class="mb-1">Zone Urbaine</h6>
+                                                            <small class="text-muted">Commune &rarr; Arrondissement &rarr;
+                                                                Quartier</small>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-5">
+                                                        <div class="card text-center p-3 border-2 zone-type-btn"
+                                                            id="zoneCardRurale" data-zone="rurale"
+                                                            style="cursor:pointer; border-color: #dee2e6;">
+                                                            <div class="form-check d-flex justify-content-end mb-2">
+                                                                <input class="form-check-input zone-radio" type="radio"
+                                                                    name="zone_type_radio" id="radioRurale" value="rurale"
+                                                                    style="pointer-events:none;">
+                                                            </div>
+                                                            <i class="fas fa-tree fa-2x text-success mb-2"></i>
+                                                            <h6 class="mb-1">Zone Rurale</h6>
+                                                            <small class="text-muted">Canton &rarr; Regroupement &rarr;
+                                                                Village</small>
+                                                        </div>
+                                                    </div>
+                                                    <input type="hidden" name="zone_type" id="zone_type_input"
+                                                        value="urbaine">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Localisation administrative -->
+                                        <div class="card border-0 shadow-sm mb-4">
+                                            <div class="card-header bg-primary text-white">
+                                                <h6 class="mb-0">
                                                     <i class="fas fa-home me-2"></i>
-                                                    Siège social
+                                                    Localisation du siège social
                                                 </h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-                                                    <!-- Adresse complète -->
-                                                    <div class="col-12 mb-4">
-                                                        <label for="org_adresse_complete"
-                                                            class="form-label fw-bold required">
-                                                            <i class="fas fa-map-marker-alt me-2 text-info"></i>
-                                                            Adresse complète du siège social
-                                                        </label>
-                                                        <textarea class="form-control form-control-lg"
-                                                            id="org_adresse_complete" name="org_adresse_complete" rows="3"
-                                                            placeholder="Numéro, rue, quartier, arrondissement..."
-                                                            required></textarea>
-                                                        <div class="invalid-feedback"></div>
-                                                    </div>
-
-                                                    <!-- Province -->
+                                                    <!-- Province (commun) -->
                                                     <div class="col-md-6 mb-4">
                                                         <label for="org_province" class="form-label fw-bold required">
-                                                            <i class="fas fa-map me-2 text-info"></i>
+                                                            <i class="fas fa-map me-2 text-primary"></i>
                                                             Province
                                                         </label>
                                                         <select class="form-select form-select-lg" id="org_province"
-                                                            name="org_province" required>
+                                                            name="org_province_id" required>
                                                             <option value="">Sélectionnez une province</option>
-                                                            <option value="Estuaire">Estuaire</option>
-                                                            <option value="Haut-Ogooué">Haut-Ogooué</option>
-                                                            <option value="Moyen-Ogooué">Moyen-Ogooué</option>
-                                                            <option value="Ngounié">Ngounié</option>
-                                                            <option value="Nyanga">Nyanga</option>
-                                                            <option value="Ogooué-Ivindo">Ogooué-Ivindo</option>
-                                                            <option value="Ogooué-Lolo">Ogooué-Lolo</option>
-                                                            <option value="Ogooué-Maritime">Ogooué-Maritime</option>
-                                                            <option value="Woleu-Ntem">Woleu-Ntem</option>
+                                                            @foreach($provinces ?? [] as $province)
+                                                                <option value="{{ $province->id }}"
+                                                                    data-nom="{{ $province->nom }}">{{ $province->nom }}
+                                                                </option>
+                                                            @endforeach
                                                         </select>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
 
-                                                    <!-- Département -->
+                                                    <!-- Département (commun) -->
                                                     <div class="col-md-6 mb-4">
-                                                        <label for="org_departement" class="form-label fw-bold">
-                                                            <i class="fas fa-map-pin me-2 text-info"></i>
+                                                        <label for="org_departement" class="form-label fw-bold required">
+                                                            <i class="fas fa-map-pin me-2 text-primary"></i>
                                                             Département
                                                         </label>
                                                         <select class="form-select form-select-lg" id="org_departement"
-                                                            name="org_departement">
+                                                            name="org_departement_id" required disabled>
                                                             <option value="">Sélectionnez d'abord une province</option>
                                                         </select>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
 
-                                                    <!-- Préfecture -->
+                                                    <!-- ===== ZONE URBAINE : Commune → Arrondissement → Quartier ===== -->
+                                                    <div class="col-md-6 mb-4 zone-urbaine-field">
+                                                        <label for="org_commune_id" class="form-label fw-bold">
+                                                            <i class="fas fa-city me-2 text-info"></i>
+                                                            Commune / Ville
+                                                        </label>
+                                                        <select class="form-select form-select-lg" id="org_commune_id"
+                                                            name="org_commune_id" disabled>
+                                                            <option value="">Sélectionnez un département...</option>
+                                                        </select>
+                                                        <div class="invalid-feedback"></div>
+                                                    </div>
+
+                                                    <div class="col-md-6 mb-4 zone-urbaine-field">
+                                                        <label for="org_arrondissement_id" class="form-label fw-bold">
+                                                            <i class="fas fa-map-marked me-2 text-info"></i>
+                                                            Arrondissement
+                                                        </label>
+                                                        <select class="form-select form-select-lg"
+                                                            id="org_arrondissement_id" name="org_arrondissement_id"
+                                                            disabled>
+                                                            <option value="">Sélectionnez une commune...</option>
+                                                        </select>
+                                                        <div class="invalid-feedback"></div>
+                                                    </div>
+
+                                                    <div class="col-md-6 mb-4 zone-urbaine-field">
+                                                        <label for="org_quartier_id" class="form-label fw-bold">
+                                                            <i class="fas fa-street-view me-2 text-info"></i>
+                                                            Quartier
+                                                        </label>
+                                                        <select class="form-select form-select-lg" id="org_quartier_id"
+                                                            name="org_quartier_id" disabled>
+                                                            <option value="">Sélectionnez un arrondissement...</option>
+                                                        </select>
+                                                        <div class="invalid-feedback"></div>
+                                                    </div>
+
+                                                    <!-- ===== ZONE RURALE : Canton → Regroupement → Village ===== -->
+                                                    <div class="col-md-6 mb-4 zone-rurale-field" style="display: none;">
+                                                        <label for="org_canton_id" class="form-label fw-bold">
+                                                            <i class="fas fa-tree me-2 text-success"></i>
+                                                            Canton
+                                                        </label>
+                                                        <select class="form-select form-select-lg" id="org_canton_id"
+                                                            name="org_canton_id" disabled>
+                                                            <option value="">Sélectionnez un département...</option>
+                                                        </select>
+                                                        <div class="invalid-feedback"></div>
+                                                    </div>
+
+                                                    <div class="col-md-6 mb-4 zone-rurale-field" style="display: none;">
+                                                        <label for="org_regroupement_id" class="form-label fw-bold">
+                                                            <i class="fas fa-layer-group me-2 text-success"></i>
+                                                            Regroupement
+                                                        </label>
+                                                        <select class="form-select form-select-lg" id="org_regroupement_id"
+                                                            name="org_regroupement_id" disabled>
+                                                            <option value="">Sélectionnez un canton...</option>
+                                                        </select>
+                                                        <div class="invalid-feedback"></div>
+                                                    </div>
+
+                                                    <div class="col-md-6 mb-4 zone-rurale-field" style="display: none;">
+                                                        <label for="org_village_id" class="form-label fw-bold">
+                                                            <i class="fas fa-home me-2 text-success"></i>
+                                                            Village
+                                                        </label>
+                                                        <select class="form-select form-select-lg" id="org_village_id"
+                                                            name="org_village_id" disabled>
+                                                            <option value="">Sélectionnez un regroupement...</option>
+                                                        </select>
+                                                        <div class="invalid-feedback"></div>
+                                                    </div>
+
+                                                    <!-- ===== CHAMPS COMMUNS ===== -->
                                                     <div class="col-md-6 mb-4">
-                                                        <label for="org_prefecture" class="form-label fw-bold required">
-                                                            <i class="fas fa-building me-2 text-info"></i>
+                                                        <label for="org_prefecture" class="form-label fw-bold">
+                                                            <i class="fas fa-building me-2 text-muted"></i>
                                                             Préfecture
                                                         </label>
                                                         <input type="text" class="form-control form-control-lg"
                                                             id="org_prefecture" name="org_prefecture"
-                                                            placeholder="Nom de la préfecture" required>
+                                                            placeholder="Préfecture (optionnel)">
                                                         <div class="invalid-feedback"></div>
                                                     </div>
 
-                                                    <!-- Zone type -->
                                                     <div class="col-md-6 mb-4">
-                                                        <label for="org_zone_type" class="form-label fw-bold required">
-                                                            <i class="fas fa-city me-2 text-info"></i>
-                                                            Type de zone
+                                                        <label for="org_sous_prefecture" class="form-label fw-bold">
+                                                            <i class="fas fa-building me-2 text-muted"></i>
+                                                            Sous-Préfecture
                                                         </label>
-                                                        <select class="form-select form-select-lg" id="org_zone_type"
-                                                            name="org_zone_type" required>
-                                                            <option value="">Sélectionnez le type</option>
-                                                            <option value="urbaine">Zone urbaine</option>
-                                                            <option value="rurale">Zone rurale</option>
-                                                        </select>
+                                                        <input type="text" class="form-control form-control-lg"
+                                                            id="org_sous_prefecture" name="org_sous_prefecture"
+                                                            placeholder="Sous-préfecture (optionnel)">
+                                                        <div class="invalid-feedback"></div>
+                                                    </div>
+
+                                                    <div class="col-md-6 mb-4">
+                                                        <label for="org_lieu_dit" class="form-label fw-bold">
+                                                            <i class="fas fa-thumbtack me-2 text-muted"></i>
+                                                            Lieu-dit
+                                                        </label>
+                                                        <input type="text" class="form-control form-control-lg"
+                                                            id="org_lieu_dit" name="org_lieu_dit"
+                                                            placeholder="Lieu-dit (optionnel)">
+                                                        <div class="invalid-feedback"></div>
+                                                    </div>
+
+                                                    <!-- Adresse complète -->
+                                                    <div class="col-12 mb-4">
+                                                        <label for="org_adresse_complete"
+                                                            class="form-label fw-bold required">
+                                                            <i class="fas fa-map-marker-alt me-2 text-primary"></i>
+                                                            Adresse complète du siège social
+                                                        </label>
+                                                        <textarea class="form-control form-control-lg"
+                                                            id="org_adresse_complete" name="org_adresse" rows="3"
+                                                            placeholder="Numéro, rue, bâtiment..." required></textarea>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
                                                 </div>
+
+                                                <!-- Champs cachés pour stocker les noms -->
+                                                <input type="hidden" name="province" id="province_nom">
+                                                <input type="hidden" name="departement" id="departement_nom">
+                                                <input type="hidden" name="commune" id="commune_nom">
+                                                <input type="hidden" name="arrondissement" id="arrondissement_text">
+                                                <input type="hidden" name="quartier" id="quartier_nom">
+                                                <input type="hidden" name="canton" id="canton_nom">
+                                                <input type="hidden" name="regroupement" id="regroupement_nom">
+                                                <input type="hidden" name="village" id="village_nom">
                                             </div>
                                         </div>
 
@@ -1532,9 +1526,8 @@
                                                             <i class="fas fa-compass me-2 text-warning"></i>
                                                             Latitude
                                                         </label>
-                                                        <input type="number" class="form-control form-control-lg"
-                                                            id="org_latitude" name="org_latitude" step="0.0000001"
-                                                            min="-3.978" max="2.318" placeholder="Ex: 0.4162">
+                                                        <input type="text" class="form-control form-control-lg"
+                                                            id="org_latitude" name="org_latitude" placeholder="Ex: 0.4162">
                                                         <div class="invalid-feedback"></div>
                                                     </div>
 
@@ -1543,9 +1536,9 @@
                                                             <i class="fas fa-globe-americas me-2 text-warning"></i>
                                                             Longitude
                                                         </label>
-                                                        <input type="number" class="form-control form-control-lg"
-                                                            id="org_longitude" name="org_longitude" step="0.0000001"
-                                                            min="8.695" max="14.502" placeholder="Ex: 9.4673">
+                                                        <input type="text" class="form-control form-control-lg"
+                                                            id="org_longitude" name="org_longitude"
+                                                            placeholder="Ex: 9.4673">
                                                         <div class="invalid-feedback"></div>
                                                     </div>
 
@@ -1613,48 +1606,63 @@
                                                     </div>
 
                                                     <div class="col-md-3 mb-3">
-                                                        <label for="fondateur_nom" class="form-label fw-bold">Nom</label>
+                                                        <label for="fondateur_nom" class="form-label fw-bold">Nom <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control" id="fondateur_nom"
-                                                            placeholder="Nom de famille">
+                                                            placeholder="Nom de famille" maxlength="255">
+                                                        <div class="invalid-feedback">Le nom est obligatoire</div>
                                                     </div>
 
                                                     <div class="col-md-3 mb-3">
                                                         <label for="fondateur_prenom"
-                                                            class="form-label fw-bold">Prénom</label>
+                                                            class="form-label fw-bold">Prénom <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control" id="fondateur_prenom"
-                                                            placeholder="Prénom(s)">
+                                                            placeholder="Prénom(s)" maxlength="255">
+                                                        <div class="invalid-feedback">Le prénom est obligatoire</div>
                                                     </div>
 
                                                     <div class="col-md-3 mb-3">
-                                                        <label for="fondateur_nip" class="form-label fw-bold">NIP</label>
+                                                        <label for="fondateur_nip" class="form-label fw-bold">NIP <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control" id="fondateur_nip"
                                                             data-validate="nip" placeholder="A1-2345-19901225"
                                                             maxlength="16" pattern="[A-Z0-9]{2}-[0-9]{4}-[0-9]{8}">
-                                                        <small class="form-text text-muted">Format: XX-QQQQ-YYYYMMDD</small>
+                                                        <small class="form-text text-muted">Format obligatoire : XX-0000-AAAAMMJJ (ex: A1-2345-19901225)</small>
+                                                        <div class="invalid-feedback">NIP obligatoire au format XX-0000-AAAAMMJJ</div>
                                                     </div>
 
                                                     <div class="col-md-4 mb-3">
                                                         <label for="fondateur_fonction"
-                                                            class="form-label fw-bold">Fonction</label>
+                                                            class="form-label fw-bold">Fonction <span class="text-danger">*</span></label>
                                                         <select class="form-select" id="fondateur_fonction">
                                                             <option value="">Sélectionnez</option>
-                                                            <option value="president">Président(e)</option>
-                                                            <option value="vice-president">Vice-Président(e)</option>
-                                                            <option value="secretaire-general">Secrétaire Général(e)
-                                                            </option>
-                                                            <option value="tresorier">Trésorier(ère)</option>
-                                                            <option value="membre">Membre fondateur</option>
+                                                            @if(isset($fonctions) && $fonctions->where('categorie', 'bureau')->count())
+                                                                <optgroup label="Bureau">
+                                                                    @foreach($fonctions->where('categorie', 'bureau') as $fonction)
+                                                                        <option value="{{ $fonction->code }}">{{ $fonction->nom }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </optgroup>
+                                                            @endif
+                                                            @if(isset($fonctions))
+                                                                <optgroup label="Autres fonctions">
+                                                                    @foreach($fonctions->where('categorie', '!=', 'bureau') as $fonction)
+                                                                        <option value="{{ $fonction->code }}">{{ $fonction->nom }}
+                                                                        </option>
+                                                                    @endforeach
+                                                                </optgroup>
+                                                            @endif
                                                         </select>
                                                     </div>
 
                                                     <div class="col-md-4 mb-3">
                                                         <label for="fondateur_telephone"
-                                                            class="form-label fw-bold">Téléphone</label>
+                                                            class="form-label fw-bold">Téléphone <span class="text-danger">*</span></label>
                                                         <div class="input-group">
                                                             <span class="input-group-text">+241</span>
                                                             <input type="tel" class="form-control" id="fondateur_telephone"
-                                                                placeholder="01234567">
+                                                                placeholder="01234567" pattern="[0-9]{8,9}">
                                                         </div>
+                                                        <small class="form-text text-muted">8 ou 9 chiffres</small>
+                                                        <div class="invalid-feedback">Téléphone obligatoire (8-9 chiffres)</div>
                                                     </div>
 
                                                     <div class="col-md-4 mb-3">
@@ -1662,6 +1670,7 @@
                                                             class="form-label fw-bold">Email</label>
                                                         <input type="email" class="form-control" id="fondateur_email"
                                                             placeholder="email@exemple.com">
+                                                        <small class="form-text text-muted">Optionnel</small>
                                                     </div>
 
                                                     <div class="col-12">
@@ -1758,20 +1767,22 @@
                                                                     class="form-label fw-bold">Fonction *</label>
                                                                 <select class="form-select" id="membre_fonction">
                                                                     <option value="">Sélectionnez</option>
-                                                                    <option value="Président(e)">Président(e)</option>
-                                                                    <option value="Vice-Président(e)">Vice-Président(e)
-                                                                    </option>
-                                                                    <option value="Secrétaire Général(e)">Secrétaire
-                                                                        Général(e)</option>
-                                                                    <option value="Secrétaire Général(e) Adjoint(e)">
-                                                                        Secrétaire Général(e) Adjoint(e)</option>
-                                                                    <option value="Trésorier(ère)">Trésorier(ère)</option>
-                                                                    <option value="Trésorier(ère) Adjoint(e)">Trésorier(ère)
-                                                                        Adjoint(e)</option>
-                                                                    <option value="Commissaire aux comptes">Commissaire aux
-                                                                        comptes</option>
-                                                                    <option value="Conseiller(ère)">Conseiller(ère)</option>
-                                                                    <option value="Autre">Autre</option>
+                                                                    @if(isset($fonctions) && $fonctions->where('categorie', 'bureau')->count())
+                                                                        <optgroup label="Bureau">
+                                                                            @foreach($fonctions->where('categorie', 'bureau') as $fonction)
+                                                                                <option value="{{ $fonction->nom }}">
+                                                                                    {{ $fonction->nom }}</option>
+                                                                            @endforeach
+                                                                        </optgroup>
+                                                                    @endif
+                                                                    @if(isset($fonctions))
+                                                                        <optgroup label="Autres fonctions">
+                                                                            @foreach($fonctions->where('categorie', '!=', 'bureau') as $fonction)
+                                                                                <option value="{{ $fonction->nom }}">
+                                                                                    {{ $fonction->nom }}</option>
+                                                                            @endforeach
+                                                                        </optgroup>
+                                                                    @endif
                                                                 </select>
                                                             </div>
 
@@ -2280,8 +2291,8 @@
                                     <i class="fas fa-rocket me-2"></i>Créer l'Organisation (Phase 1)
                                 </button>
 
-                                <button type="submit" class="btn btn-success" id="submitTraditionalBtn"
-                                    style="display: none;">
+                                <button type="button" class="btn btn-success" id="submitTraditionalBtn"
+                                    onclick="submitTraditional()" style="display: none;">
                                     <i class="fas fa-paper-plane me-2"></i>Soumettre Maintenant
                                 </button>
                             </div>
@@ -2311,7 +2322,7 @@
                                 <i class="fas fa-question-circle me-2"></i>
                                 Aide - Création d'organisation
                             </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
                         </div>
                         <div class="modal-body">
                             <p>Ce guide vous aidera à créer votre organisation étape par étape selon la législation
@@ -2323,7 +2334,7 @@
                             </ul>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
                         </div>
                     </div>
                 </div>
@@ -2338,7 +2349,7 @@
                                 <i class="fas fa-hashtag me-2"></i>
                                 Aide - Format NIP Gabonais
                             </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            <button type="button" class="close text-white" data-dismiss="modal"><span>&times;</span></button>
                         </div>
                         <div class="modal-body">
                             <h6>Nouveau format NIP : XX-QQQQ-YYYYMMDD</h6>
@@ -2364,7 +2375,7 @@
                             <div id="nipExampleResult" class="mt-2"></div>
                         </div>
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Fermer</button>
                         </div>
                     </div>
                 </div>
@@ -2374,7 +2385,7 @@
 
 
             <!-- Modal de confirmation workflow 2 phases -->
-            <div class="modal fade modal-workflow" id="workflowConfirmModal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal fade modal-workflow" id="workflowConfirmModal" tabindex="-1" data-backdrop="static">
                 <div class="modal-dialog modal-lg">
                     <div class="modal-content">
                         <div class="modal-header">
@@ -2448,11 +2459,13 @@
                                 </div>
                             </div>
                         </div>
+                        {{-- ═══ DIAGNOSTIC ═══ --}}
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                            <button type="button" class="btn btn-outline-secondary" data-dismiss="modal">
                                 <i class="fas fa-times me-2"></i>Annuler
                             </button>
-                            <button type="button" class="btn btn-phase-primary" id="confirmSubmitPhase1">
+                            <button type="button" class="btn btn-success btn-lg" id="btnConfirmCreate"
+                                onclick="handleConfirmSubmitPhase1();">
                                 <i class="fas fa-rocket me-2"></i>Confirmer - Créer l'Organisation
                             </button>
                         </div>
@@ -2476,367 +2489,392 @@
 @endsection
 
         @push('scripts')
-            <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 
-            <!-- Configuration JavaScript pour 8 étapes -->
-            <script>
-                // Configuration globale mise à jour pour 8 étapes
-                window.OrganisationApp = {
-                    currentStep: 1,
-                    totalSteps: 8, // Mise à jour : 8 étapes au lieu de 9
-                    formData: {},
-                    isSubmitting: false,
-                    organisationType: null,
-                    foundateurs: [],
-                    membresBureau: [], // Membres du bureau pour le récépissé
-                    validationErrors: {},
-                    uploadedDocuments: {}, // Pour tracker les documents uploadés
+                <!-- Configuration JavaScript pour 8 étapes -->
+                <script>
+                    // Données des types d'organisation chargées depuis la base de données
+                    window.typesOrganisationData = @json($typesOrganisationJson ?? []);
 
-                    // Configuration cache/localStorage
-                    cacheConfig: {
-                        enabled: true,
-                        keyPrefix: 'organisationForm_',
-                        expirationHours: 24,
-                        autoSaveInterval: 5000, // 5 secondes
-                        maxCacheSize: 5 * 1024 * 1024 // 5MB max
-                    },
+                    // Configuration globale mise à jour pour 8 étapes
+                    window.OrganisationApp = {
+                        currentStep: 1,
+                        totalSteps: 8,
+                        formData: {},
+                        isSubmitting: false,
+                        organisationType: null,
+                        foundateurs: [],
+                        membresBureau: [],
+                        validationErrors: {},
+                        uploadedDocuments: {},
 
-                    // Configuration mise à jour des étapes
-                    stepConfig: {
-                        1: { name: 'Type', icon: 'fa-list-ul', required: true },
-                        2: { name: 'Guide', icon: 'fa-book-open', required: true },
-                        3: { name: 'Demandeur', icon: 'fa-user', required: true },
-                        4: { name: 'Organisation', icon: 'fa-building', required: true },
-                        5: { name: 'Coordonnées', icon: 'fa-map-marker-alt', required: true },
-                        6: { name: 'Fondateurs', icon: 'fa-users', required: true },
-                        7: { name: 'Documents', icon: 'fa-file-alt', required: true }, // Ex-étape 8
-                        8: { name: 'Soumission', icon: 'fa-check-circle', required: true } // Ex-étape 9
-                    },
-
-                    // Configuration documents par type d'organisation
-                    documentRequirements: {
-                        'association': {
-                            required: ['statuts', 'pv_ag', 'liste_fondateurs'],
-                            optional: ['justif_siege']
+                        // Configuration cache/localStorage
+                        cacheConfig: {
+                            enabled: true,
+                            keyPrefix: 'organisationForm_',
+                            expirationHours: 24,
+                            autoSaveInterval: 5000,
+                            maxCacheSize: 5 * 1024 * 1024
                         },
-                        'ong': {
-                            required: ['statuts', 'pv_ag', 'liste_fondateurs', 'projet_social'],
-                            optional: ['justif_siege', 'budget_previsionnel']
+
+                        // Configuration mise à jour des étapes
+                        stepConfig: {
+                            1: { name: 'Type', icon: 'fa-list-ul', required: true },
+                            2: { name: 'Guide', icon: 'fa-book-open', required: true },
+                            3: { name: 'Demandeur', icon: 'fa-user', required: true },
+                            4: { name: 'Organisation', icon: 'fa-building', required: true },
+                            5: { name: 'Coordonnées', icon: 'fa-map-marker-alt', required: true },
+                            6: { name: 'Fondateurs', icon: 'fa-users', required: true },
+                            7: { name: 'Documents', icon: 'fa-file-alt', required: true },
+                            8: { name: 'Soumission', icon: 'fa-check-circle', required: true }
                         },
-                        'parti_politique': {
-                            required: ['statuts', 'pv_ag', 'liste_fondateurs', 'programme_politique'],
-                            optional: ['justif_siege']
-                        },
-                        'confession_religieuse': {
-                            required: ['statuts', 'pv_ag', 'liste_fondateurs', 'expose_doctrine'],
-                            optional: ['justif_siege', 'justif_lieu_culte']
-                        }
-                    }
-                };
 
-                console.log('📋 Configuration mise à jour:', window.OrganisationApp);
-            </script>
+                        // Documents par type - dynamique depuis la DB
+                        documentRequirements: (function () {
+                            const reqs = {};
+                            Object.keys(window.typesOrganisationData).forEach(code => {
+                                const typeData = window.typesOrganisationData[code];
+                                reqs[code] = {
+                                    required: typeData.documents.filter(d => d.is_obligatoire).map(d => d.nom),
+                                    optional: typeData.documents.filter(d => !d.is_obligatoire).map(d => d.nom)
+                                };
+                            });
+                            return reqs;
+                        })()
+                    };
 
-            <script>
-                // ========================================
-                // WORKFLOW 2 PHASES - JAVASCRIPT INTÉGRÉ
-                // ========================================
+                    console.log('Configuration chargée depuis DB:', window.typesOrganisationData);
+                    console.log('Configuration app:', window.OrganisationApp);
+                </script>
 
-                // Variables globales pour le workflow
-                window.WorkflowData = {
-                    submissionMode: 'phase1_only',
-                    traditionalAdherents: [],
-                    isPhase1Submitted: false
-                };
+                <script>
+                    // ========================================
+                    // WORKFLOW 2 PHASES - JAVASCRIPT INTÉGRÉ
+                    // ========================================
 
-                /**
-                 * Mise à jour des boutons de navigation pour l'étape 8
-                 */
-                function updateNavigationButtonsStep8() {
-                    const nextBtn = document.getElementById('nextBtn');
-                    const submitPhase1Btn = document.getElementById('submitPhase1Btn');
-                    const submitTraditionalBtn = document.getElementById('submitTraditionalBtn');
-                    const submissionInfo = document.getElementById('submission-info');
+                    // Variables globales pour le workflow
+                    window.WorkflowData = {
+                        submissionMode: 'phase1_only',
+                        traditionalAdherents: [],
+                        isPhase1Submitted: false
+                    };
 
-                    if (OrganisationApp.currentStep === 8) {
-                        // Masquer le bouton suivant
-                        if (nextBtn) nextBtn.classList.add('d-none');
+                    /**
+                     * Mise à jour des boutons de navigation pour l'étape 8
+                     */
+                    function updateNavigationButtonsStep8() {
+                        const nextBtn = document.getElementById('nextBtn');
+                        const submitPhase1Btn = document.getElementById('submitPhase1Btn');
+                        const submitTraditionalBtn = document.getElementById('submitTraditionalBtn');
+                        const submissionInfo = document.getElementById('submission-info');
 
-                        // Afficher les informations de soumission
-                        if (submissionInfo) submissionInfo.classList.remove('d-none');
+                        if (OrganisationApp.currentStep === 8) {
+                            // Masquer le bouton suivant
+                            if (nextBtn) nextBtn.classList.add('d-none');
 
-                        // Afficher le bon bouton selon le mode
-                        if (WorkflowData.submissionMode === 'phase1_only') {
-                            if (submitPhase1Btn) submitPhase1Btn.classList.remove('d-none');
-                            if (submitTraditionalBtn) submitTraditionalBtn.classList.add('d-none');
+                            // Afficher les informations de soumission
+                            if (submissionInfo) submissionInfo.classList.remove('d-none');
+
+                            // Afficher le bon bouton selon le mode
+                            if (WorkflowData.submissionMode === 'phase1_only') {
+                                if (submitPhase1Btn) submitPhase1Btn.classList.remove('d-none');
+                                if (submitTraditionalBtn) submitTraditionalBtn.classList.add('d-none');
+                            } else {
+                                if (submitPhase1Btn) submitPhase1Btn.classList.add('d-none');
+                                if (submitTraditionalBtn) submitTraditionalBtn.classList.remove('d-none');
+                            }
                         } else {
+                            // Masquer tous les boutons de soumission
                             if (submitPhase1Btn) submitPhase1Btn.classList.add('d-none');
-                            if (submitTraditionalBtn) submitTraditionalBtn.classList.remove('d-none');
-                        }
-                    } else {
-                        // Masquer tous les boutons de soumission
-                        if (submitPhase1Btn) submitPhase1Btn.classList.add('d-none');
-                        if (submitTraditionalBtn) submitTraditionalBtn.classList.add('d-none');
-                        if (submissionInfo) submissionInfo.classList.add('d-none');
+                            if (submitTraditionalBtn) submitTraditionalBtn.classList.add('d-none');
+                            if (submissionInfo) submissionInfo.classList.add('d-none');
 
-                        // Afficher le bouton suivant
-                        if (nextBtn) nextBtn.classList.remove('d-none');
+                            // Afficher le bouton suivant
+                            if (nextBtn) nextBtn.classList.remove('d-none');
+                        }
                     }
-                }
 
-                /**
-                 * Gestion du changement de mode de soumission
-                 */
-                function setupSubmissionModeHandlers() {
-                    const submissionChoices = document.querySelectorAll('.submission-choice');
-                    const traditionalSection = document.getElementById('traditional-adherents-section');
-                    const submissionHelp = document.getElementById('submission-help');
+                    /**
+                     * Gestion du changement de mode de soumission
+                     */
+                    function setupSubmissionModeHandlers() {
+                        const submissionChoices = document.querySelectorAll('.submission-choice');
+                        const traditionalSection = document.getElementById('traditional-adherents-section');
+                        const submissionHelp = document.getElementById('submission-help');
 
-                    submissionChoices.forEach(choice => {
-                        choice.addEventListener('click', function () {
-                            const radio = this.querySelector('input[type="radio"]');
-                            if (radio) {
-                                // Mettre à jour la sélection visuelle
-                                submissionChoices.forEach(c => c.classList.remove('selected'));
-                                this.classList.add('selected');
+                        submissionChoices.forEach(choice => {
+                            choice.addEventListener('click', function () {
+                                const radio = this.querySelector('input[type="radio"]');
+                                if (radio) {
+                                    // Mettre à jour la sélection visuelle
+                                    submissionChoices.forEach(c => c.classList.remove('selected'));
+                                    this.classList.add('selected');
 
-                                // Mettre à jour le mode global
-                                WorkflowData.submissionMode = radio.value;
+                                    // Mettre à jour le mode global
+                                    WorkflowData.submissionMode = radio.value;
 
-                                // Afficher/masquer la section traditionnelle
-                                if (radio.value === 'traditional') {
-                                    if (traditionalSection) traditionalSection.classList.remove('d-none');
-                                    if (submissionHelp) {
-                                        submissionHelp.className = 'alert alert-warning border-0 mt-3';
-                                        submissionHelp.innerHTML = `
-                                                                        <div class="d-flex align-items-center">
-                                                                            <i class="fas fa-exclamation-triangle fa-2x me-3 text-warning"></i>
-                                                                            <div>
-                                                                                <h6 class="alert-heading mb-1">Mode Traditionnel</h6>
-                                                                                <p class="mb-0">
-                                                                                    Attention : Ce mode est limité à 50 adhérents maximum et peut causer des timeouts 
-                                                                                    avec de gros volumes. La Phase 2 est recommandée pour plus de sécurité.
-                                                                                </p>
-                                                                            </div>
-                                                                                                                               </div>
-                                                                    `;
-                                            }
-                                        } else {
-                                            if (traditionalSection) traditionalSection.classList.add('d-none');
-                                            if (submissionHelp) {
-                                                submissionHelp.className = 'alert alert-info border-0 mt-3';
-                                                submissionHelp.innerHTML = `
-                                                                        <div class="d-flex align-items-center">
-                                                                            <i class="fas fa-lightbulb fa-2x me-3 text-info"></i>
-                                                                            <div>
-                                                                                <h6 class="alert-heading mb-1">Recommandation</h6>
-                                                                                <p class="mb-0">
-                                                                                    Excellent choix ! La soumission en 2 phases garantit la sécurité de vos données 
-                                                                                    et permet de traiter un nombre illimité d'adhérents.
-                                                                                </p>
-                                                                            </div>
-                                                                        </div>
-                                                                    `;
-                                            }
+                                    // Afficher/masquer la section traditionnelle
+                                    if (radio.value === 'traditional') {
+                                        if (traditionalSection) traditionalSection.classList.remove('d-none');
+                                        if (submissionHelp) {
+                                            submissionHelp.className = 'alert alert-warning border-0 mt-3';
+                                            submissionHelp.innerHTML = `
+                                                                                <div class="d-flex align-items-center">
+                                                                                    <i class="fas fa-exclamation-triangle fa-2x me-3 text-warning"></i>
+                                                                                    <div>
+                                                                                        <h6 class="alert-heading mb-1">Mode Traditionnel</h6>
+                                                                                        <p class="mb-0">
+                                                                                            Attention : Ce mode est limité à 50 adhérents maximum et peut causer des timeouts 
+                                                                                            avec de gros volumes. La Phase 2 est recommandée pour plus de sécurité.
+                                                                                        </p>
+                                                                                    </div>
+                                                                                                                                       </div>
+                                                                            `;
                                         }
-
-                                        // Mettre à jour les boutons
-                                        updateNavigationButtonsStep8();
+                                    } else {
+                                        if (traditionalSection) traditionalSection.classList.add('d-none');
+                                        if (submissionHelp) {
+                                            submissionHelp.className = 'alert alert-info border-0 mt-3';
+                                            submissionHelp.innerHTML = `
+                                                                                <div class="d-flex align-items-center">
+                                                                                    <i class="fas fa-lightbulb fa-2x me-3 text-info"></i>
+                                                                                    <div>
+                                                                                        <h6 class="alert-heading mb-1">Recommandation</h6>
+                                                                                        <p class="mb-0">
+                                                                                            Excellent choix ! La soumission en 2 phases garantit la sécurité de vos données 
+                                                                                            et permet de traiter un nombre illimité d'adhérents.
+                                                                                        </p>
+                                                                                    </div>
+                                                                                </div>
+                                                                            `;
+                                        }
                                     }
-                                });
+
+                                    // Mettre à jour les boutons
+                                    updateNavigationButtonsStep8();
+                                }
                             });
+                        });
+                    }
+
+                    /**
+                     * Ajouter un adhérent en mode traditionnel
+                     */
+                    function addAdherentTraditional() {
+                        const nom = document.getElementById('adherent-nom')?.value?.trim();
+                        const prenom = document.getElementById('adherent-prenom')?.value?.trim();
+                        const nip = document.getElementById('adherent-nip')?.value?.trim();
+                        const telephone = document.getElementById('adherent-telephone')?.value?.trim();
+
+                        // Validation
+                        if (!nom || !prenom || !nip) {
+                            showNotification('Nom, prénom et NIP sont obligatoires', 'warning');
+                            return;
                         }
 
-                        /**
-                         * Ajouter un adhérent en mode traditionnel
-                         */
-                        function addAdherentTraditional() {
-                            const nom = document.getElementById('adherent-nom')?.value?.trim();
-                            const prenom = document.getElementById('adherent-prenom')?.value?.trim();
-                            const nip = document.getElementById('adherent-nip')?.value?.trim();
-                            const telephone = document.getElementById('adherent-telephone')?.value?.trim();
-
-                            // Validation
-                            if (!nom || !prenom || !nip) {
-                                showNotification('Nom, prénom et NIP sont obligatoires', 'warning');
-                                return;
-                            }
-
-                            // Vérifier le limite
-                            if (WorkflowData.traditionalAdherents.length >= 50) {
-                                showNotification('Maximum 50 adhérents en mode traditionnel', 'warning');
-                                return;
-                            }
-
-                            // Vérifier les doublons
-                            if (WorkflowData.traditionalAdherents.some(a => a.nip === nip)) {
-                                showNotification('Ce NIP existe déjà', 'warning');
-                                return;
-                            }
-
-                            // Ajouter l'adhérent
-                            const adherent = {
-                                id: Date.now(),
-                                nom: nom,
-                                prenom: prenom,
-                                nip: nip,
-                                telephone: telephone || '',
-                                civilite: 'M'
-                            };
-
-                            WorkflowData.traditionalAdherents.push(adherent);
-                            updateTraditionalAdherentsList();
-                            clearTraditionalForm();
-
-                            showNotification(`Adhérent ${prenom} ${nom} ajouté (${WorkflowData.traditionalAdherents.length}/50)`, 'success');
+                        // Vérifier le limite
+                        if (WorkflowData.traditionalAdherents.length >= 50) {
+                            showNotification('Maximum 50 adhérents en mode traditionnel', 'warning');
+                            return;
                         }
 
-                        /**
-                         * Mettre à jour la liste des adhérents traditionnels
-                         */
-                        function updateTraditionalAdherentsList() {
-                            const listContainer = document.getElementById('traditional-adherents-list');
-                            if (!listContainer) return;
+                        // Vérifier les doublons
+                        if (WorkflowData.traditionalAdherents.some(a => a.nip === nip)) {
+                            showNotification('Ce NIP existe déjà', 'warning');
+                            return;
+                        }
 
-                            if (WorkflowData.traditionalAdherents.length === 0) {
-                                listContainer.innerHTML = `
-                                                        <div class="text-center text-muted py-3">
-                                                            <i class="fas fa-users fa-2x mb-2"></i>
-                                                            <p>Aucun adhérent ajouté</p>
-                                                        </div>
-                                                    `;
-                                return;
-                            }
+                        // Ajouter l'adhérent
+                        const adherent = {
+                            id: Date.now(),
+                            nom: nom,
+                            prenom: prenom,
+                            nip: nip,
+                            telephone: telephone || '',
+                            civilite: 'M'
+                        };
 
-                            let html = `
-                                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                                        <h6 class="mb-0">
-                                                            <i class="fas fa-list me-2"></i>
-                                                            Adhérents ajoutés (${WorkflowData.traditionalAdherents.length}/50)
-                                                        </h6>
-                                                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearAllTraditionalAdherents()">
-                                                            <i class="fas fa-trash"></i> Vider
-                                                        </button>
-                                                    </div>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm table-hover">
-                                                            <thead class="table-light">
-                                                                <tr>
-                                                                    <th>Nom</th>
-                                                                    <th>Prénom</th>
-                                                                    <th>NIP</th>
-                                                                    <th>Téléphone</th>
-                                                                    <th>Actions</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                `;
+                        WorkflowData.traditionalAdherents.push(adherent);
+                        updateTraditionalAdherentsList();
+                        clearTraditionalForm();
 
-                            WorkflowData.traditionalAdherents.forEach((adherent, index) => {
-                                html += `
-                                                        <tr>
-                                                            <td><strong>${adherent.nom}</strong></td>
-                                                            <td>${adherent.prenom}</td>
-                                                            <td><code>${adherent.nip}</code></td>
-                                                            <td>${adherent.telephone || '-'}</td>
-                                                            <td>
-                                                                <button class="btn btn-outline-danger btn-sm" onclick="removeTraditionalAdherent(${index})">
-                                                                    <i class="fas fa-trash"></i>
+                        showNotification(`Adhérent ${prenom} ${nom} ajouté (${WorkflowData.traditionalAdherents.length}/50)`, 'success');
+                    }
+
+                    /**
+                     * Mettre à jour la liste des adhérents traditionnels
+                     */
+                    function updateTraditionalAdherentsList() {
+                        const listContainer = document.getElementById('traditional-adherents-list');
+                        if (!listContainer) return;
+
+                        if (WorkflowData.traditionalAdherents.length === 0) {
+                            listContainer.innerHTML = `
+                                                                <div class="text-center text-muted py-3">
+                                                                    <i class="fas fa-users fa-2x mb-2"></i>
+                                                                    <p>Aucun adhérent ajouté</p>
+                                                                </div>
+                                                            `;
+                            return;
+                        }
+
+                        let html = `
+                                                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                                                <h6 class="mb-0">
+                                                                    <i class="fas fa-list me-2"></i>
+                                                                    Adhérents ajoutés (${WorkflowData.traditionalAdherents.length}/50)
+                                                                </h6>
+                                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="clearAllTraditionalAdherents()">
+                                                                    <i class="fas fa-trash"></i> Vider
                                                                 </button>
-                                                            </td>
-                                                        </tr>
-                                                    `;
-                            });
+                                                            </div>
+                                                            <div class="table-responsive">
+                                                                <table class="table table-sm table-hover">
+                                                                    <thead class="table-light">
+                                                                        <tr>
+                                                                            <th>Nom</th>
+                                                                            <th>Prénom</th>
+                                                                            <th>NIP</th>
+                                                                            <th>Téléphone</th>
+                                                                            <th>Actions</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                        `;
 
-                            html += '</tbody></table></div>';
-                            listContainer.innerHTML = html;
+                        WorkflowData.traditionalAdherents.forEach((adherent, index) => {
+                            html += `
+                                                                <tr>
+                                                                    <td><strong>${adherent.nom}</strong></td>
+                                                                    <td>${adherent.prenom}</td>
+                                                                    <td><code>${adherent.nip}</code></td>
+                                                                    <td>${adherent.telephone || '-'}</td>
+                                                                    <td>
+                                                                        <button class="btn btn-outline-danger btn-sm" onclick="removeTraditionalAdherent(${index})">
+                                                                            <i class="fas fa-trash"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            `;
+                        });
+
+                        html += '</tbody></table></div>';
+                        listContainer.innerHTML = html;
+                    }
+
+                    /**
+                     * Supprimer un adhérent traditionnel
+                     */
+                    function removeTraditionalAdherent(index) {
+                        if (confirm('Supprimer cet adhérent ?')) {
+                            const adherent = WorkflowData.traditionalAdherents[index];
+                            WorkflowData.traditionalAdherents.splice(index, 1);
+                            updateTraditionalAdherentsList();
+                            showNotification(`Adhérent ${adherent.prenom} ${adherent.nom} supprimé`, 'info');
+                        }
+                    }
+
+                    /**
+                     * Vider tous les adhérents traditionnels
+                     */
+                    function clearAllTraditionalAdherents() {
+                        if (confirm('Supprimer tous les adhérents ajoutés ?')) {
+                            WorkflowData.traditionalAdherents = [];
+                            updateTraditionalAdherentsList();
+                            showNotification('Tous les adhérents supprimés', 'info');
+                        }
+                    }
+
+                    /**
+                     * Vider le formulaire traditionnel
+                     */
+                    function clearTraditionalForm() {
+                        const fields = ['adherent-nom', 'adherent-prenom', 'adherent-nip', 'adherent-telephone'];
+                        fields.forEach(fieldId => {
+                            const field = document.getElementById(fieldId);
+                            if (field) field.value = '';
+                        });
+                    }
+
+                    /**
+                     * Soumission Phase 1
+                     */
+                    function submitPhase1() {
+                        console.log('🚀 Début soumission Phase 1');
+
+                        // Validation finale
+                        if (!validateStep8()) {
+                            showNotification('Veuillez compléter toutes les déclarations obligatoires', 'warning');
+                            return;
                         }
 
-                        /**
-                         * Supprimer un adhérent traditionnel
-                         */
-                        function removeTraditionalAdherent(index) {
-                            if (confirm('Supprimer cet adhérent ?')) {
-                                const adherent = WorkflowData.traditionalAdherents[index];
-                                WorkflowData.traditionalAdherents.splice(index, 1);
-                                updateTraditionalAdherentsList();
-                                showNotification(`Adhérent ${adherent.prenom} ${adherent.nom} supprimé`, 'info');
+                        // Préparer les données de confirmation
+                        const orgNom = document.getElementById('org_nom')?.value || 'Organisation';
+                        const orgType = getOrganizationTypeLabel(OrganisationApp.organisationType);
+
+                        document.getElementById('confirm-org-name').textContent = orgNom;
+                        document.getElementById('confirm-org-type').textContent = orgType;
+
+                        // Afficher le modal de confirmation (Bootstrap 4 + jQuery)
+                        $('#workflowConfirmModal').modal('show');
+                    }
+
+                    /**
+                     * Confirmation finale de la soumission Phase 1
+                     */
+                    async function handleConfirmSubmitPhase1() {
+                        console.log('✅ Confirmation soumission Phase 1');
+
+                        // Masquer le modal (Bootstrap 4 + jQuery)
+                        $('#workflowConfirmModal').modal('hide');
+
+                        // Afficher le loader
+                        showGlobalLoader('Création de votre organisation en cours...');
+
+                        try {
+                            // ══════ 1. Rafraîchir le token CSRF AVANT soumission ══════
+                            let csrfToken;
+                            try {
+                                csrfToken = await window.UnifiedCSRFManager.getCurrentToken();
+                                console.log('🔑 Token CSRF obtenu:', csrfToken ? csrfToken.substring(0, 15) + '...' : 'ABSENT');
+                            } catch (e) {
+                                // Fallback : token du meta tag
+                                csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                                console.warn('⚠️ Fallback CSRF meta tag:', csrfToken ? csrfToken.substring(0, 15) + '...' : 'ABSENT');
                             }
-                        }
 
-                        /**
-                         * Vider tous les adhérents traditionnels
-                         */
-                        function clearAllTraditionalAdherents() {
-                            if (confirm('Supprimer tous les adhérents ajoutés ?')) {
-                                WorkflowData.traditionalAdherents = [];
-                                updateTraditionalAdherentsList();
-                                showNotification('Tous les adhérents supprimés', 'info');
-                            }
-                        }
-
-                        /**
-                         * Vider le formulaire traditionnel
-                         */
-                        function clearTraditionalForm() {
-                            const fields = ['adherent-nom', 'adherent-prenom', 'adherent-nip', 'adherent-telephone'];
-                            fields.forEach(fieldId => {
-                                const field = document.getElementById(fieldId);
-                                if (field) field.value = '';
-                            });
-                        }
-
-                        /**
-                         * Soumission Phase 1
-                         */
-                        function submitPhase1() {
-                            console.log('🚀 Début soumission Phase 1');
-
-                            // Validation finale
-                            if (!validateStep8()) {
-                                showNotification('Veuillez compléter toutes les déclarations obligatoires', 'warning');
-                                return;
+                            if (!csrfToken) {
+                                throw new Error('Token CSRF introuvable. Veuillez rafraîchir la page.');
                             }
 
-                            // Préparer les données de confirmation
-                            const orgNom = document.getElementById('org_nom')?.value || 'Organisation';
-                            const orgType = getOrganizationTypeLabel(OrganisationApp.organisationType);
-
-                            document.getElementById('confirm-org-name').textContent = orgNom;
-                            document.getElementById('confirm-org-type').textContent = orgType;
-
-                            // Afficher le modal de confirmation
-                            const confirmModal = new bootstrap.Modal(document.getElementById('workflowConfirmModal'));
-                            confirmModal.show();
-                        }
-
-                        /**
-                         * Confirmation finale de la soumission Phase 1
-                         */
-                        function confirmSubmitPhase1() {
-                            console.log('✅ Confirmation soumission Phase 1');
-
-                            // Masquer le modal
-                            const confirmModal = bootstrap.Modal.getInstance(document.getElementById('workflowConfirmModal'));
-                            if (confirmModal) confirmModal.hide();
-
-                            // Afficher le loader
-                            showGlobalLoader('Création de votre organisation en cours...');
-
-                            // Collecter toutes les données
+                            // ══════ 2. Collecter toutes les données du formulaire ══════
                             collectAllFormData();
 
-                            // Préparer les données pour Phase 1
+                            // ══════ 3. Construire le FormData ══════
                             const formData = new FormData();
 
-                            // Ajouter toutes les données du formulaire
+                            // Token CSRF dans le body
+                            formData.append('_token', csrfToken);
+
+                            // Données du formulaire
                             Object.keys(OrganisationApp.formData).forEach(key => {
-                                if (OrganisationApp.formData[key] !== null && OrganisationApp.formData[key] !== undefined) {
-                                    formData.append(key, OrganisationApp.formData[key]);
+                                if (key === '_token') return; // déjà ajouté
+                                const val = OrganisationApp.formData[key];
+                                if (val === null || val === undefined) return;
+
+                                if (val === true) {
+                                    formData.append(key, '1');
+                                } else if (val === false) {
+                                    return;
+                                } else if (typeof val === 'object' && val.hasFile) {
+                                    return;
+                                } else {
+                                    formData.append(key, val);
                                 }
                             });
 
-                            // Ajouter les fondateurs
+                            // Fondateurs
+                            console.log('📋 Phase1 - Fondateurs:', OrganisationApp.foundateurs.length);
                             OrganisationApp.foundateurs.forEach((fondateur, index) => {
                                 Object.keys(fondateur).forEach(key => {
                                     if (key !== 'id' && key !== 'dateAjout') {
@@ -2845,7 +2883,7 @@
                                 });
                             });
 
-                            // Ajouter les membres du bureau
+                            // Membres du bureau
                             OrganisationApp.membresBureau.forEach((membre, index) => {
                                 Object.keys(membre).forEach(key => {
                                     if (key !== 'id' && key !== 'dateAjout') {
@@ -2854,7 +2892,7 @@
                                 });
                             });
 
-                            // Ajouter les documents
+                            // Documents
                             Object.keys(OrganisationApp.uploadedDocuments).forEach(docType => {
                                 const doc = OrganisationApp.uploadedDocuments[docType];
                                 if (doc.file) {
@@ -2862,2385 +2900,3299 @@
                                 }
                             });
 
-                            // Marquer comme workflow 2 phases
+                            // Marqueurs workflow
                             formData.append('_workflow', '2_phases');
                             formData.append('_phase', '1');
                             formData.append('submission_mode', 'phase1_only');
 
-                            // Envoyer la requête
-                            fetch(document.getElementById('organisationForm').action, {
-                                method: 'POST',
-                                body: formData,
-                                headers: {
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                    'Accept': 'application/json'
+                            // ══════ 4. Envoyer avec retry CSRF ══════
+                            const submitUrl = document.getElementById('organisationForm').action;
+                            console.log('🔍 Phase1 - URL:', submitUrl);
+
+                            const maxRetries = 2;
+                            let lastError = null;
+
+                            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                                // Obtenir le token le plus frais pour chaque tentative
+                                if (attempt > 1) {
+                                    console.log(`🔄 Retry ${attempt}/${maxRetries} - Rafraîchissement token CSRF...`);
+                                    try {
+                                        csrfToken = await window.UnifiedCSRFManager.refreshFromServer();
+                                        formData.set('_token', csrfToken);
+                                    } catch (e) {
+                                        console.warn('⚠️ Échec refresh token:', e.message);
+                                    }
                                 }
-                            })
-                                .then(response => {
-                                    if (!response.ok) {
-                                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+                                const response = await fetch(submitUrl, {
+                                    method: 'POST',
+                                    body: formData,
+                                    credentials: 'same-origin',
+                                    headers: {
+                                        'X-CSRF-TOKEN': csrfToken,
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Accept': 'application/json'
                                     }
-                                    return response.json();
-                                })
-                                .then(data => {
-                                    hideGlobalLoader();
-                                    console.log('✅ Phase 1 réussie:', data);
-
-                                    if (data.success && data.phase === 1) {
-                                        // Marquer comme soumis
-                                        WorkflowData.isPhase1Submitted = true;
-
-                                        // Nettoyer le cache puisque Phase 1 est terminée
-                                        clearCache();
-
-                                        // Notification de succès
-                                        showNotification(`Organisation créée avec succès ! N° ${data.data.numero_recepisse}`, 'success');
-
-                                        // Redirection vers Phase 2
-                                        setTimeout(() => {
-                                            if (data.data.next_phase_url) {
-                                                window.location.href = data.data.next_phase_url;
-                                            } else if (data.data.dossier_id) {
-                                                // Fallback: construire l'URL manuellement
-                                                window.location.href = `/operator/dossiers/${data.data.dossier_id}/adherents-import`;
-                                            } else {
-                                                console.error('❌ URL Phase 2 non fournie');
-                                                showNotification('Organisation créée, mais erreur de redirection vers Phase 2', 'warning');
-                                            }
-                                        }, 2000);
-                                    } else {
-                                        throw new Error(data.message || 'Réponse inattendue du serveur');
-                                    }
-                                })
-                                .catch(error => {
-                                    hideGlobalLoader();
-                                    console.error('❌ Erreur Phase 1:', error);
-
-                                    let errorMessage = 'Erreur lors de la création de l\'organisation. ';
-
-                                    if (error.message.includes('timeout')) {
-                                        errorMessage += 'Délai d\'attente dépassé. Veuillez réessayer.';
-                                    } else if (error.message.includes('413')) {
-                                        errorMessage += 'Fichiers trop volumineux. Réduisez la taille des documents.';
-                                    } else {
-                                        errorMessage += 'Veuillez vérifier vos données et réessayer.';
-                                    }
-
-                                    showNotification(errorMessage, 'error');
                                 });
+
+                                console.log('🔍 Phase1 - Response:', response.status, response.type);
+
+                                // Erreur 419 CSRF → retry
+                                if (response.status === 419 && attempt < maxRetries) {
+                                    console.warn('⚠️ CSRF 419 - retry...');
+                                    const body = await response.json().catch(() => ({}));
+                                    if (body.new_token) {
+                                        csrfToken = body.new_token;
+                                        formData.set('_token', csrfToken);
+                                        window.UnifiedCSRFManager.updateAllLocations(csrfToken);
+                                    }
+                                    continue;
+                                }
+
+                                // Redirection (session expirée)
+                                if (response.type === 'opaqueredirect' || response.status === 0) {
+                                    throw new Error('Session expirée. Veuillez rafraîchir la page et vous reconnecter.');
+                                }
+
+                                // Erreur serveur
+                                if (!response.ok) {
+                                    const errorData = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
+                                    console.error('❌ Erreur serveur:', response.status, errorData);
+                                    let errorMsg = errorData.message || `HTTP ${response.status}`;
+                                    if (errorData.errors) {
+                                        const errorDetails = Object.values(errorData.errors).flat().join('\n• ');
+                                        errorMsg += '\n\n• ' + errorDetails;
+                                    }
+                                    throw new Error(errorMsg);
+                                }
+
+                                // ══════ 5. Succès ══════
+                                const data = await response.json();
+                                hideGlobalLoader();
+                                console.log('✅ Phase 1 réussie:', data);
+
+                                if (data.success && data.phase === 1) {
+                                    WorkflowData.isPhase1Submitted = true;
+                                    clearCache();
+                                    showNotification(`Organisation créée avec succès ! N° ${data.data.numero_recepisse}`, 'success');
+
+                                    setTimeout(() => {
+                                        if (data.data.next_phase_url) {
+                                            window.location.href = data.data.next_phase_url;
+                                        } else if (data.data.dossier_id) {
+                                            window.location.href = `/operator/dossiers/${data.data.dossier_id}/adherents-import`;
+                                        } else {
+                                            showNotification('Organisation créée, mais erreur de redirection vers Phase 2', 'warning');
+                                        }
+                                    }, 2000);
+                                } else {
+                                    throw new Error(data.message || 'Réponse inattendue du serveur');
+                                }
+                                return; // Sortir de la boucle retry
+                            }
+
+                            // Si on arrive ici, tous les retries ont échoué
+                            throw new Error('Échec après plusieurs tentatives. Token CSRF invalide.');
+
+                        } catch (error) {
+                            hideGlobalLoader();
+                            console.error('❌ Erreur Phase 1:', error);
+
+                            let errorMessage = error.message || 'Erreur lors de la création.';
+                            if (error.message.includes('413')) {
+                                errorMessage = 'Fichiers trop volumineux. Réduisez la taille des documents.';
+                            }
+                            showNotification(errorMessage, 'error');
+                        }
+                    }
+
+                    /**
+                     * Soumission Traditionnelle (complète avec adhérents)
+                     * Même logique que confirmSubmitPhase1() mais avec submission_mode='traditional'
+                     */
+                    async function submitTraditional() {
+                        console.log('🚀 Début soumission Traditionnelle');
+
+                        // Validation finale
+                        if (!validateStep8()) {
+                            showNotification('Veuillez compléter toutes les déclarations obligatoires', 'warning');
+                            return;
                         }
 
-                        /**
-                         * Afficher le loader global
-                         */
-                        function showGlobalLoader(message = 'Chargement...') {
-                            const loader = document.getElementById('global-loader');
-                            if (loader) {
-                                const loadingText = loader.querySelector('.visually-hidden');
-                                if (loadingText) loadingText.textContent = message;
-                                loader.classList.remove('d-none');
+                        // Afficher le loader
+                        showGlobalLoader('Soumission complète en cours...');
+
+                        try {
+                            // ══════ 1. Rafraîchir le token CSRF AVANT soumission ══════
+                            let csrfToken;
+                            try {
+                                csrfToken = await window.UnifiedCSRFManager.getCurrentToken();
+                            } catch (e) {
+                                csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
                             }
+
+                            if (!csrfToken) {
+                                throw new Error('Token CSRF introuvable. Veuillez rafraîchir la page.');
+                            }
+
+                            // ══════ 2. Collecter toutes les données ══════
+                            collectAllFormData();
+
+                            // ══════ 3. Construire le FormData ══════
+                            const formData = new FormData();
+                            formData.append('_token', csrfToken);
+
+                            Object.keys(OrganisationApp.formData).forEach(key => {
+                                if (key === '_token') return;
+                                const val = OrganisationApp.formData[key];
+                                if (val === null || val === undefined) return;
+
+                                if (val === true) {
+                                    formData.append(key, '1');
+                                } else if (val === false) {
+                                    return;
+                                } else if (typeof val === 'object' && val.hasFile) {
+                                    return;
+                                } else {
+                                    formData.append(key, val);
+                                }
+                            });
+
+                            // Fondateurs
+                            console.log('📋 Fondateurs à envoyer:', OrganisationApp.foundateurs.length);
+                            OrganisationApp.foundateurs.forEach((fondateur, index) => {
+                                Object.keys(fondateur).forEach(key => {
+                                    if (key !== 'id' && key !== 'dateAjout') {
+                                        formData.append(`fondateurs[${index}][${key}]`, fondateur[key]);
+                                    }
+                                });
+                            });
+
+                            // Membres du bureau
+                            OrganisationApp.membresBureau.forEach((membre, index) => {
+                                Object.keys(membre).forEach(key => {
+                                    if (key !== 'id' && key !== 'dateAjout') {
+                                        formData.append(`membresBureau[${index}][${key}]`, membre[key]);
+                                    }
+                                });
+                            });
+
+                            // Documents
+                            Object.keys(OrganisationApp.uploadedDocuments).forEach(docType => {
+                                const doc = OrganisationApp.uploadedDocuments[docType];
+                                if (doc.file) {
+                                    formData.append(`documents[${docType}]`, doc.file);
+                                }
+                            });
+
+                            formData.append('submission_mode', 'traditional');
+
+                            // ══════ 4. Envoyer avec retry CSRF ══════
+                            const submitUrl = document.getElementById('organisationForm').action;
+                            console.log('🔍 submitTraditional - URL:', submitUrl);
+
+                            const maxRetries = 2;
+                            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                                if (attempt > 1) {
+                                    try {
+                                        csrfToken = await window.UnifiedCSRFManager.refreshFromServer();
+                                        formData.set('_token', csrfToken);
+                                    } catch (e) {
+                                        console.warn('⚠️ Échec refresh token:', e.message);
+                                    }
+                                }
+
+                                const response = await fetch(submitUrl, {
+                                    method: 'POST',
+                                    body: formData,
+                                    credentials: 'same-origin',
+                                    headers: {
+                                        'X-CSRF-TOKEN': csrfToken,
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Accept': 'application/json'
+                                    }
+                                });
+
+                                console.log('🔍 submitTraditional - Response:', response.status);
+
+                                // 419 CSRF → retry
+                                if (response.status === 419 && attempt < maxRetries) {
+                                    const body = await response.json().catch(() => ({}));
+                                    if (body.new_token) {
+                                        csrfToken = body.new_token;
+                                        formData.set('_token', csrfToken);
+                                        window.UnifiedCSRFManager.updateAllLocations(csrfToken);
+                                    }
+                                    continue;
+                                }
+
+                                if (response.type === 'opaqueredirect' || response.status === 0) {
+                                    throw new Error('Session expirée. Veuillez rafraîchir la page.');
+                                }
+
+                                if (!response.ok) {
+                                    const errorData = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
+                                    let errorMsg = errorData.message || `HTTP ${response.status}`;
+                                    if (errorData.errors) {
+                                        errorMsg += '\n\n• ' + Object.values(errorData.errors).flat().join('\n• ');
+                                    }
+                                    throw new Error(errorMsg);
+                                }
+
+                                // ══════ 5. Succès ══════
+                                const data = await response.json();
+                                hideGlobalLoader();
+                                console.log('✅ Soumission traditionnelle réussie:', data);
+
+                                if (data.success) {
+                                    clearCache();
+                                    showNotification('Organisation créée avec succès !', 'success');
+                                    setTimeout(() => {
+                                        if (data.redirect_url) {
+                                            window.location.href = data.redirect_url;
+                                        } else if (data.data && data.data.dossier_id) {
+                                            window.location.href = `/operator/dossiers/${data.data.dossier_id}/confirmation`;
+                                        } else {
+                                            window.location.href = '/operator/dossiers';
+                                        }
+                                    }, 2000);
+                                } else {
+                                    throw new Error(data.message || 'Réponse inattendue du serveur');
+                                }
+                                return;
+                            }
+
+                            throw new Error('Échec après plusieurs tentatives. Token CSRF invalide.');
+
+                        } catch (error) {
+                            hideGlobalLoader();
+                            console.error('❌ Erreur soumission traditionnelle:', error);
+                            showNotification('Erreur: ' + error.message, 'error');
+                        }
+                    }
+
+                    /**
+                     * Afficher le loader global
+                     */
+                    function showGlobalLoader(message = 'Chargement...') {
+                        const loader = document.getElementById('global-loader');
+                        if (loader) {
+                            const loadingText = loader.querySelector('.visually-hidden');
+                            if (loadingText) loadingText.textContent = message;
+                            loader.classList.remove('d-none');
+                        }
+                    }
+
+                    /**
+                     * Masquer le loader global
+                     */
+                    function hideGlobalLoader() {
+                        const loader = document.getElementById('global-loader');
+                        if (loader) {
+                            loader.classList.add('d-none');
+                        }
+                    }
+
+                    /**
+                     * Vérifier la session des adhérents
+                     */
+                    function checkSessionAdherents() {
+                        // Cette fonction devrait appeler une API pour vérifier s'il y a des adhérents en session
+                        // Pour l'instant, simulation
+                        const sessionCount = 0; // À remplacer par vraie vérification
+
+                        const previewSection = document.getElementById('adherents-preview-section');
+                        const countSpan = document.getElementById('session-adherents-count');
+
+                        if (sessionCount > 0) {
+                            if (previewSection) previewSection.style.display = 'block';
+                            if (countSpan) countSpan.textContent = sessionCount;
+                        }
+                    }
+
+                    /**
+                     * Initialiser le workflow lors de l'arrivée à l'étape 8
+                     */
+                    function initWorkflowStep8() {
+                        console.log('🔄 Initialisation workflow étape 8');
+
+                        // Sélectionner le mode par défaut
+                        const defaultMode = document.getElementById('submissionPhase1Only');
+                        if (defaultMode && !document.querySelector('input[name="submission_mode"]:checked')) {
+                            defaultMode.checked = true;
+                            defaultMode.closest('.submission-choice').classList.add('selected');
+                            WorkflowData.submissionMode = 'phase1_only';
                         }
 
-                        /**
-                         * Masquer le loader global
-                         */
-                        function hideGlobalLoader() {
-                            const loader = document.getElementById('global-loader');
-                            if (loader) {
-                                loader.classList.add('d-none');
-                            }
+                        // Configurer les gestionnaires d'événements
+                        setupSubmissionModeHandlers();
+
+                        // Vérifier les adhérents en session
+                        checkSessionAdherents();
+
+                        // Mettre à jour les boutons
+                        updateNavigationButtonsStep8();
+
+                        // Configurer le bouton de confirmation
+                        // Note: le onclick est déjà défini en inline sur le bouton HTML
+                        // (onclick="handleConfirmSubmitPhase1()")
+                        // Ce code est un fallback de sécurité
+                        const confirmBtn = document.getElementById('btnConfirmCreate');
+                        if (confirmBtn && !confirmBtn.getAttribute('onclick')) {
+                            confirmBtn.onclick = handleConfirmSubmitPhase1;
+                        }
+                    }
+
+                    /**
+                     * Modifier la fonction changeStep existante pour gérer l'étape 8
+                     */
+                    const originalChangeStep = window.changeStep;
+                    window.changeStep = function (direction) {
+                        const result = originalChangeStep(direction);
+
+                        // Si on arrive à l'étape 8, initialiser le workflow
+                        if (OrganisationApp.currentStep === 8) {
+                            setTimeout(() => {
+                                initWorkflowStep8();
+                            }, 100);
                         }
 
-                        /**
-                         * Vérifier la session des adhérents
-                         */
-                        function checkSessionAdherents() {
-                            // Cette fonction devrait appeler une API pour vérifier s'il y a des adhérents en session
-                            // Pour l'instant, simulation
-                            const sessionCount = 0; // À remplacer par vraie vérification
+                        return result;
+                    };
 
-                            const previewSection = document.getElementById('adherents-preview-section');
-                            const countSpan = document.getElementById('session-adherents-count');
+                    /**
+                     * Modifier la fonction updateNavigationButtons existante
+                     */
+                    const originalUpdateNavigationButtons = window.updateNavigationButtons || function () { };
+                    window.updateNavigationButtons = function () {
+                        originalUpdateNavigationButtons();
 
-                            if (sessionCount > 0) {
-                                if (previewSection) previewSection.style.display = 'block';
-                                if (countSpan) countSpan.textContent = sessionCount;
-                            }
-                        }
-
-                        /**
-                         * Initialiser le workflow lors de l'arrivée à l'étape 8
-                         */
-                        function initWorkflowStep8() {
-                            console.log('🔄 Initialisation workflow étape 8');
-
-                            // Sélectionner le mode par défaut
-                            const defaultMode = document.getElementById('submissionPhase1Only');
-                            if (defaultMode && !document.querySelector('input[name="submission_mode"]:checked')) {
-                                defaultMode.checked = true;
-                                defaultMode.closest('.submission-choice').classList.add('selected');
-                                WorkflowData.submissionMode = 'phase1_only';
-                            }
-
-                            // Configurer les gestionnaires d'événements
-                            setupSubmissionModeHandlers();
-
-                            // Vérifier les adhérents en session
-                            checkSessionAdherents();
-
-                            // Mettre à jour les boutons
+                        if (OrganisationApp.currentStep === 8) {
                             updateNavigationButtonsStep8();
+                        }
+                    };
 
-                            // Configurer le bouton de confirmation
-                            const confirmBtn = document.getElementById('confirmSubmitPhase1');
-                            if (confirmBtn) {
-                                confirmBtn.onclick = confirmSubmitPhase1;
-                            }
+                    // Exposer les fonctions nécessaires globalement
+                    window.submitPhase1 = submitPhase1;
+                    window.addAdherentTraditional = addAdherentTraditional;
+                    window.removeTraditionalAdherent = removeTraditionalAdherent;
+                    window.clearAllTraditionalAdherents = clearAllTraditionalAdherents;
+
+                    console.log('🚀 Workflow 2 Phases intégré avec succès dans create.blade.php');
+                </script>
+
+                <!-- Validation NIP format XX-QQQQ-YYYYMMDD -->
+                <script src="{{ asset('js/nip-validation.js') }}"></script>
+
+
+
+                <!-- Script principal adapté pour 8 étapes -->
+                <script>
+                    // ========================================
+                    // FONCTIONS DE NAVIGATION CORRIGÉES
+                    // ========================================
+
+                    /**
+                     * Navigation entre les étapes (avec sauvegarde automatique)
+                     */
+                    function changeStep(direction) {
+                        console.log(`🔄 Changement d'étape: direction ${direction}, étape actuelle: ${OrganisationApp.currentStep}`);
+
+                        // Sauvegarder les données de l'étape actuelle avant de changer
+                        saveCurrentStepData();
+
+                        // Validation avant d'avancer (les fonctions validateStepX affichent les messages détaillés)
+                        if (direction === 1 && !validateCurrentStep()) {
+                            console.log('❌ Validation échouée pour l\'étape', OrganisationApp.currentStep);
+                            return false;
                         }
 
-                        /**
-                         * Modifier la fonction changeStep existante pour gérer l'étape 8
-                         */
-                        const originalChangeStep = window.changeStep;
-                        window.changeStep = function (direction) {
-                            const result = originalChangeStep(direction);
+                        // Calculer la nouvelle étape
+                        const newStep = OrganisationApp.currentStep + direction;
 
-                            // Si on arrive à l'étape 8, initialiser le workflow
-                            if (OrganisationApp.currentStep === 8) {
-                                setTimeout(() => {
-                                    initWorkflowStep8();
-                                }, 100);
+                        if (newStep >= 1 && newStep <= OrganisationApp.totalSteps) {
+                            OrganisationApp.currentStep = newStep;
+                            updateStepDisplay();
+                            updateNavigationButtons();
+
+                            // Actions spécifiques selon l'étape
+                            handleStepSpecificActions(newStep);
+
+                            // Sauvegarde après changement d'étape
+                            saveToCache();
+
+                            scrollToTop();
+                            return true;
+                        }
+
+                        return false;
+                    }
+
+                    /**
+                     * Actions spécifiques selon l'étape (CORRIGÉ pour 8 étapes)
+                     */
+                    function handleStepSpecificActions(stepNumber) {
+                        switch (stepNumber) {
+                            case 2:
+                                updateGuideContent();
+                                break;
+                            case 4:
+                                updateOrganizationRequirements();
+                                break;
+                            case 6:
+                                updateFoundersRequirements();
+                                break;
+                            case 7: // Ex-étape 8 : Documents
+                                updateDocumentsRequirements();
+                                break;
+                            case 8: // Ex-étape 9 : Soumission
+                                generateRecap();
+                                // Initialiser le workflow si on arrive à l'étape 8
+                                if (typeof initWorkflowStep8 === 'function') {
+                                    setTimeout(() => {
+                                        initWorkflowStep8();
+                                    }, 100);
+                                }
+                                break;
+                        }
+                    }
+
+                    /**
+                     * Compteur de caractères en temps réel
+                     */
+                    function updateCharCount(textarea, counterId, minLength) {
+                        const counter = document.getElementById(counterId);
+                        if (!counter) return;
+                        const len = (textarea.value || '').length;
+                        if (len >= minLength) {
+                            counter.textContent = `${len} caractères ✓`;
+                            counter.className = 'form-text text-success';
+                            textarea.classList.remove('is-invalid');
+                        } else {
+                            counter.textContent = `${len} / ${minLength} min`;
+                            counter.className = 'form-text text-danger';
+                        }
+                    }
+
+                    /**
+                     * Validation de l'étape actuelle
+                     */
+                    function validateCurrentStep() {
+                        return validateStep(OrganisationApp.currentStep);
+                    }
+
+                    /**
+                     * Validation d'une étape spécifique (CORRIGÉ pour 8 étapes)
+                     */
+                    function validateStep(stepNumber) {
+                        switch (stepNumber) {
+                            case 1: return validateStep1();
+                            case 2: return validateStep2();
+                            case 3: return validateStep3();
+                            case 4: return validateStep4();
+                            case 5: return validateStep5();
+                            case 6: return validateStep6();
+                            case 7: return validateStep7(); // Ex-étape 8 : Documents
+                            case 8: return validateStep8(); // Ex-étape 9 : Soumission
+                            default: return true;
+                        }
+                    }
+
+                    /**
+                     * Validation étape 1 : Type d'organisation
+                     */
+                    function validateStep1() {
+                        const selectedType = document.querySelector('input[name="type_organisation"]:checked');
+                        if (!selectedType) {
+                            showNotification('Veuillez sélectionner un type d\'organisation', 'warning');
+                            return false;
+                        }
+
+                        // Stocker le type sélectionné
+                        OrganisationApp.organisationType = selectedType.value;
+                        document.getElementById('organizationType').value = selectedType.value;
+
+                        return true;
+                    }
+
+                    /**
+                     * Validation étape 2 : Guide lu
+                     */
+                    function validateStep2() {
+                        const guideConfirm = document.getElementById('guideReadConfirm');
+                        if (!guideConfirm || !guideConfirm.checked) {
+                            showNotification('Veuillez confirmer avoir lu et compris le guide', 'warning');
+                            if (guideConfirm) guideConfirm.focus();
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    /**
+                     * Utilitaire : valider un champ et retourner le message d'erreur
+                     */
+                    function validateField(fieldId, label, rules) {
+                        const field = document.getElementById(fieldId);
+                        if (!field) return null;
+
+                        const val = (field.value || '').trim();
+                        const feedback = field.closest('.mb-3, .mb-4, .col-md-6, .col-md-4, .col-12')
+                                          ?.querySelector('.invalid-feedback');
+
+                        // Vérifier required
+                        if (rules.required && !val) {
+                            field.classList.add('is-invalid');
+                            if (feedback) feedback.textContent = `${label} est obligatoire`;
+                            return `${label} est obligatoire`;
+                        }
+                        // Vérifier min length
+                        if (rules.min && val.length > 0 && val.length < rules.min) {
+                            field.classList.add('is-invalid');
+                            if (feedback) feedback.textContent = `${label} : minimum ${rules.min} caractères (actuellement ${val.length})`;
+                            return `${label} : minimum ${rules.min} caractères (actuellement ${val.length})`;
+                        }
+                        // Vérifier max length
+                        if (rules.max && val.length > rules.max) {
+                            field.classList.add('is-invalid');
+                            if (feedback) feedback.textContent = `${label} : maximum ${rules.max} caractères`;
+                            return `${label} : maximum ${rules.max} caractères`;
+                        }
+                        // Vérifier pattern
+                        if (rules.pattern && val && !new RegExp(rules.pattern).test(val)) {
+                            field.classList.add('is-invalid');
+                            if (feedback) feedback.textContent = rules.patternMsg || `${label} : format invalide`;
+                            return rules.patternMsg || `${label} : format invalide`;
+                        }
+
+                        field.classList.remove('is-invalid');
+                        if (feedback) feedback.textContent = '';
+                        return null;
+                    }
+
+                    /**
+                     * Validation étape 3 : Demandeur
+                     */
+                    function validateStep3() {
+                        const errors = [];
+
+                        // Champs texte/select obligatoires avec règles
+                        const fields = [
+                            ['demandeur_nip', 'NIP', { required: true, pattern: '^[A-Z0-9]{2}-[0-9]{4}-[0-9]{8}$', patternMsg: 'NIP : format attendu XX-0000-00000000' }],
+                            ['demandeur_civilite', 'Civilité', { required: true }],
+                            ['demandeur_nom', 'Nom', { required: true, max: 255 }],
+                            ['demandeur_prenom', 'Prénom', { required: true, max: 255 }],
+                            ['demandeur_date_naissance', 'Date de naissance', { required: true }],
+                            ['demandeur_nationalite', 'Nationalité', { required: true }],
+                            ['demandeur_telephone', 'Téléphone', { required: true, pattern: '^[0-9]{8,9}$', patternMsg: 'Téléphone : 8 ou 9 chiffres requis' }],
+                            ['demandeur_email', 'Email', { required: true }],
+                            ['demandeur_adresse', 'Adresse', { required: true, max: 500 }],
+                            ['demandeur_role', 'Rôle / Qualité', { required: true }]
+                        ];
+
+                        fields.forEach(([id, label, rules]) => {
+                            const err = validateField(id, label, rules);
+                            if (err) errors.push(err);
+                        });
+
+                        // Checkboxes obligatoires
+                        ['demandeur_engagement', 'demandeur_responsabilite'].forEach(checkId => {
+                            const check = document.getElementById(checkId);
+                            if (!check || !check.checked) {
+                                if (check) check.classList.add('is-invalid');
+                                const label = checkId === 'demandeur_engagement' ? "Engagement du demandeur" : "Responsabilité du demandeur";
+                                errors.push(`${label} doit être coché`);
+                            } else if (check) {
+                                check.classList.remove('is-invalid');
                             }
+                        });
 
-                            return result;
-                        };
+                        if (errors.length > 0) {
+                            showNotification('Champs à corriger :<br>• ' + errors.join('<br>• '), 'warning');
+                        }
+                        return errors.length === 0;
+                    }
 
-                        /**
-                         * Modifier la fonction updateNavigationButtons existante
-                         */
-                        const originalUpdateNavigationButtons = window.updateNavigationButtons || function () { };
-                        window.updateNavigationButtons = function () {
-                            originalUpdateNavigationButtons();
+                    /**
+                     * Validation étape 4 : Organisation
+                     */
+                    function validateStep4() {
+                        const errors = [];
 
-                            if (OrganisationApp.currentStep === 8) {
-                                updateNavigationButtonsStep8();
+                        const fields = [
+                            ['org_nom', 'Nom de l\'organisation', { required: true, max: 255 }],
+                            ['org_objet', 'Objet social / Mission', { required: true, min: 50 }],
+                            ['org_date_creation', 'Date de création', { required: true }],
+                            ['org_telephone', 'Téléphone principal', { required: true, pattern: '^[0-9]{8,9}$', patternMsg: 'Téléphone : 8 ou 9 chiffres requis' }]
+                        ];
+
+                        fields.forEach(([id, label, rules]) => {
+                            const err = validateField(id, label, rules);
+                            if (err) errors.push(err);
+                        });
+
+                        if (errors.length > 0) {
+                            showNotification('Champs à corriger :<br>• ' + errors.join('<br>• '), 'warning');
+                        }
+                        return errors.length === 0;
+                    }
+
+                    /**
+                     * Validation étape 5 : Coordonnées et Localisation
+                     */
+                    function validateStep5() {
+                        const errors = [];
+
+                        const fields = [
+                            ['org_province', 'Province', { required: true }],
+                            ['org_departement', 'Département', { required: true }]
+                        ];
+
+                        fields.forEach(([id, label, rules]) => {
+                            const err = validateField(id, label, rules);
+                            if (err) errors.push(err);
+                        });
+
+                        // Adresse : id = org_adresse_complete OU name = org_adresse
+                        const adresseField = document.getElementById('org_adresse_complete') || document.querySelector('[name="org_adresse"]');
+                        if (adresseField && (!adresseField.value || adresseField.value.trim() === '')) {
+                            adresseField.classList.add('is-invalid');
+                            errors.push('Adresse / Siège social est obligatoire');
+                        } else if (adresseField) {
+                            adresseField.classList.remove('is-invalid');
+                        }
+
+                        if (errors.length > 0) {
+                            showNotification('Champs à corriger :<br>• ' + errors.join('<br>• '), 'warning');
+                        }
+                        return errors.length === 0;
+                    }
+
+                    /**
+                     * Validation étape 6 : Fondateurs
+                     */
+                    function validateStep6() {
+                        const typeData = window.typesOrganisationData ? window.typesOrganisationData[OrganisationApp.organisationType] : null;
+                        const minRequired = typeData ? typeData.nb_min_fondateurs_majeurs : 3;
+                        const currentCount = OrganisationApp.foundateurs.length;
+
+                        if (currentCount < minRequired) {
+                            showNotification(
+                                `<strong>Fondateurs insuffisants</strong><br>` +
+                                `Vous avez ajouté <strong>${currentCount}</strong> fondateur(s).<br>` +
+                                `Le minimum requis pour ce type d'organisation est de <strong>${minRequired}</strong> fondateur(s) majeur(s).`,
+                                'warning'
+                            );
+                            return false;
+                        }
+                        return true;
+                    }
+
+                    /**
+                     * Validation étape 7 : Documents (ex-étape 8)
+                     */
+                    function validateStep7() {
+                        if (!OrganisationApp.organisationType) {
+                            showNotification('Type d\'organisation non défini', 'error');
+                            return false;
+                        }
+
+                        const requirements = OrganisationApp.documentRequirements[OrganisationApp.organisationType];
+                        if (!requirements) return true;
+
+                        const missingDocs = [];
+
+                        // Vérifier les documents obligatoires
+                        requirements.required.forEach(docType => {
+                            const fileInput = document.getElementById(`doc_${docType}`);
+                            if (!fileInput || !fileInput.files[0]) {
+                                missingDocs.push(getDocumentLabel(docType));
                             }
-                        };
+                        });
 
-                        // Exposer les fonctions nécessaires globalement
-                        window.submitPhase1 = submitPhase1;
-                        window.addAdherentTraditional = addAdherentTraditional;
-                        window.removeTraditionalAdherent = removeTraditionalAdherent;
-                        window.clearAllTraditionalAdherents = clearAllTraditionalAdherents;
+                        if (missingDocs.length > 0) {
+                            showNotification(
+                                `Documents obligatoires manquants :<br>• ${missingDocs.join('<br>• ')}`,
+                                'warning'
+                            );
 
-                        console.log('🚀 Workflow 2 Phases intégré avec succès dans create.blade.php');
-                    </script>
-
-                    <!-- Validation NIP format XX-QQQQ-YYYYMMDD -->
-                    <script src="{{ asset('js/nip-validation.js') }}"></script>
-
-
-
-                    <!-- Script principal adapté pour 8 étapes -->
-                    <script>
-                        // ========================================
-                        // FONCTIONS DE NAVIGATION CORRIGÉES
-                        // ========================================
-
-                        /**
-                         * Navigation entre les étapes (avec sauvegarde automatique)
-                         */
-                        function changeStep(direction) {
-                            console.log(`🔄 Changement d'étape: direction ${direction}, étape actuelle: ${OrganisationApp.currentStep}`);
-
-                            // Sauvegarder les données de l'étape actuelle avant de changer
-                            saveCurrentStepData();
-
-                            // Validation avant d'avancer
-                            if (direction === 1 && !validateCurrentStep()) {
-                                console.log('❌ Validation échouée pour l\'étape', OrganisationApp.currentStep);
-                                showNotification('Veuillez compléter tous les champs obligatoires avant de continuer', 'warning');
-                                return false;
-                            }
-
-                            // Calculer la nouvelle étape
-                            const newStep = OrganisationApp.currentStep + direction;
-
-                            if (newStep >= 1 && newStep <= OrganisationApp.totalSteps) {
-                                OrganisationApp.currentStep = newStep;
-                                updateStepDisplay();
-                                updateNavigationButtons();
-
-                                // Actions spécifiques selon l'étape
-                                handleStepSpecificActions(newStep);
-
-                                // Sauvegarde après changement d'étape
-                                saveToCache();
-
-                                scrollToTop();
-                                return true;
-                            }
+                            // Highlight des champs manquants
+                            requirements.required.forEach(docType => {
+                                const fileInput = document.getElementById(`doc_${docType}`);
+                                if (!fileInput || !fileInput.files[0]) {
+                                    fileInput?.classList.add('is-invalid');
+                                }
+                            });
 
                             return false;
                         }
 
-                        /**
-                         * Actions spécifiques selon l'étape (CORRIGÉ pour 8 étapes)
-                         */
-                        function handleStepSpecificActions(stepNumber) {
-                            switch (stepNumber) {
-                                case 2:
-                                    updateGuideContent();
-                                    break;
-                                case 4:
-                                    updateOrganizationRequirements();
-                                    break;
-                                case 6:
-                                    updateFoundersRequirements();
-                                    break;
-                                case 7: // Ex-étape 8 : Documents
-                                    updateDocumentsRequirements();
-                                    break;
-                                case 8: // Ex-étape 9 : Soumission
-                                    generateRecap();
-                                    // Initialiser le workflow si on arrive à l'étape 8
-                                    if (typeof initWorkflowStep8 === 'function') {
-                                        setTimeout(() => {
-                                            initWorkflowStep8();
-                                        }, 100);
-                                    }
-                                    break;
-                            }
-                        }
+                        // Valider les fichiers uploadés
+                        const invalidFiles = [];
+                        requirements.required.forEach(docType => {
+                            const fileInput = document.getElementById(`doc_${docType}`);
+                            if (fileInput && fileInput.files[0]) {
+                                const file = fileInput.files[0];
 
-                        /**
-                         * Validation de l'étape actuelle
-                         */
-                        function validateCurrentStep() {
-                            return validateStep(OrganisationApp.currentStep);
-                        }
-
-                        /**
-                         * Validation d'une étape spécifique (CORRIGÉ pour 8 étapes)
-                         */
-                        function validateStep(stepNumber) {
-                            switch (stepNumber) {
-                                case 1: return validateStep1();
-                                case 2: return validateStep2();
-                                case 3: return validateStep3();
-                                case 4: return validateStep4();
-                                case 5: return validateStep5();
-                                case 6: return validateStep6();
-                                case 7: return validateStep7(); // Ex-étape 8 : Documents
-                                case 8: return validateStep8(); // Ex-étape 9 : Soumission
-                                default: return true;
-                            }
-                        }
-
-                        /**
-                         * Validation étape 1 : Type d'organisation
-                         */
-                        function validateStep1() {
-                            const selectedType = document.querySelector('input[name="type_organisation"]:checked');
-                            if (!selectedType) {
-                                showNotification('Veuillez sélectionner un type d\'organisation', 'warning');
-                                return false;
-                            }
-
-                            // Stocker le type sélectionné
-                            OrganisationApp.organisationType = selectedType.value;
-                            document.getElementById('organizationType').value = selectedType.value;
-
-                            return true;
-                        }
-
-                        /**
-                         * Validation étape 2 : Guide lu
-                         */
-                        function validateStep2() {
-                            const guideConfirm = document.getElementById('guideReadConfirm');
-                            if (!guideConfirm || !guideConfirm.checked) {
-                                showNotification('Veuillez confirmer avoir lu et compris le guide', 'warning');
-                                if (guideConfirm) guideConfirm.focus();
-                                return false;
-                            }
-                            return true;
-                        }
-
-                        /**
-                         * Validation étape 3 : Demandeur
-                         */
-                        function validateStep3() {
-                            const requiredFields = [
-                                'demandeur_nip', 'demandeur_civilite', 'demandeur_nom',
-                                'demandeur_prenom', 'demandeur_date_naissance', 'demandeur_nationalite',
-                                'demandeur_telephone', 'demandeur_email', 'demandeur_adresse', 'demandeur_role'
-                            ];
-
-                            let isValid = true;
-
-                            requiredFields.forEach(fieldId => {
-                                const field = document.getElementById(fieldId);
-                                if (field && (!field.value || field.value.trim() === '')) {
-                                    field.classList.add('is-invalid');
-                                    isValid = false;
-                                } else if (field) {
-                                    field.classList.remove('is-invalid');
+                                // Vérifier la taille
+                                if (file.size > 5 * 1024 * 1024) {
+                                    invalidFiles.push(`${getDocumentLabel(docType)} (trop volumineux)`);
                                 }
-                            });
 
-                            // Validation checkboxes obligatoires
-                            const engagementCheck = document.getElementById('demandeur_engagement');
-                            const responsabiliteCheck = document.getElementById('demandeur_responsabilite');
+                                // Vérifier le type
+                                const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+                                if (!allowedTypes.includes(file.type)) {
+                                    invalidFiles.push(`${getDocumentLabel(docType)} (format non autorisé)`);
+                                }
+                            }
+                        });
 
-                            if (!engagementCheck || !engagementCheck.checked) {
-                                if (engagementCheck) engagementCheck.classList.add('is-invalid');
+                        if (invalidFiles.length > 0) {
+                            showNotification(
+                                `Fichiers invalides :<br>• ${invalidFiles.join('<br>• ')}`,
+                                'error'
+                            );
+                            return false;
+                        }
+
+                        return true;
+                    }
+
+                    /**
+                     * Validation étape 8 : Soumission (ex-étape 9)
+                     */
+                    function validateStep8() {
+                        const requiredChecks = [
+                            'declaration_veracite', 'declaration_conformite', 'declaration_autorisation'
+                        ];
+
+                        let isValid = true;
+
+                        requiredChecks.forEach(checkId => {
+                            const check = document.getElementById(checkId);
+                            if (!check || !check.checked) {
+                                if (check) check.classList.add('is-invalid');
                                 isValid = false;
+                            } else if (check) {
+                                check.classList.remove('is-invalid');
                             }
+                        });
 
-                            if (!responsabiliteCheck || !responsabiliteCheck.checked) {
-                                if (responsabiliteCheck) responsabiliteCheck.classList.add('is-invalid');
+                        // Vérification spéciale pour parti politique
+                        if (OrganisationApp.organisationType === 'parti_politique') {
+                            const partiCheck = document.getElementById('declaration_exclusivite_parti');
+                            if (partiCheck && !partiCheck.checked) {
+                                partiCheck.classList.add('is-invalid');
                                 isValid = false;
-                            }
-
-                            if (!isValid) {
-                                showNotification('Veuillez compléter tous les champs obligatoires du demandeur', 'warning');
-                            }
-
-                            return isValid;
-                        }
-
-                        /**
-                         * Validation étape 4 : Organisation
-                         */
-                        function validateStep4() {
-                            const requiredFields = [
-                                'org_nom', 'org_objet', 'org_date_creation', 'org_telephone'
-                            ];
-
-                            let isValid = true;
-
-                            requiredFields.forEach(fieldId => {
-                                const field = document.getElementById(fieldId);
-                                if (field && (!field.value || field.value.trim() === '')) {
-                                    field.classList.add('is-invalid');
-                                    isValid = false;
-                                } else if (field) {
-                                    field.classList.remove('is-invalid');
-                                }
-                            });
-
-                            if (!isValid) {
-                                showNotification('Veuillez compléter les informations obligatoires de l\'organisation', 'warning');
-                            }
-
-                            return isValid;
-                        }
-
-                        /**
-                         * Validation étape 5 : Coordonnées
-                         */
-                        function validateStep5() {
-                            const requiredFields = [
-                                'org_adresse_complete', 'org_province', 'org_prefecture', 'org_zone_type'
-                            ];
-
-                            let isValid = true;
-
-                            requiredFields.forEach(fieldId => {
-                                const field = document.getElementById(fieldId);
-                                if (field && (!field.value || field.value.trim() === '')) {
-                                    field.classList.add('is-invalid');
-                                    isValid = false;
-                                } else if (field) {
-                                    field.classList.remove('is-invalid');
-                                }
-                            });
-
-                            if (!isValid) {
-                                showNotification('Veuillez compléter les informations de localisation', 'warning');
-                            }
-
-                            return isValid;
-                        }
-
-                        /**
-                         * Validation étape 6 : Fondateurs
-                         */
-                        function validateStep6() {
-                            if (OrganisationApp.foundateurs.length < 3) {
-                                showNotification('Minimum 3 fondateurs requis', 'warning');
-                                return false;
-                            }
-                            return true;
-                        }
-
-                        /**
-                         * Validation étape 7 : Documents (ex-étape 8)
-                         */
-                        function validateStep7() {
-                            if (!OrganisationApp.organisationType) {
-                                showNotification('Type d\'organisation non défini', 'error');
-                                return false;
-                            }
-
-                            const requirements = OrganisationApp.documentRequirements[OrganisationApp.organisationType];
-                            if (!requirements) return true;
-
-                            const missingDocs = [];
-
-                            // Vérifier les documents obligatoires
-                            requirements.required.forEach(docType => {
-                                const fileInput = document.getElementById(`doc_${docType}`);
-                                if (!fileInput || !fileInput.files[0]) {
-                                    missingDocs.push(getDocumentLabel(docType));
-                                }
-                            });
-
-                            if (missingDocs.length > 0) {
-                                showNotification(
-                                    `Documents obligatoires manquants :<br>• ${missingDocs.join('<br>• ')}`,
-                                    'warning'
-                                );
-
-                                // Highlight des champs manquants
-                                requirements.required.forEach(docType => {
-                                    const fileInput = document.getElementById(`doc_${docType}`);
-                                    if (!fileInput || !fileInput.files[0]) {
-                                        fileInput?.classList.add('is-invalid');
-                                    }
-                                });
-
-                                return false;
-                            }
-
-                            // Valider les fichiers uploadés
-                            const invalidFiles = [];
-                            requirements.required.forEach(docType => {
-                                const fileInput = document.getElementById(`doc_${docType}`);
-                                if (fileInput && fileInput.files[0]) {
-                                    const file = fileInput.files[0];
-
-                                    // Vérifier la taille
-                                    if (file.size > 5 * 1024 * 1024) {
-                                        invalidFiles.push(`${getDocumentLabel(docType)} (trop volumineux)`);
-                                    }
-
-                                    // Vérifier le type
-                                    const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-                                    if (!allowedTypes.includes(file.type)) {
-                                        invalidFiles.push(`${getDocumentLabel(docType)} (format non autorisé)`);
-                                    }
-                                }
-                            });
-
-                            if (invalidFiles.length > 0) {
-                                showNotification(
-                                    `Fichiers invalides :<br>• ${invalidFiles.join('<br>• ')}`,
-                                    'error'
-                                );
-                                return false;
-                            }
-
-                            return true;
-                        }
-
-                        /**
-                         * Validation étape 8 : Soumission (ex-étape 9)
-                         */
-                        function validateStep8() {
-                            const requiredChecks = [
-                                'declaration_veracite', 'declaration_conformite', 'declaration_autorisation'
-                            ];
-
-                            let isValid = true;
-
-                            requiredChecks.forEach(checkId => {
-                                const check = document.getElementById(checkId);
-                                if (!check || !check.checked) {
-                                    if (check) check.classList.add('is-invalid');
-                                    isValid = false;
-                                } else if (check) {
-                                    check.classList.remove('is-invalid');
-                                }
-                            });
-
-                            // Vérification spéciale pour parti politique
-                            if (OrganisationApp.organisationType === 'parti_politique') {
-                                const partiCheck = document.getElementById('declaration_exclusivite_parti');
-                                if (partiCheck && !partiCheck.checked) {
-                                    partiCheck.classList.add('is-invalid');
-                                    isValid = false;
-                                } else if (partiCheck) {
-                                    partiCheck.classList.remove('is-invalid');
-                                }
-                            }
-
-                            if (!isValid) {
-                                showNotification('Veuillez accepter toutes les déclarations obligatoires', 'warning');
-                            }
-
-                            return isValid;
-                        }
-
-                        /**
-                         * Mise à jour de l'affichage des étapes
-                         */
-                        function updateStepDisplay() {
-                            // Masquer toutes les étapes
-                            document.querySelectorAll('.step-content').forEach(step => {
-                                step.style.display = 'none';
-                            });
-
-                            // Afficher l'étape actuelle
-                            const currentStepElement = document.getElementById(`step${OrganisationApp.currentStep}`);
-                            if (currentStepElement) {
-                                currentStepElement.style.display = 'block';
-                            }
-
-                            // Mettre à jour les indicateurs
-                            updateStepIndicators();
-                            updateProgressBar();
-                        }
-
-                        /**
-                         * Mise à jour des indicateurs d'étapes
-                         */
-                        function updateStepIndicators() {
-                            document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
-                                const stepNumber = index + 1;
-                                indicator.classList.remove('active', 'completed');
-
-                                if (stepNumber < OrganisationApp.currentStep) {
-                                    indicator.classList.add('completed');
-                                } else if (stepNumber === OrganisationApp.currentStep) {
-                                    indicator.classList.add('active');
-                                }
-                            });
-                        }
-
-                        /**
-                         * Mise à jour de la barre de progression
-                         */
-                        function updateProgressBar() {
-                            const progressBar = document.getElementById('globalProgress');
-                            const currentStepNumber = document.getElementById('currentStepNumber');
-
-                            if (progressBar) {
-                                const percentage = (OrganisationApp.currentStep / OrganisationApp.totalSteps) * 100;
-                                progressBar.style.width = percentage + '%';
-                            }
-
-                            if (currentStepNumber) {
-                                currentStepNumber.textContent = OrganisationApp.currentStep;
+                            } else if (partiCheck) {
+                                partiCheck.classList.remove('is-invalid');
                             }
                         }
 
-                        /**
-                 * Mise à jour des boutons de navigation
-                 */
-                        function updateNavigationButtons() {
-                            const prevBtn = document.getElementById('prevBtn');
-                            const nextBtn = document.getElementById('nextBtn');
-                            const submitBtn = document.getElementById('submitBtn');
-                            const submitPhase1Btn = document.getElementById('submitPhase1Btn');
-                            const submitTraditionalBtn = document.getElementById('submitTraditionalBtn');
-                            const submissionInfo = document.getElementById('submission-info');
+                        if (!isValid) {
+                            showNotification('Veuillez accepter toutes les déclarations obligatoires', 'warning');
+                        }
 
-                            console.log(`🔄 updateNavigationButtons - Étape: ${OrganisationApp.currentStep}/${OrganisationApp.totalSteps}`);
+                        return isValid;
+                    }
 
-                            // Bouton précédent
-                            if (prevBtn) {
-                                if (OrganisationApp.currentStep > 1) {
-                                    prevBtn.style.display = 'inline-block';
-                                } else {
-                                    prevBtn.style.display = 'none';
-                                }
+                    /**
+                     * Mise à jour de l'affichage des étapes
+                     */
+                    function updateStepDisplay() {
+                        // Masquer toutes les étapes
+                        document.querySelectorAll('.step-content').forEach(step => {
+                            step.style.display = 'none';
+                        });
+
+                        // Afficher l'étape actuelle
+                        const currentStepElement = document.getElementById(`step${OrganisationApp.currentStep}`);
+                        if (currentStepElement) {
+                            currentStepElement.style.display = 'block';
+                        }
+
+                        // Mettre à jour les indicateurs
+                        updateStepIndicators();
+                        updateProgressBar();
+                    }
+
+                    /**
+                     * Mise à jour des indicateurs d'étapes
+                     */
+                    function updateStepIndicators() {
+                        document.querySelectorAll('.step-indicator').forEach((indicator, index) => {
+                            const stepNumber = index + 1;
+                            indicator.classList.remove('active', 'completed');
+
+                            if (stepNumber < OrganisationApp.currentStep) {
+                                indicator.classList.add('completed');
+                            } else if (stepNumber === OrganisationApp.currentStep) {
+                                indicator.classList.add('active');
                             }
+                        });
+                    }
 
-                            // ✅ CORRECTION : Traiter l'étape 8 comme la DERNIÈRE étape (soumission)
-                            if (OrganisationApp.currentStep === OrganisationApp.totalSteps) {
-                                // DERNIÈRE ÉTAPE (8) : Soumission - Afficher boutons workflow
-                                if (nextBtn) nextBtn.style.display = 'none';
-                                if (submitBtn) submitBtn.style.display = 'none';
+                    /**
+                     * Mise à jour de la barre de progression
+                     */
+                    function updateProgressBar() {
+                        const progressBar = document.getElementById('globalProgress');
+                        const currentStepNumber = document.getElementById('currentStepNumber');
 
-                                // Afficher les informations de soumission
-                                if (submissionInfo) submissionInfo.style.display = 'block';
+                        if (progressBar) {
+                            const percentage = (OrganisationApp.currentStep / OrganisationApp.totalSteps) * 100;
+                            progressBar.style.width = percentage + '%';
+                        }
 
-                                // Décider quel bouton afficher selon le workflow
-                                const adherentsCount = (OrganisationApp.adherents || []).length;
-                                console.log(`📊 Analyse volume adhérents: ${adherentsCount}`);
+                        if (currentStepNumber) {
+                            currentStepNumber.textContent = OrganisationApp.currentStep;
+                        }
+                    }
 
-                                // Par défaut, toujours afficher le bouton Phase 1 pour le workflow 2 phases
-                                if (submitPhase1Btn) {
-                                    submitPhase1Btn.style.display = 'inline-block';
-                                    console.log('✅ Bouton Phase 1 affiché');
-                                }
+                    /**
+             * Mise à jour des boutons de navigation
+             */
+                    function updateNavigationButtons() {
+                        const prevBtn = document.getElementById('prevBtn');
+                        const nextBtn = document.getElementById('nextBtn');
+                        const submitBtn = document.getElementById('submitBtn');
+                        const submitPhase1Btn = document.getElementById('submitPhase1Btn');
+                        const submitTraditionalBtn = document.getElementById('submitTraditionalBtn');
+                        const submissionInfo = document.getElementById('submission-info');
 
-                                // Optionnel : afficher aussi le bouton traditionnel selon les préférences
-                                const submissionMode = document.querySelector('input[name="submission_mode"]:checked');
-                                if (submissionMode && submissionMode.value === 'traditional') {
-                                    if (submitTraditionalBtn) {
-                                        submitTraditionalBtn.style.display = 'inline-block';
-                                        console.log('✅ Bouton traditionnel aussi affiché');
-                                    }
-                                } else {
-                                    if (submitTraditionalBtn) submitTraditionalBtn.style.display = 'none';
-                                }
+                        console.log(`🔄 updateNavigationButtons - Étape: ${OrganisationApp.currentStep}/${OrganisationApp.totalSteps}`);
 
-                                console.log('✅ Dernière étape (8 - Soumission) - Boutons workflow affichés');
-
+                        // Bouton précédent
+                        if (prevBtn) {
+                            if (OrganisationApp.currentStep > 1) {
+                                prevBtn.style.display = 'inline-block';
                             } else {
-                                // Toutes les autres étapes (1-7) : bouton suivant visible, soumission masquée
-                                if (nextBtn) nextBtn.style.display = 'inline-block';
-                                if (submitBtn) submitBtn.style.display = 'none';
-                                if (submitPhase1Btn) submitPhase1Btn.style.display = 'none';
-                                if (submitTraditionalBtn) submitTraditionalBtn.style.display = 'none';
-                                if (submissionInfo) submissionInfo.style.display = 'none';
-
-                                console.log(`✅ Étape ${OrganisationApp.currentStep} - Bouton suivant affiché`);
+                                prevBtn.style.display = 'none';
                             }
                         }
 
+                        // ✅ CORRECTION : Traiter l'étape 8 comme la DERNIÈRE étape (soumission)
+                        if (OrganisationApp.currentStep === OrganisationApp.totalSteps) {
+                            // DERNIÈRE ÉTAPE (8) : Soumission - Afficher boutons workflow
+                            if (nextBtn) nextBtn.style.display = 'none';
+                            if (submitBtn) submitBtn.style.display = 'none';
 
-                        /**
-                         * Sauvegarder les données de l'étape actuelle
-                         */
-                        function saveCurrentStepData() {
-                            const currentStepElement = document.getElementById(`step${OrganisationApp.currentStep}`);
-                            if (!currentStepElement) return;
+                            // Afficher les informations de soumission
+                            if (submissionInfo) submissionInfo.style.display = 'block';
 
-                            const inputs = currentStepElement.querySelectorAll('input, select, textarea');
-                            inputs.forEach(input => {
-                                const name = input.name || input.id;
-                                if (!name) return;
+                            // Décider quel bouton afficher selon le workflow
+                            const adherentsCount = (OrganisationApp.adherents || []).length;
+                            console.log(`📊 Analyse volume adhérents: ${adherentsCount}`);
 
-                                if (input.type === 'checkbox' || input.type === 'radio') {
-                                    if (input.checked) {
-                                        OrganisationApp.formData[name] = input.value;
-                                    }
-                                } else if (input.type === 'file') {
-                                    // Pour les fichiers, stocker les métadonnées
-                                    if (input.files && input.files.length > 0) {
-                                        OrganisationApp.formData[name] = {
-                                            hasFile: true,
-                                            fileName: input.files[0].name,
-                                            fileSize: input.files[0].size
-                                        };
-                                    }
-                                } else {
+                            // Par défaut, toujours afficher le bouton Phase 1 pour le workflow 2 phases
+                            if (submitPhase1Btn) {
+                                submitPhase1Btn.style.display = 'inline-block';
+                                console.log('✅ Bouton Phase 1 affiché');
+                            }
+
+                            // Optionnel : afficher aussi le bouton traditionnel selon les préférences
+                            const submissionMode = document.querySelector('input[name="submission_mode"]:checked');
+                            if (submissionMode && submissionMode.value === 'traditional') {
+                                if (submitTraditionalBtn) {
+                                    submitTraditionalBtn.style.display = 'inline-block';
+                                    console.log('✅ Bouton traditionnel aussi affiché');
+                                }
+                            } else {
+                                if (submitTraditionalBtn) submitTraditionalBtn.style.display = 'none';
+                            }
+
+                            console.log('✅ Dernière étape (8 - Soumission) - Boutons workflow affichés');
+
+                        } else {
+                            // Toutes les autres étapes (1-7) : bouton suivant visible, soumission masquée
+                            if (nextBtn) nextBtn.style.display = 'inline-block';
+                            if (submitBtn) submitBtn.style.display = 'none';
+                            if (submitPhase1Btn) submitPhase1Btn.style.display = 'none';
+                            if (submitTraditionalBtn) submitTraditionalBtn.style.display = 'none';
+                            if (submissionInfo) submissionInfo.style.display = 'none';
+
+                            console.log(`✅ Étape ${OrganisationApp.currentStep} - Bouton suivant affiché`);
+                        }
+                    }
+
+
+                    /**
+                     * Sauvegarder les données de l'étape actuelle
+                     */
+                    function saveCurrentStepData() {
+                        const currentStepElement = document.getElementById(`step${OrganisationApp.currentStep}`);
+                        if (!currentStepElement) return;
+
+                        const inputs = currentStepElement.querySelectorAll('input, select, textarea');
+                        inputs.forEach(input => {
+                            const name = input.name || input.id;
+                            if (!name) return;
+
+                            if (input.type === 'checkbox' || input.type === 'radio') {
+                                if (input.checked) {
                                     OrganisationApp.formData[name] = input.value;
                                 }
-                            });
-
-                            // Déclencher la sauvegarde en cache
-                            saveToCache();
-                        }
-
-                        /**
-                         * Générer le récapitulatif pour l'étape 8 (ex-étape 9)
-                         */
-                        function generateRecap() {
-                            const recapContainer = document.getElementById('recap_content');
-                            if (!recapContainer) return;
-
-                            let recapHtml = '<div class="row">';
-
-                            // Type d'organisation
-                            if (OrganisationApp.organisationType) {
-                                recapHtml += `
-                                                                <div class="col-md-6 mb-3">
-                                                                    <div class="card border-0 shadow-sm">
-                                                                        <div class="card-body">
-                                                                            <h6 class="text-primary"><i class="fas fa-list-ul me-2"></i>Type d'organisation</h6>
-                                                                            <p class="mb-0 fw-bold">${getOrganizationTypeLabel(OrganisationApp.organisationType)}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                            }
-
-                            // Nom de l'organisation
-                            const orgNom = document.getElementById('org_nom');
-                            if (orgNom && orgNom.value) {
-                                recapHtml += `
-                                                                <div class="col-md-6 mb-3">
-                                                                    <div class="card border-0 shadow-sm">
-                                                                        <div class="card-body">
-                                                                            <h6 class="text-primary"><i class="fas fa-building me-2"></i>Nom de l'organisation</h6>
-                                                                            <p class="mb-0 fw-bold">${orgNom.value}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                            }
-
-                            // Demandeur
-                            const demandeurNom = document.getElementById('demandeur_nom');
-                            const demandeurPrenom = document.getElementById('demandeur_prenom');
-                            const demandeurRole = document.getElementById('demandeur_role');
-                            if (demandeurNom && demandeurPrenom && demandeurNom.value && demandeurPrenom.value) {
-                                recapHtml += `
-                                                                <div class="col-md-6 mb-3">
-                                                                    <div class="card border-0 shadow-sm">
-                                                                        <div class="card-body">
-                                                                            <h6 class="text-primary"><i class="fas fa-user me-2"></i>Demandeur principal</h6>
-                                                                            <p class="mb-1 fw-bold">${demandeurPrenom.value} ${demandeurNom.value}</p>
-                                                                            <small class="text-muted">${demandeurRole ? demandeurRole.options[demandeurRole.selectedIndex]?.text || '' : ''}</small>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                            }
-
-                            // Nombre de fondateurs
-                            recapHtml += `
-                                                            <div class="col-md-6 mb-3">
-                                                                <div class="card border-0 shadow-sm">
-                                                                    <div class="card-body">
-                                                                        <h6 class="text-primary"><i class="fas fa-users me-2"></i>Fondateurs</h6>
-                                                                        <p class="mb-0 fw-bold">${OrganisationApp.foundateurs.length} fondateur(s)</p>
-                                                                        <small class="text-muted">
-                                                                            ${OrganisationApp.foundateurs.length >= 3 ?
-                                    '<i class="fas fa-check text-success me-1"></i>Minimum requis atteint' :
-                                    '<i class="fas fa-exclamation-triangle text-warning me-1"></i>Minimum requis: 3'
-                                }
-                                                                        </small>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        `;
-
-                            // Localisation
-                            const province = document.getElementById('org_province');
-                            const prefecture = document.getElementById('org_prefecture');
-                            if (province && prefecture && province.value && prefecture.value) {
-                                recapHtml += `
-                                                                <div class="col-md-6 mb-3">
-                                                                    <div class="card border-0 shadow-sm">
-                                                                        <div class="card-body">
-                                                                            <h6 class="text-primary"><i class="fas fa-map-marker-alt me-2"></i>Localisation</h6>
-                                                                            <p class="mb-0 fw-bold">${prefecture.value}, ${province.value}</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                            }
-
-                            // Documents uploadés
-                            const documentsUploaded = Object.keys(OrganisationApp.uploadedDocuments || {}).length;
-                            const requirements = OrganisationApp.documentRequirements[OrganisationApp.organisationType];
-                            const documentsRequired = requirements ? requirements.required.length : 0;
-
-                            recapHtml += `
-                                                            <div class="col-md-6 mb-3">
-                                                                <div class="card border-0 shadow-sm">
-                                                                    <div class="card-body">
-                                                                        <h6 class="text-primary"><i class="fas fa-file-alt me-2"></i>Documents</h6>
-                                                                        <p class="mb-0 fw-bold">${documentsUploaded} / ${documentsRequired} obligatoires</p>
-                                                                        <small class="text-muted">
-                                                                            ${documentsUploaded >= documentsRequired ?
-                                    '<i class="fas fa-check text-success me-1"></i>Documents complets' :
-                                    '<i class="fas fa-exclamation-triangle text-warning me-1"></i>Documents manquants'
-                                }
-                                                                        </small>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        `;
-
-                            recapHtml += '</div>';
-
-                            // Ajout d'un message de validation globale
-                            const isValid = OrganisationApp.foundateurs.length >= 3 && documentsUploaded >= documentsRequired;
-
-                            if (isValid) {
-                                recapHtml += `
-                                                                <div class="alert alert-success border-0 mt-4">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <i class="fas fa-check-circle fa-2x me-3"></i>
-                                                                        <div>
-                                                                            <h6 class="alert-heading mb-1">Dossier prêt pour soumission</h6>
-                                                                            <p class="mb-0">Toutes les exigences minimales sont respectées. Vous pouvez procéder à la soumission.</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                            } else {
-                                recapHtml += `
-                                                                <div class="alert alert-warning border-0 mt-4">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
-                                                                        <div>
-                                                                            <h6 class="alert-heading mb-1">Dossier incomplet</h6>
-                                                                            <p class="mb-0">Veuillez compléter toutes les sections obligatoires avant la soumission.</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                            }
-
-                            recapContainer.innerHTML = recapHtml;
-                        }
-
-                        /**
-                         * Mettre à jour le contenu du guide selon le type
-                         */
-                        function updateGuideContent() {
-                            const guideContent = document.getElementById('guide-content');
-                            const selectedTypeTitle = document.getElementById('selectedTypeTitle');
-
-                            if (!OrganisationApp.organisationType) return;
-
-                            if (selectedTypeTitle) {
-                                selectedTypeTitle.textContent = getOrganizationTypeLabel(OrganisationApp.organisationType);
-                            }
-
-                            if (guideContent) {
-                                const content = getGuideContentForType(OrganisationApp.organisationType);
-                                guideContent.innerHTML = content;
-                            }
-                        }
-
-                        /**
-                         * Contenu du guide selon le type d'organisation
-                         */
-                        function getGuideContentForType(type) {
-                            const guides = {
-                                'association': `
-                                                                <div class="alert alert-success border-0 mb-4 shadow-sm">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <i class="fas fa-handshake fa-3x me-3 text-success"></i>
-                                                                        <div>
-                                                                            <h5 class="alert-heading mb-1">Guide pour créer une Association au Gabon</h5>
-                                                                            <p class="mb-0">Procédures légales selon la législation gabonaise en vigueur</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <h6 class="text-success"><i class="fas fa-check me-2"></i>Exigences minimales</h6>
-                                                                        <ul class="list-unstyled">
-                                                                            <li>• Minimum 3 membres fondateurs majeurs</li>
-                                                                            <li>• Minimum 10 adhérents à la création</li>
-                                                                            <li>• But non lucratif clairement défini</li>
-                                                                            <li>• Siège social au Gabon</li>
-                                                                        </ul>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <h6 class="text-success"><i class="fas fa-file-alt me-2"></i>Documents requis</h6>
-                                                                        <ul class="list-unstyled">
-                                                                            <li>• Statuts signés par les fondateurs</li>
-                                                                            <li>• PV de l'assemblée générale constitutive</li>
-                                                                            <li>• Liste des membres fondateurs avec NIP</li>
-                                                                            <li>• Justificatif du siège social (optionnel)</li>
-                                                                        </ul>
-                                                                    </div>
-                                                                </div>
-                                                            `,
-                                'ong': `
-                                                                <div class="alert alert-info border-0 mb-4 shadow-sm">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <i class="fas fa-globe-africa fa-3x me-3 text-info"></i>
-                                                                        <div>
-                                                                            <h5 class="alert-heading mb-1">Guide pour créer une ONG au Gabon</h5>
-                                                                            <p class="mb-0">Organisation Non Gouvernementale à vocation sociale</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <h6 class="text-info"><i class="fas fa-check me-2"></i>Exigences minimales</h6>
-                                                                        <ul class="list-unstyled">
-                                                                            <li>• Minimum 5 membres fondateurs majeurs</li>
-                                                                            <li>• Minimum 15 adhérents à la création</li>
-                                                                            <li>• Mission sociale ou humanitaire</li>
-                                                                            <li>• Projet social détaillé</li>
-                                                                        </ul>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <h6 class="text-info"><i class="fas fa-file-alt me-2"></i>Documents requis</h6>
-                                                                        <ul class="list-unstyled">
-                                                                            <li>• Statuts signés par les fondateurs</li>
-                                                                            <li>• PV de l'assemblée générale constitutive</li>
-                                                                            <li>• Liste des membres fondateurs avec NIP</li>
-                                                                            <li>• Projet social détaillé</li>
-                                                                            <li>• Budget prévisionnel (optionnel)</li>
-                                                                        </ul>
-                                                                    </div>
-                                                                </div>
-                                                            `,
-                                'parti_politique': `
-                                                                <div class="alert alert-warning border-0 mb-4 shadow-sm">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <i class="fas fa-vote-yea fa-3x me-3 text-warning"></i>
-                                                                        <div>
-                                                                            <h5 class="alert-heading mb-1">Guide pour créer un Parti Politique au Gabon</h5>
-                                                                            <p class="mb-0">Organisation politique pour la participation démocratique</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <h6 class="text-warning"><i class="fas fa-exclamation-triangle me-2"></i>Exigences spéciales</h6>
-                                                                        <ul class="list-unstyled">
-                                                                            <li>• Minimum 3 membres fondateurs majeurs</li>
-                                                                            <li>• Minimum 50 adhérents à la création</li>
-                                                                            <li>• Présence dans au moins 3 provinces</li>
-                                                                            <li>• Programme politique détaillé</li>
-                                                                        </ul>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <h6 class="text-warning"><i class="fas fa-file-alt me-2"></i>Documents requis</h6>
-                                                                        <ul class="list-unstyled">
-                                                                            <li>• Statuts signés par les fondateurs</li>
-                                                                            <li>• PV de l'assemblée générale constitutive</li>
-                                                                            <li>• Liste des membres fondateurs avec NIP</li>
-                                                                            <li>• Programme politique complet</li>
-                                                                        </ul>
-                                                                    </div>
-                                                                </div>
-                                                            `,
-                                'confession_religieuse': `
-                                                                <div class="alert alert-secondary border-0 mb-4 shadow-sm">
-                                                                    <div class="d-flex align-items-center">
-                                                                        <i class="fas fa-pray fa-3x me-3 text-secondary"></i>
-                                                                        <div>
-                                                                            <h5 class="alert-heading mb-1">Guide pour créer une Confession Religieuse au Gabon</h5>
-                                                                            <p class="mb-0">Organisation religieuse pour l'exercice du culte</p>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="row">
-                                                                    <div class="col-md-6">
-                                                                        <h6 class="text-secondary"><i class="fas fa-check me-2"></i>Exigences minimales</h6>
-                                                                        <ul class="list-unstyled">
-                                                                            <li>• Minimum 3 membres fondateurs majeurs</li>
-                                                                            <li>• Minimum 10 fidèles à la création</li>
-                                                                            <li>• Doctrine religieuse définie</li>
-                                                                            <li>• Lieu de culte identifié</li>
-                                                                        </ul>
-                                                                    </div>
-                                                                    <div class="col-md-6">
-                                                                        <h6 class="text-secondary"><i class="fas fa-file-alt me-2"></i>Documents requis</h6>
-                                                                        <ul class="list-unstyled">
-                                                                            <li>• Statuts signés par les fondateurs</li>
-                                                                            <li>• PV de l'assemblée générale constitutive</li>
-                                                                            <li>• Liste des membres fondateurs avec NIP</li>
-                                                                            <li>• Exposé de la doctrine religieuse</li>
-                                                                            <li>• Justificatif du lieu de culte (optionnel)</li>
-                                                                        </ul>
-                                                                    </div>
-                                                                </div>
-                                                            `
-                            };
-
-                            return guides[type] || `
-                                                            <div class="alert alert-info border-0 mb-4 shadow-sm">
-                                                                <div class="d-flex align-items-center">
-                                                                    <i class="fas fa-info-circle fa-3x me-3 text-info"></i>
-                                                                    <div>
-                                                                        <h5 class="alert-heading mb-1">Guide spécifique à votre type d'organisation</h5>
-                                                                        <p class="mb-0">Le contenu s'affichera selon votre sélection à l'étape précédente</p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        `;
-                        }
-
-                        /**
-                         * Mettre à jour les exigences des fondateurs
-                         */
-                        function updateFoundersRequirements() {
-                            const requirementsDiv = document.getElementById('fondateurs_requirements');
-                            if (!requirementsDiv) return;
-
-                            const minimums = {
-                                'association': 3,
-                                'ong': 5,
-                                'parti_politique': 3,
-                                'confession_religieuse': 3
-                            };
-
-                            const minRequired = minimums[OrganisationApp.organisationType] || 3;
-                            document.getElementById('min_fondateurs').textContent = minRequired;
-                        }
-
-                        /**
-                         * Mettre à jour les exigences des documents
-                         */
-                        function updateDocumentsRequirements() {
-                            const documentsContainer = document.getElementById('documents_container');
-                            if (!documentsContainer || !OrganisationApp.organisationType) return;
-
-                            const requirements = OrganisationApp.documentRequirements[OrganisationApp.organisationType];
-                            if (!requirements) return;
-
-                            const allDocuments = [...requirements.required, ...requirements.optional];
-
-                            let documentsHtml = `
-                                                            <div class="alert alert-info border-0 mb-4">
-                                                                <h6 class="alert-heading">
-                                                                    <i class="fas fa-info-circle me-2"></i>
-                                                                    Documents requis pour ${getOrganizationTypeLabel(OrganisationApp.organisationType)}
-                                                                </h6>
-                                                                <p class="mb-2">
-                                                                    <strong>Documents obligatoires :</strong> ${requirements.required.length}
-                                                                    ${requirements.optional.length > 0 ? `| <strong>Documents optionnels :</strong> ${requirements.optional.length}` : ''}
-                                                                </p>
-                                                                <small class="text-muted">
-                                                                    <i class="fas fa-upload me-1"></i>
-                                                                    Formats acceptés : PDF, JPG, PNG (taille max : 5MB par fichier)
-                                                                </small>
-                                                            </div>
-                                                        `;
-
-                            allDocuments.forEach(doc => {
-                                const isRequired = requirements.required.includes(doc);
-                                const label = getDocumentLabel(doc);
-
-                                documentsHtml += `
-                                                                <div class="card border-0 shadow-sm mb-3">
-                                                                    <div class="card-body">
-                                                                        <div class="row align-items-center">
-                                                                            <div class="col-md-6">
-                                                                                <h6 class="mb-1">
-                                                                                    ${isRequired ? '<span class="text-danger">*</span> ' : ''}
-                                                                                    ${label}
-                                                                                </h6>
-                                                                                <input type="file" 
-                                                                                       class="form-control" 
-                                                                                       id="doc_${doc}" 
-                                                                                       name="documents[${doc}]"
-                                                                                       accept=".pdf,.jpg,.jpeg,.png"
-                                                                                       onchange="handleDocumentUpload('${doc}', this)"
-                                                                                       ${isRequired ? 'required' : ''}>
-                                                                                <div class="form-text">
-                                                                                    <i class="fas fa-info me-1"></i>
-                                                                                    ${isRequired ? 'Document obligatoire' : 'Document optionnel'} - PDF, JPG, PNG (max 5MB)
-                                                                                </div>
-                                                                            </div>
-                                                                            <div class="col-md-6">
-                                                                                <div id="status_${doc}" class="text-muted">
-                                                                                    <i class="fas fa-clock me-1"></i>En attente
-                                                                                </div>
-                                                                                <div class="progress mt-2 d-none" id="progress_container_${doc}">
-                                                                                    <div class="progress-bar" id="progress_${doc}" style="width: 0%"></div>
-                                                                                </div>
-                                                                                <div id="preview_${doc}" class="mt-2 d-none"></div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                            });
-
-                            documentsContainer.innerHTML = documentsHtml;
-                        }
-
-                        /**
-                         * Obtenir le label d'un document
-                         */
-                        function getDocumentLabel(doc) {
-                            const labels = {
-                                'statuts': 'Statuts de l\'organisation',
-                                'pv_ag': 'Procès-verbal de l\'assemblée générale constitutive',
-                                'liste_fondateurs': 'Liste des membres fondateurs',
-                                'justif_siege': 'Justificatif du siège social',
-                                'projet_social': 'Projet social détaillé',
-                                'budget_previsionnel': 'Budget prévisionnel',
-                                'programme_politique': 'Programme politique',
-                                'liste_50_adherents': 'Liste de 50 adhérents minimum',
-                                'expose_doctrine': 'Exposé de la doctrine religieuse',
-                                'justif_lieu_culte': 'Justificatif du lieu de culte'
-                            };
-                            return labels[doc] || doc;
-                        }
-
-                        /**
-                         * Gestion upload document
-                         */
-                        function handleDocumentUpload(docType, fileInput) {
-                            const file = fileInput.files[0];
-                            if (!file) return;
-
-                            // Validation de la taille
-                            if (file.size > 5 * 1024 * 1024) {
-                                showNotification('Le fichier ne peut pas dépasser 5MB', 'error');
-                                fileInput.value = '';
-                                return;
-                            }
-
-                            // Validation du type
-                            const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-                            if (!allowedTypes.includes(file.type)) {
-                                showNotification('Type de fichier non autorisé. Utilisez PDF, JPG ou PNG.', 'error');
-                                fileInput.value = '';
-                                return;
-                            }
-
-                            // Mise à jour du statut
-                            const statusElement = document.getElementById(`status_${docType}`);
-                            const progressContainer = document.getElementById(`progress_container_${docType}`);
-                            const progressBar = document.getElementById(`progress_${docType}`);
-                            const previewElement = document.getElementById(`preview_${docType}`);
-
-                            if (statusElement) {
-                                statusElement.innerHTML = '<i class="fas fa-upload me-1 text-info"></i>Fichier sélectionné';
-                            }
-
-                            // Simulation du progress (à remplacer par vraie logique d'upload)
-                            if (progressContainer && progressBar) {
-                                progressContainer.classList.remove('d-none');
-                                let progress = 0;
-                                const interval = setInterval(() => {
-                                    progress += 10;
-                                    progressBar.style.width = progress + '%';
-
-                                    if (progress >= 100) {
-                                        clearInterval(interval);
-                                        setTimeout(() => {
-                                            progressContainer.classList.add('d-none');
-                                            if (statusElement) {
-                                                statusElement.innerHTML = '<i class="fas fa-check me-1 text-success"></i>Fichier téléchargé';
-                                            }
-
-                                            // Aperçu pour les images
-                                            if (file.type.startsWith('image/') && previewElement) {
-                                                const reader = new FileReader();
-                                                reader.onload = function (e) {
-                                                    previewElement.innerHTML = `
-                                                                                    <img src="${e.target.result}" class="img-thumbnail" style="max-height: 100px;">
-                                                                                    <small class="d-block text-muted">${file.name}</small>
-                                                                                `;
-                                                    previewElement.classList.remove('d-none');
-                                                };
-                                                reader.readAsDataURL(file);
-                                            } else if (previewElement) {
-                                                previewElement.innerHTML = `
-                                                                                <div class="d-flex align-items-center">
-                                                                                    <i class="fas fa-file-pdf text-danger me-2"></i>
-                                                                                    <small class="text-muted">${file.name}</small>
-                                                                                </div>
-                                                                            `;
-                                                previewElement.classList.remove('d-none');
-                                            }
-                                        }, 500);
-                                    }
-                                }, 100);
-                            }
-
-                            // Stocker le fichier dans l'application
-                            OrganisationApp.uploadedDocuments[docType] = {
-                                file: file,
-                                name: file.name,
-                                size: file.size,
-                                type: file.type,
-                                uploaded: true
-                            };
-
-                            console.log('Document uploadé:', docType, file.name);
-                        }
-
-                        /**
-                         * Obtenir le label d'un type d'organisation
-                         */
-                        function getOrganizationTypeLabel(type) {
-                            const labels = {
-                                'association': 'Association',
-                                'ong': 'Organisation Non Gouvernementale (ONG)',
-                                'parti_politique': 'Parti Politique',
-                                'confession_religieuse': 'Confession Religieuse'
-                            };
-                            return labels[type] || type;
-                        }
-
-                        /**
-                         * Afficher une notification
-                         */
-                        function showNotification(message, type = 'info') {
-                            const alertClass = {
-                                success: 'alert-success',
-                                error: 'alert-danger',
-                                warning: 'alert-warning',
-                                info: 'alert-info'
-                            }[type] || 'alert-info';
-
-                            const alertDiv = document.createElement('div');
-                            alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
-                            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
-                            alertDiv.innerHTML = `
-                                                            ${message}
-                                                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                                                        `;
-
-                            document.body.appendChild(alertDiv);
-
-                            setTimeout(() => {
-                                alertDiv.remove();
-                            }, 5000);
-                        }
-
-                        /**
-                         * Scroll vers le haut
-                         */
-                        function scrollToTop() {
-                            window.scrollTo({ top: 0, behavior: 'smooth' });
-                        }
-
-                        // ========================================
-                        // GESTION DES TYPES D'ORGANISATION
-                        // ========================================
-
-                        /**
-                         * Initialiser les cartes de type d'organisation
-                         */
-                        function initOrganizationTypeCards() {
-                            const typeCards = document.querySelectorAll('.organization-type-card');
-                            const selectedInfo = document.getElementById('selectedTypeInfo');
-                            const selectedTypeName = document.getElementById('selectedTypeName');
-
-                            typeCards.forEach(card => {
-                                card.addEventListener('click', function () {
-                                    const radio = this.querySelector('input[type="radio"]');
-                                    if (radio) {
-                                        radio.checked = true;
-
-                                        // Mettre à jour l'affichage
-                                        typeCards.forEach(c => c.classList.remove('selected'));
-                                        this.classList.add('selected');
-
-                                        // Afficher les informations de sélection
-                                        if (selectedInfo && selectedTypeName) {
-                                            const typeLabel = this.querySelector('.card-title').textContent;
-                                            selectedTypeName.textContent = typeLabel;
-                                            selectedInfo.classList.remove('d-none');
-                                        }
-
-                                        // Mettre à jour le type dans l'application
-                                        OrganisationApp.organisationType = radio.value;
-
-                                        // Déclencher la validation
-                                        validateStep1();
-                                    }
-                                });
-                            });
-                        }
-
-                        // ========================================
-                        // GESTION DES FONDATEURS
-                        // ========================================
-
-                        /**
-                         * Ajouter un fondateur
-                         */
-                        function addFondateur() {
-                            const formData = {
-                                civilite: document.getElementById('fondateur_civilite')?.value || '',
-                                nom: document.getElementById('fondateur_nom')?.value?.trim() || '',
-                                prenom: document.getElementById('fondateur_prenom')?.value?.trim() || '',
-                                nip: document.getElementById('fondateur_nip')?.value?.trim() || '',
-                                fonction: document.getElementById('fondateur_fonction')?.value || '',
-                                telephone: document.getElementById('fondateur_telephone')?.value?.trim() || '',
-                                email: document.getElementById('fondateur_email')?.value?.trim() || ''
-                            };
-
-                            // Validation
-                            if (!formData.nom || !formData.prenom || !formData.nip) {
-                                showNotification('Nom, prénom et NIP sont obligatoires', 'warning');
-                                return;
-                            }
-
-                            // Vérifier les doublons
-                            if (OrganisationApp.foundateurs.some(f => f.nip === formData.nip)) {
-                                showNotification('Ce NIP existe déjà dans la liste des fondateurs', 'warning');
-                                return;
-                            }
-
-                            // Ajouter le fondateur
-                            const fondateur = {
-                                id: Date.now(),
-                                ...formData,
-                                dateAjout: new Date().toISOString()
-                            };
-
-                            OrganisationApp.foundateurs.push(fondateur);
-                            updateFoundersList();
-                            clearFoundersForm();
-
-                            showNotification(`Fondateur ${fondateur.prenom} ${fondateur.nom} ajouté`, 'success');
-                        }
-
-                        // ========================================
-                        // GESTION DES MEMBRES DU BUREAU
-                        // ========================================
-
-                        /**
-                         * Ajouter un membre du bureau
-                         */
-                        function addMembreBureau() {
-                            const formData = {
-                                nip: document.getElementById('membre_nip')?.value?.trim() || '',
-                                nom: document.getElementById('membre_nom')?.value?.trim() || '',
-                                prenom: document.getElementById('membre_prenom')?.value?.trim() || '',
-                                fonction: document.getElementById('membre_fonction')?.value || '',
-                                contact: document.getElementById('membre_contact')?.value?.trim() || '',
-                                domicile: document.getElementById('membre_domicile')?.value?.trim() || '',
-                                afficher_recepisse: document.getElementById('membre_afficher_recepisse')?.checked || false
-                            };
-
-                            // Validation
-                            if (!formData.nom || !formData.prenom || !formData.nip || !formData.fonction) {
-                                showNotification('NIP, nom, prénom et fonction sont obligatoires', 'warning');
-                                return;
-                            }
-
-                            // Vérifier les doublons
-                            if (OrganisationApp.membresBureau.some(m => m.nip === formData.nip)) {
-                                showNotification('Ce NIP existe déjà dans la liste des membres du bureau', 'warning');
-                                return;
-                            }
-
-                            // Vérifier le maximum de 3 membres pour le récépissé
-                            if (formData.afficher_recepisse) {
-                                const countRecepisse = OrganisationApp.membresBureau.filter(m => m.afficher_recepisse).length;
-                                if (countRecepisse >= 3) {
-                                    showNotification('Maximum 3 membres peuvent être affichés sur le récépissé', 'warning');
-                                    return;
-                                }
-                            }
-
-                            // Ajouter le membre
-                            const membre = {
-                                id: Date.now(),
-                                ...formData,
-                                ordre: OrganisationApp.membresBureau.length,
-                                dateAjout: new Date().toISOString()
-                            };
-
-                            OrganisationApp.membresBureau.push(membre);
-                            updateMembresBureauList();
-                            clearMembresBureauForm();
-
-                            showNotification(`Membre ${membre.prenom} ${membre.nom} ajouté au bureau`, 'success');
-                        }
-
-                        /**
-                         * Mettre à jour la liste des membres du bureau
-                         */
-                        function updateMembresBureauList() {
-                            const listContainer = document.getElementById('membres_bureau_list');
-                            const countElement = document.getElementById('membres_bureau_count');
-                            const recepisseCountElement = document.getElementById('membres_recepisse_count');
-
-                            const totalCount = OrganisationApp.membresBureau.length;
-                            const recepisseCount = OrganisationApp.membresBureau.filter(m => m.afficher_recepisse).length;
-
-                            if (countElement) {
-                                countElement.textContent = `${totalCount} membre(s)`;
-                            }
-                            if (recepisseCountElement) {
-                                recepisseCountElement.textContent = `${recepisseCount}/3 sur récépissé`;
-                                recepisseCountElement.className = recepisseCount >= 3 ? 'badge bg-warning' : 'badge bg-success';
-                            }
-
-                            if (!listContainer) return;
-
-                            if (totalCount === 0) {
-                                listContainer.innerHTML = `
-                                                                <div class="text-center py-4 text-muted">
-                                                                    <i class="fas fa-user-tie fa-3x mb-3"></i>
-                                                                    <p>Aucun membre du bureau ajouté</p>
-                                                                </div>
-                                                            `;
-                                return;
-                            }
-
-                            let html = '<div class="table-responsive"><table class="table table-hover">';
-                            html += `
-                                                            <thead class="table-primary">
-                                                                <tr>
-                                                                    <th>NIP</th>
-                                                                    <th>Nom</th>
-                                                                    <th>Prénom</th>
-                                                                    <th>Fonction</th>
-                                                                    <th>Contact</th>
-                                                                    <th>Sur récépissé</th>
-                                                                    <th>Actions</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                        `;
-
-                            OrganisationApp.membresBureau.forEach((membre, index) => {
-                                html += `
-                                                                <tr>
-                                                                    <td><code>${membre.nip}</code></td>
-                                                                    <td><strong>${membre.nom}</strong></td>
-                                                                    <td>${membre.prenom}</td>
-                                                                    <td><span class="badge bg-primary">${membre.fonction}</span></td>
-                                                                    <td>${membre.contact || '-'}</td>
-                                                                    <td>
-                                                                        ${membre.afficher_recepisse
-                                        ? '<span class="badge bg-success"><i class="fas fa-check"></i> Oui</span>'
-                                        : '<span class="badge bg-secondary">Non</span>'}
-                                                                    </td>
-                                                                    <td>
-                                                                        <button class="btn btn-outline-danger btn-sm" onclick="removeMembreBureau(${index})">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            `;
-                            });
-
-                            html += '</tbody></table></div>';
-                            listContainer.innerHTML = html;
-                        }
-
-                        /**
-                         * Supprimer un membre du bureau
-                         */
-                        function removeMembreBureau(index) {
-                            if (confirm('Supprimer ce membre du bureau ?')) {
-                                const membre = OrganisationApp.membresBureau[index];
-                                OrganisationApp.membresBureau.splice(index, 1);
-                                updateMembresBureauList();
-                                showNotification(`Membre ${membre.prenom} ${membre.nom} supprimé`, 'info');
-                            }
-                        }
-
-                        /**
-                         * Vider le formulaire des membres du bureau
-                         */
-                        function clearMembresBureauForm() {
-                            document.getElementById('membre_nip').value = '';
-                            document.getElementById('membre_nom').value = '';
-                            document.getElementById('membre_prenom').value = '';
-                            document.getElementById('membre_fonction').value = '';
-                            document.getElementById('membre_contact').value = '';
-                            document.getElementById('membre_domicile').value = '';
-                            document.getElementById('membre_afficher_recepisse').checked = false;
-                        }
-
-                        /**
-                         * Mettre à jour la liste des fondateurs
-                         */
-                        function updateFoundersList() {
-                            const listContainer = document.getElementById('fondateurs_list');
-                            const countElement = document.getElementById('fondateurs_count');
-
-                            if (countElement) {
-                                countElement.textContent = `${OrganisationApp.foundateurs.length} fondateur(s)`;
-                            }
-
-                            if (!listContainer) return;
-
-                            if (OrganisationApp.foundateurs.length === 0) {
-                                listContainer.innerHTML = `
-                                                                <div class="text-center py-4 text-muted">
-                                                                    <i class="fas fa-users fa-3x mb-3"></i>
-                                                                    <p>Aucun fondateur ajouté</p>
-                                                                </div>
-                                                            `;
-                                return;
-                            }
-
-                            let html = '<div class="table-responsive"><table class="table table-hover">';
-                            html += `
-                                                            <thead class="table-dark">
-                                                                <tr>
-                                                                    <th>Civilité</th>
-                                                                    <th>Nom</th>
-                                                                    <th>Prénom</th>
-                                                                    <th>NIP</th>
-                                                                    <th>Fonction</th>
-                                                                    <th>Téléphone</th>
-                                                                    <th>Actions</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                        `;
-
-                            OrganisationApp.foundateurs.forEach((fondateur, index) => {
-                                html += `
-                                                                <tr>
-                                                                    <td>${fondateur.civilite}</td>
-                                                                    <td><strong>${fondateur.nom}</strong></td>
-                                                                    <td>${fondateur.prenom}</td>
-                                                                    <td><code>${fondateur.nip}</code></td>
-                                                                    <td>${fondateur.fonction || '-'}</td>
-                                                                    <td>${fondateur.telephone || '-'}</td>
-                                                                    <td>
-                                                                        <button class="btn btn-outline-danger btn-sm" onclick="removeFondateur(${index})">
-                                                                            <i class="fas fa-trash"></i>
-                                                                        </button>
-                                                                    </td>
-                                                                </tr>
-                                                            `;
-                            });
-
-                            html += '</tbody></table></div>';
-                            listContainer.innerHTML = html;
-                        }
-
-                        /**
-                         * Supprimer un fondateur (avec sauvegarde automatique)
-                         */
-                        function removeFondateur(index) {
-                            if (confirm('Supprimer ce fondateur ?')) {
-                                const fondateur = OrganisationApp.foundateurs[index];
-                                OrganisationApp.foundateurs.splice(index, 1);
-                                updateFoundersList();
-
-                                // Sauvegarder automatiquement
-                                saveToCache();
-
-                                showNotification(`Fondateur ${fondateur.prenom} ${fondateur.nom} supprimé`, 'success');
-                            }
-                        }
-
-                        /**
-                         * Vider le formulaire des fondateurs
-                         */
-                        function clearFoundersForm() {
-                            const inputs = ['fondateur_civilite', 'fondateur_nom', 'fondateur_prenom',
-                                'fondateur_nip', 'fondateur_fonction', 'fondateur_telephone', 'fondateur_email'];
-
-                            inputs.forEach(inputId => {
-                                const input = document.getElementById(inputId);
-                                if (input) {
-                                    if (input.tagName === 'SELECT') {
-                                        input.selectedIndex = 0;
-                                    } else {
-                                        input.value = '';
-                                    }
-                                }
-                            });
-                        }
-
-                        // ========================================
-                        // INITIALISATION
-                        // ========================================
-
-                        /**
-                         * Initialisation de l'application
-                         */
-                        function initApplication() {
-                            console.log('🚀 Initialisation OrganisationApp v2.0 (8 étapes)');
-
-                            // Initialiser l'affichage
-                            updateStepDisplay();
-                            updateNavigationButtons();
-
-                            // Initialiser les cartes de type
-                            initOrganizationTypeCards();
-
-                            // Événements des boutons
-                            const addFondateurBtn = document.getElementById('addFondateurBtn');
-                            if (addFondateurBtn) {
-                                addFondateurBtn.addEventListener('click', addFondateur);
-                            }
-
-                            // Événementpour ajouter un membre du bureau
-                            const addMembreBureauBtn = document.getElementById('addMembreBureauBtn');
-                            if (addMembreBureauBtn) {
-                                addMembreBureauBtn.addEventListener('click', addMembreBureau);
-                            }
-
-                            // Événements des provinces/départements
-                            const provinceSelect = document.getElementById('org_province');
-                            if (provinceSelect) {
-                                provinceSelect.addEventListener('change', updateDepartements);
-                            }
-
-                            console.log('✅ Application initialisée avec succès');
-                        }
-
-                        /**
-                         * Mettre à jour les départements selon la province
-                         */
-                        function updateDepartements() {
-                            const provinceSelect = document.getElementById('org_province');
-                            const departementSelect = document.getElementById('org_departement');
-
-                            if (!provinceSelect || !departementSelect) return;
-
-                            const departements = {
-                                'Estuaire': ['Libreville', 'Ntoum', 'Komo-Mondah', 'Komo', 'Noya'],
-                                'Haut-Ogooué': ['Franceville', 'Bongoville', 'Bakoumba', 'Akiéni', 'Lékoko'],
-                                'Moyen-Ogooué': ['Lambaréné', 'Ndjolé', 'Ogooué et des Lacs', 'Abanga-Bigné'],
-                                'Ngounié': ['Mouila', 'Fougamou', 'Mandji', 'Tsamba-Magotsi', 'Dola'],
-                                'Nyanga': ['Tchibanga', 'Mayumba', 'Basse-Banio', 'Haute-Banio', 'Mongo'],
-                                'Ogooué-Ivindo': ['Makokou', 'Mékambo', 'Booué', 'Ivindo', 'Lopé'],
-                                'Ogooué-Lolo': ['Koulamoutou', 'Lastoursville', 'Mulundu', 'Offoué-Onoye', 'Lombo-Bouenguidi'],
-                                'Ogooué-Maritime': ['Port-Gentil', 'Omboué', 'Bendjé', 'Etimboué', 'Ndougou'],
-                                'Woleu-Ntem': ['Oyem', 'Bitam', 'Mitzic', 'Woleu', 'Ntem', 'Okano', 'Haut-Ntem']
-                            };
-
-                            const selectedProvince = provinceSelect.value;
-                            const options = departements[selectedProvince] || [];
-
-                            departementSelect.innerHTML = '<option value="">Sélectionnez un département</option>';
-                            options.forEach(dept => {
-                                departementSelect.innerHTML += `<option value="${dept}">${dept}</option>`;
-                            });
-                        }
-
-                        /**
-                         * Obtenir la géolocalisation
-                         */
-                        function getGeolocation() {
-                            const btn = document.getElementById('getLocationBtn');
-                            const latInput = document.getElementById('org_latitude');
-                            const lngInput = document.getElementById('org_longitude');
-
-                            if (!navigator.geolocation) {
-                                showNotification('La géolocalisation n\'est pas supportée par ce navigateur', 'warning');
-                                return;
-                            }
-
-                            // Disable button and show loading
-                            if (btn) {
-                                btn.disabled = true;
-                                btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Localisation...';
-                            }
-
-                            navigator.geolocation.getCurrentPosition(
-                                function (position) {
-                                    const lat = position.coords.latitude;
-                                    const lng = position.coords.longitude;
-
-                                    // Vérifier si on est au Gabon (approximativement)
-                                    if (lat >= -3.978 && lat <= 2.318 && lng >= 8.695 && lng <= 14.502) {
-                                        if (latInput) latInput.value = lat.toFixed(6);
-                                        if (lngInput) lngInput.value = lng.toFixed(6);
-
-                                        showNotification('Position obtenue avec succès', 'success');
-                                    } else {
-                                        showNotification('Position détectée hors du Gabon. Veuillez vérifier.', 'warning');
-                                        if (latInput) latInput.value = lat.toFixed(6);
-                                        if (lngInput) lngInput.value = lng.toFixed(6);
-                                    }
-                                },
-                                function (error) {
-                                    let message = 'Erreur de géolocalisation: ';
-                                    switch (error.code) {
-                                        case error.PERMISSION_DENIED:
-                                            message += 'Permission refusée';
-                                            break;
-                                        case error.POSITION_UNAVAILABLE:
-                                            message += 'Position indisponible';
-                                            break;
-                                        case error.TIMEOUT:
-                                            message += 'Délai dépassé';
-                                            break;
-                                        default:
-                                            message += 'Erreur inconnue';
-                                            break;
-                                    }
-                                    showNotification(message, 'error');
-                                },
-                                {
-                                    enableHighAccuracy: true,
-                                    timeout: 10000,
-                                    maximumAge: 0
-                                }
-                            );
-
-                            // Restore button state
-                            if (btn) {
-                                setTimeout(() => {
-                                    btn.disabled = false;
-                                    btn.innerHTML = '<i class="fas fa-map-marker-alt me-2"></i>Obtenir ma position actuelle';
-                                }, 3000);
-                            }
-                        }
-
-                        /**
-                         * Validation avancée des champs
-                         */
-                        function validateFieldsAdvanced() {
-                            // Validation email
-                            const emailInputs = document.querySelectorAll('input[type="email"]');
-                            emailInputs.forEach(input => {
-                                input.addEventListener('blur', function () {
-                                    if (this.value && !isValidEmail(this.value)) {
-                                        this.classList.add('is-invalid');
-                                        showFieldError(this, 'Format email invalide');
-                                    } else {
-                                        this.classList.remove('is-invalid');
-                                        clearFieldError(this);
-                                    }
-                                });
-                            });
-
-                            // Validation téléphone
-                            const phoneInputs = document.querySelectorAll('input[type="tel"]');
-                            phoneInputs.forEach(input => {
-                                input.addEventListener('blur', function () {
-                                    if (this.value && !isValidGabonPhone(this.value)) {
-                                        this.classList.add('is-invalid');
-                                        showFieldError(this, 'Numéro de téléphone gabonais invalide');
-                                    } else {
-                                        this.classList.remove('is-invalid');
-                                        clearFieldError(this);
-                                    }
-                                });
-                            });
-
-                            // Validation dates
-                            const dateInputs = document.querySelectorAll('input[type="date"]');
-                            dateInputs.forEach(input => {
-                                input.addEventListener('change', function () {
-                                    if (this.id === 'demandeur_date_naissance') {
-                                        const age = calculateAge(new Date(this.value));
-                                        if (age < 18) {
-                                            this.classList.add('is-invalid');
-                                            showFieldError(this, 'Le demandeur doit être majeur (18 ans minimum)');
-                                        } else {
-                                            this.classList.remove('is-invalid');
-                                            clearFieldError(this);
-                                        }
-                                    }
-                                });
-                            });
-                        }
-
-                        /**
-                         * Valider email
-                         */
-                        function isValidEmail(email) {
-                            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                            return emailRegex.test(email);
-                        }
-
-                        /**
-                         * Valider téléphone gabonais
-                         */
-                        function isValidGabonPhone(phone) {
-                            // Format gabonais : 8-9 chiffres
-                            const phoneRegex = /^[0-9]{8,9}$/;
-                            return phoneRegex.test(phone.replace(/\s/g, ''));
-                        }
-
-                        /**
-                         * Calculer l'âge
-                         */
-                        function calculateAge(birthDate) {
-                            const today = new Date();
-                            let age = today.getFullYear() - birthDate.getFullYear();
-                            const monthDiff = today.getMonth() - birthDate.getMonth();
-
-                            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                                age--;
-                            }
-
-                            return age;
-                        }
-
-                        /**
-                         * Afficher erreur de champ
-                         */
-                        function showFieldError(field, message) {
-                            if (!field) return;
-
-                            // Supprimer l'ancienne erreur
-                            clearFieldError(field);
-
-                            // Créer le message d'erreur
-                            const errorDiv = document.createElement('div');
-                            errorDiv.className = 'invalid-feedback';
-                            errorDiv.textContent = message;
-
-                            // Ajouter après le champ
-                            field.parentNode.insertBefore(errorDiv, field.nextSibling);
-                        }
-
-                        /**
-                         * Supprimer erreur de champ
-                         */
-                        function clearFieldError(field) {
-                            if (!field) return;
-
-                            const errorDiv = field.parentNode.querySelector('.invalid-feedback');
-                            if (errorDiv) {
-                                errorDiv.remove();
-                            }
-                        }
-
-                        // ========================================
-                        // SYSTÈME DE CACHE/SAUVEGARDE AUTOMATIQUE
-                        // ========================================
-
-                        /**
-                         * Sauvegarder les données dans le cache
-                         */
-                        function saveToCache() {
-                            if (!OrganisationApp.cacheConfig.enabled) return;
-
-                            try {
-                                const cacheData = {
-                                    currentStep: OrganisationApp.currentStep,
-                                    organisationType: OrganisationApp.organisationType,
-                                    formData: OrganisationApp.formData,
-                                    foundateurs: OrganisationApp.foundateurs,
-                                    membresBureau: OrganisationApp.membresBureau,
-                                    uploadedDocuments: OrganisationApp.uploadedDocuments,
-                                    timestamp: new Date().toISOString(),
-                                    expiresAt: new Date(Date.now() + OrganisationApp.cacheConfig.expirationHours * 60 * 60 * 1000).toISOString()
-                                };
-
-                                // Collecter les données des formulaires
-                                collectAllFormData();
-                                cacheData.formData = OrganisationApp.formData;
-
-                                const cacheString = JSON.stringify(cacheData);
-
-                                // Vérifier la taille du cache
-                                if (cacheString.length > OrganisationApp.cacheConfig.maxCacheSize) {
-                                    console.warn('Cache trop volumineux, sauvegarde partielle');
-                                    // Sauvegarder seulement les données essentielles
-                                    const essentialData = {
-                                        currentStep: cacheData.currentStep,
-                                        organisationType: cacheData.organisationType,
-                                        formData: filterEssentialFormData(cacheData.formData),
-                                        foundateurs: cacheData.foundateurs,
-                                        membresBureau: cacheData.membresBureau,
-                                        timestamp: cacheData.timestamp,
-                                        expiresAt: cacheData.expiresAt
+                            } else if (input.type === 'file') {
+                                // Pour les fichiers, stocker les métadonnées
+                                if (input.files && input.files.length > 0) {
+                                    OrganisationApp.formData[name] = {
+                                        hasFile: true,
+                                        fileName: input.files[0].name,
+                                        fileSize: input.files[0].size
                                     };
-                                    localStorage.setItem(OrganisationApp.cacheConfig.keyPrefix + 'data', JSON.stringify(essentialData));
-                                } else {
-                                    localStorage.setItem(OrganisationApp.cacheConfig.keyPrefix + 'data', cacheString);
                                 }
-
-                                // Mettre à jour l'indicateur de sauvegarde
-                                updateSaveIndicator('saved');
-
-                                console.log('💾 Données sauvegardées dans le cache', new Date().toLocaleTimeString());
-
-                            } catch (error) {
-                                console.error('❌ Erreur sauvegarde cache:', error);
-                                if (error.name === 'QuotaExceededError') {
-                                    showNotification('Espace de stockage insuffisant. Données partiellement sauvegardées.', 'warning');
-                                    // Essayer de nettoyer l'ancien cache
-                                    clearExpiredCache();
-                                }
+                            } else {
+                                OrganisationApp.formData[name] = input.value;
                             }
+                        });
+
+                        // Déclencher la sauvegarde en cache
+                        saveToCache();
+                    }
+
+                    /**
+                     * Générer le récapitulatif pour l'étape 8 (ex-étape 9)
+                     */
+                    function generateRecap() {
+                        const recapContainer = document.getElementById('recap_content');
+                        if (!recapContainer) return;
+
+                        let recapHtml = '<div class="row">';
+
+                        // Type d'organisation
+                        if (OrganisationApp.organisationType) {
+                            recapHtml += `
+                                                                        <div class="col-md-6 mb-3">
+                                                                            <div class="card border-0 shadow-sm">
+                                                                                <div class="card-body">
+                                                                                    <h6 class="text-primary"><i class="fas fa-list-ul me-2"></i>Type d'organisation</h6>
+                                                                                    <p class="mb-0 fw-bold">${getOrganizationTypeLabel(OrganisationApp.organisationType)}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
                         }
 
-                        /**
-                         * Charger les données depuis le cache
-                         */
-                        function loadFromCache() {
-                            if (!OrganisationApp.cacheConfig.enabled) return false;
+                        // Nom de l'organisation
+                        const orgNom = document.getElementById('org_nom');
+                        if (orgNom && orgNom.value) {
+                            recapHtml += `
+                                                                        <div class="col-md-6 mb-3">
+                                                                            <div class="card border-0 shadow-sm">
+                                                                                <div class="card-body">
+                                                                                    <h6 class="text-primary"><i class="fas fa-building me-2"></i>Nom de l'organisation</h6>
+                                                                                    <p class="mb-0 fw-bold">${orgNom.value}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
+                        }
 
-                            try {
-                                const cacheString = localStorage.getItem(OrganisationApp.cacheConfig.keyPrefix + 'data');
-                                if (!cacheString) return false;
+                        // Demandeur
+                        const demandeurNom = document.getElementById('demandeur_nom');
+                        const demandeurPrenom = document.getElementById('demandeur_prenom');
+                        const demandeurRole = document.getElementById('demandeur_role');
+                        if (demandeurNom && demandeurPrenom && demandeurNom.value && demandeurPrenom.value) {
+                            recapHtml += `
+                                                                        <div class="col-md-6 mb-3">
+                                                                            <div class="card border-0 shadow-sm">
+                                                                                <div class="card-body">
+                                                                                    <h6 class="text-primary"><i class="fas fa-user me-2"></i>Demandeur principal</h6>
+                                                                                    <p class="mb-1 fw-bold">${demandeurPrenom.value} ${demandeurNom.value}</p>
+                                                                                    <small class="text-muted">${demandeurRole ? demandeurRole.options[demandeurRole.selectedIndex]?.text || '' : ''}</small>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
+                        }
 
-                                const cacheData = JSON.parse(cacheString);
+                        // Nombre de fondateurs
+                        const recapTypeData = window.typesOrganisationData[OrganisationApp.organisationType];
+                        const recapMinFondateurs = recapTypeData ? recapTypeData.nb_min_fondateurs_majeurs : 3;
+                        recapHtml += `
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <div class="card border-0 shadow-sm">
+                                                                            <div class="card-body">
+                                                                                <h6 class="text-primary"><i class="fas fa-users me-2"></i>Fondateurs</h6>
+                                                                                <p class="mb-0 fw-bold">${OrganisationApp.foundateurs.length} fondateur(s)</p>
+                                                                                <small class="text-muted">
+                                                                                    ${OrganisationApp.foundateurs.length >= recapMinFondateurs ?
+                                '<i class="fas fa-check text-success me-1"></i>Minimum requis atteint' :
+                                '<i class="fas fa-exclamation-triangle text-warning me-1"></i>Minimum requis: ' + recapMinFondateurs
+                            }
+                                                                                </small>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                `;
 
-                                // Vérifier l'expiration
-                                if (new Date(cacheData.expiresAt) < new Date()) {
-                                    console.log('🗑️ Cache expiré, suppression');
-                                    clearCache();
-                                    return false;
+                        // Localisation
+                        const province = document.getElementById('org_province');
+                        const prefecture = document.getElementById('org_prefecture');
+                        if (province && prefecture && province.value && prefecture.value) {
+                            recapHtml += `
+                                                                        <div class="col-md-6 mb-3">
+                                                                            <div class="card border-0 shadow-sm">
+                                                                                <div class="card-body">
+                                                                                    <h6 class="text-primary"><i class="fas fa-map-marker-alt me-2"></i>Localisation</h6>
+                                                                                    <p class="mb-0 fw-bold">${prefecture.value}, ${province.value}</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
+                        }
+
+                        // Documents uploadés
+                        const documentsUploaded = Object.keys(OrganisationApp.uploadedDocuments || {}).length;
+                        const requirements = OrganisationApp.documentRequirements[OrganisationApp.organisationType];
+                        const documentsRequired = requirements ? requirements.required.length : 0;
+
+                        recapHtml += `
+                                                                    <div class="col-md-6 mb-3">
+                                                                        <div class="card border-0 shadow-sm">
+                                                                            <div class="card-body">
+                                                                                <h6 class="text-primary"><i class="fas fa-file-alt me-2"></i>Documents</h6>
+                                                                                <p class="mb-0 fw-bold">${documentsUploaded} / ${documentsRequired} obligatoires</p>
+                                                                                <small class="text-muted">
+                                                                                    ${documentsUploaded >= documentsRequired ?
+                                '<i class="fas fa-check text-success me-1"></i>Documents complets' :
+                                '<i class="fas fa-exclamation-triangle text-warning me-1"></i>Documents manquants'
+                            }
+                                                                                </small>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                `;
+
+                        recapHtml += '</div>';
+
+                        // Ajout d'un message de validation globale
+                        const isValid = OrganisationApp.foundateurs.length >= recapMinFondateurs && documentsUploaded >= documentsRequired;
+
+                        if (isValid) {
+                            recapHtml += `
+                                                                        <div class="alert alert-success border-0 mt-4">
+                                                                            <div class="d-flex align-items-center">
+                                                                                <i class="fas fa-check-circle fa-2x me-3"></i>
+                                                                                <div>
+                                                                                    <h6 class="alert-heading mb-1">Dossier prêt pour soumission</h6>
+                                                                                    <p class="mb-0">Toutes les exigences minimales sont respectées. Vous pouvez procéder à la soumission.</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
+                        } else {
+                            recapHtml += `
+                                                                        <div class="alert alert-warning border-0 mt-4">
+                                                                            <div class="d-flex align-items-center">
+                                                                                <i class="fas fa-exclamation-triangle fa-2x me-3"></i>
+                                                                                <div>
+                                                                                    <h6 class="alert-heading mb-1">Dossier incomplet</h6>
+                                                                                    <p class="mb-0">Veuillez compléter toutes les sections obligatoires avant la soumission.</p>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
+                        }
+
+                        recapContainer.innerHTML = recapHtml;
+                    }
+
+                    /**
+                     * Mettre à jour le contenu du guide selon le type
+                     */
+                    function updateGuideContent() {
+                        const guideContent = document.getElementById('guide-content');
+                        const selectedTypeTitle = document.getElementById('selectedTypeTitle');
+
+                        if (!OrganisationApp.organisationType) return;
+
+                        if (selectedTypeTitle) {
+                            selectedTypeTitle.textContent = getOrganizationTypeLabel(OrganisationApp.organisationType);
+                        }
+
+                        if (guideContent) {
+                            const content = getGuideContentForType(OrganisationApp.organisationType);
+                            guideContent.innerHTML = content;
+                        }
+                    }
+
+                    /**
+                     * Contenu du guide selon le type d'organisation - DYNAMIQUE DEPUIS LA DB
+                     */
+                    function getGuideContentForType(type) {
+                        const typeData = window.typesOrganisationData[type];
+                        if (!typeData) {
+                            return `<div class="alert alert-info border-0 mb-4 shadow-sm">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="fas fa-info-circle fa-3x me-3 text-info"></i>
+                                                        <div>
+                                                            <h5 class="alert-heading mb-1">Guide spécifique à votre type d'organisation</h5>
+                                                            <p class="mb-0">Le contenu s'affichera selon votre sélection à l'étape précédente</p>
+                                                        </div>
+                                                    </div>
+                                                </div>`;
+                        }
+
+                        const couleur = typeData.couleur || '#009e3f';
+                        const icone = typeData.icone || 'fa-building';
+
+                        // Section en-tête du guide
+                        let html = `
+                                        <div class="alert border-0 mb-4 shadow-sm" style="background-color: ${couleur}15; border-left: 4px solid ${couleur} !important;">
+                                            <div class="d-flex align-items-center">
+                                                <i class="fas ${icone} fa-3x me-3" style="color: ${couleur};"></i>
+                                                <div>
+                                                    <h5 class="alert-heading mb-1">Guide pour créer : ${typeData.nom}</h5>
+                                                    <p class="mb-0 text-muted">${typeData.description || ''}</p>
+                                                </div>
+                                            </div>
+                                        </div>`;
+
+                        // Loi de référence
+                        if (typeData.loi_reference) {
+                            html += `
+                                        <div class="alert alert-light border mb-4">
+                                            <i class="fas fa-gavel me-2" style="color: ${couleur};"></i>
+                                            <strong>Base légale :</strong> ${typeData.loi_reference}
+                                        </div>`;
+                        }
+
+                        html += `<div class="row">`;
+
+                        // Colonne gauche : Exigences
+                        html += `
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card border-0 shadow-sm h-100">
+                                                <div class="card-header border-0" style="background-color: ${couleur}15;">
+                                                    <h6 class="mb-0" style="color: ${couleur};"><i class="fas fa-clipboard-check me-2"></i>Exigences minimales</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <ul class="list-unstyled mb-0">
+                                                        <li class="mb-2"><i class="fas fa-users me-2" style="color: ${couleur};"></i>Min. <strong>${typeData.nb_min_fondateurs_majeurs}</strong> fondateur(s) majeur(s)</li>
+                                                        <li class="mb-2"><i class="fas fa-user-friends me-2" style="color: ${couleur};"></i>Min. <strong>${typeData.nb_min_adherents_creation}</strong> adhérent(s) à la création</li>
+                                                        <li class="mb-2"><i class="fas fa-${typeData.is_lucratif ? 'coins' : 'heart'} me-2" style="color: ${couleur};"></i>But ${typeData.is_lucratif ? 'lucratif' : 'non lucratif'}</li>
+                                                        <li class="mb-2"><i class="fas fa-map-marker-alt me-2" style="color: ${couleur};"></i>Siège social au Gabon</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </div>`;
+
+                        // Colonne droite : Documents requis (depuis la relation pivot)
+                        const docsObligatoires = typeData.documents.filter(d => d.is_obligatoire);
+                        const docsFacultatifs = typeData.documents.filter(d => !d.is_obligatoire);
+
+                        html += `
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card border-0 shadow-sm h-100">
+                                                <div class="card-header border-0" style="background-color: ${couleur}15;">
+                                                    <h6 class="mb-0" style="color: ${couleur};"><i class="fas fa-file-alt me-2"></i>Documents requis</h6>
+                                                </div>
+                                                <div class="card-body">
+                                                    <ul class="list-unstyled mb-0">`;
+
+                        if (docsObligatoires.length > 0) {
+                            docsObligatoires.forEach(doc => {
+                                html += `<li class="mb-2"><i class="fas fa-check-circle me-2 text-success"></i>${doc.nom} <span class="badge bg-danger ms-1">Obligatoire</span></li>`;
+                            });
+                        }
+                        if (docsFacultatifs.length > 0) {
+                            docsFacultatifs.forEach(doc => {
+                                html += `<li class="mb-2"><i class="fas fa-minus-circle me-2 text-muted"></i>${doc.nom} <span class="badge bg-secondary ms-1">Facultatif</span></li>`;
+                            });
+                        }
+                        if (typeData.documents.length === 0) {
+                            html += `<li class="text-muted"><i class="fas fa-info-circle me-2"></i>Aucun document spécifique configuré</li>`;
+                        }
+
+                        html += `       </ul>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>`;
+
+                        // Guide de création (texte riche depuis la DB)
+                        if (typeData.guide_creation) {
+                            html += `
+                                        <div class="card border-0 shadow-sm mt-3">
+                                            <div class="card-header border-0" style="background-color: ${couleur}15;">
+                                                <h6 class="mb-0" style="color: ${couleur};"><i class="fas fa-book-open me-2"></i>Guide de création</h6>
+                                            </div>
+                                            <div class="card-body guide-creation-content">
+                                                ${formatGuideContent(typeData.guide_creation)}
+                                            </div>
+                                        </div>`;
+                        }
+
+                        // Texte législatif
+                        if (typeData.texte_legislatif) {
+                            html += `
+                                        <div class="card border-0 shadow-sm mt-3">
+                                            <div class="card-header border-0 bg-light">
+                                                <h6 class="mb-0 text-dark"><i class="fas fa-balance-scale me-2"></i>Cadre législatif</h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="text-muted" style="font-style: italic; font-size: 0.95em;">
+                                                    ${formatGuideContent(typeData.texte_legislatif)}
+                                                </div>
+                                            </div>
+                                        </div>`;
+                        }
+
+                        return html;
+                    }
+
+                    /**
+                     * Formater le contenu Markdown simplifié en HTML
+                     */
+                    function formatGuideContent(text) {
+                        if (!text) return '';
+                        let html = text
+                            .replace(/^### (.+)$/gm, '<h6 class="fw-bold mt-3 mb-2">$1</h6>')
+                            .replace(/^## (.+)$/gm, '<h5 class="fw-bold mt-3 mb-2">$1</h5>')
+                            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                            .replace(/^- (.+)$/gm, '<li>$1</li>')
+                            .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
+                            .replace(/\n\n/g, '</p><p>')
+                            .replace(/\n/g, '<br>');
+                        // Envelopper les <li> dans des <ul>
+                        html = html.replace(/(<li>.*?<\/li>)+/gs, '<ul class="mb-2">$&</ul>');
+                        return `<p>${html}</p>`;
+                    }
+
+                    /**
+                     * Mettre à jour les exigences des fondateurs - DYNAMIQUE DEPUIS LA DB
+                     */
+                    function updateFoundersRequirements() {
+                        const requirementsDiv = document.getElementById('fondateurs_requirements');
+                        if (!requirementsDiv) return;
+
+                        const typeData = window.typesOrganisationData[OrganisationApp.organisationType];
+                        const minRequired = typeData ? typeData.nb_min_fondateurs_majeurs : 3;
+                        const minFoundersEl = document.getElementById('min_fondateurs');
+                        if (minFoundersEl) {
+                            minFoundersEl.textContent = minRequired;
+                        }
+                    }
+
+                    /**
+                     * Mettre à jour les exigences des documents
+                     */
+                    function updateDocumentsRequirements() {
+                        const documentsContainer = document.getElementById('documents_container');
+                        if (!documentsContainer || !OrganisationApp.organisationType) return;
+
+                        const requirements = OrganisationApp.documentRequirements[OrganisationApp.organisationType];
+                        if (!requirements) return;
+
+                        const allDocuments = [...requirements.required, ...requirements.optional];
+
+                        let documentsHtml = `
+                                                                    <div class="alert alert-info border-0 mb-4">
+                                                                        <h6 class="alert-heading">
+                                                                            <i class="fas fa-info-circle me-2"></i>
+                                                                            Documents requis pour ${getOrganizationTypeLabel(OrganisationApp.organisationType)}
+                                                                        </h6>
+                                                                        <p class="mb-2">
+                                                                            <strong>Documents obligatoires :</strong> ${requirements.required.length}
+                                                                            ${requirements.optional.length > 0 ? `| <strong>Documents optionnels :</strong> ${requirements.optional.length}` : ''}
+                                                                        </p>
+                                                                        <small class="text-muted">
+                                                                            <i class="fas fa-upload me-1"></i>
+                                                                            Formats acceptés : PDF, JPG, PNG (taille max : 5MB par fichier)
+                                                                        </small>
+                                                                    </div>
+                                                                `;
+
+                        allDocuments.forEach(doc => {
+                            const isRequired = requirements.required.includes(doc);
+                            const label = getDocumentLabel(doc);
+
+                            documentsHtml += `
+                                                                        <div class="card border-0 shadow-sm mb-3">
+                                                                            <div class="card-body">
+                                                                                <div class="row align-items-center">
+                                                                                    <div class="col-md-6">
+                                                                                        <h6 class="mb-1">
+                                                                                            ${isRequired ? '<span class="text-danger">*</span> ' : ''}
+                                                                                            ${label}
+                                                                                        </h6>
+                                                                                        <input type="file" 
+                                                                                               class="form-control" 
+                                                                                               id="doc_${doc}" 
+                                                                                               name="documents[${doc}]"
+                                                                                               accept=".pdf,.jpg,.jpeg,.png"
+                                                                                               onchange="handleDocumentUpload('${doc}', this)"
+                                                                                               ${isRequired ? 'required' : ''}>
+                                                                                        <div class="form-text">
+                                                                                            <i class="fas fa-info me-1"></i>
+                                                                                            ${isRequired ? 'Document obligatoire' : 'Document optionnel'} - PDF, JPG, PNG (max 5MB)
+                                                                                        </div>
+                                                                                    </div>
+                                                                                    <div class="col-md-6">
+                                                                                        <div id="status_${doc}" class="text-muted">
+                                                                                            <i class="fas fa-clock me-1"></i>En attente
+                                                                                        </div>
+                                                                                        <div class="progress mt-2 d-none" id="progress_container_${doc}">
+                                                                                            <div class="progress-bar" id="progress_${doc}" style="width: 0%"></div>
+                                                                                        </div>
+                                                                                        <div id="preview_${doc}" class="mt-2 d-none"></div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    `;
+                        });
+
+                        documentsContainer.innerHTML = documentsHtml;
+                    }
+
+                    /**
+                     * Obtenir le label d'un document
+                     */
+                    function getDocumentLabel(doc) {
+                        const labels = {
+                            'statuts': 'Statuts de l\'organisation',
+                            'pv_ag': 'Procès-verbal de l\'assemblée générale constitutive',
+                            'liste_fondateurs': 'Liste des membres fondateurs',
+                            'justif_siege': 'Justificatif du siège social',
+                            'projet_social': 'Projet social détaillé',
+                            'budget_previsionnel': 'Budget prévisionnel',
+                            'programme_politique': 'Programme politique',
+                            'liste_50_adherents': 'Liste de 50 adhérents minimum',
+                            'expose_doctrine': 'Exposé de la doctrine religieuse',
+                            'justif_lieu_culte': 'Justificatif du lieu de culte'
+                        };
+                        return labels[doc] || doc;
+                    }
+
+                    /**
+                     * Gestion upload document
+                     */
+                    function handleDocumentUpload(docType, fileInput) {
+                        const file = fileInput.files[0];
+                        if (!file) return;
+
+                        // Validation de la taille
+                        if (file.size > 5 * 1024 * 1024) {
+                            showNotification('Le fichier ne peut pas dépasser 5MB', 'error');
+                            fileInput.value = '';
+                            return;
+                        }
+
+                        // Validation du type
+                        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
+                        if (!allowedTypes.includes(file.type)) {
+                            showNotification('Type de fichier non autorisé. Utilisez PDF, JPG ou PNG.', 'error');
+                            fileInput.value = '';
+                            return;
+                        }
+
+                        // Mise à jour du statut
+                        const statusElement = document.getElementById(`status_${docType}`);
+                        const progressContainer = document.getElementById(`progress_container_${docType}`);
+                        const progressBar = document.getElementById(`progress_${docType}`);
+                        const previewElement = document.getElementById(`preview_${docType}`);
+
+                        if (statusElement) {
+                            statusElement.innerHTML = '<i class="fas fa-upload me-1 text-info"></i>Fichier sélectionné';
+                        }
+
+                        // Simulation du progress (à remplacer par vraie logique d'upload)
+                        if (progressContainer && progressBar) {
+                            progressContainer.classList.remove('d-none');
+                            let progress = 0;
+                            const interval = setInterval(() => {
+                                progress += 10;
+                                progressBar.style.width = progress + '%';
+
+                                if (progress >= 100) {
+                                    clearInterval(interval);
+                                    setTimeout(() => {
+                                        progressContainer.classList.add('d-none');
+                                        if (statusElement) {
+                                            statusElement.innerHTML = '<i class="fas fa-check me-1 text-success"></i>Fichier téléchargé';
+                                        }
+
+                                        // Aperçu pour les images
+                                        if (file.type.startsWith('image/') && previewElement) {
+                                            const reader = new FileReader();
+                                            reader.onload = function (e) {
+                                                previewElement.innerHTML = `
+                                                                                            <img src="${e.target.result}" class="img-thumbnail" style="max-height: 100px;">
+                                                                                            <small class="d-block text-muted">${file.name}</small>
+                                                                                        `;
+                                                previewElement.classList.remove('d-none');
+                                            };
+                                            reader.readAsDataURL(file);
+                                        } else if (previewElement) {
+                                            previewElement.innerHTML = `
+                                                                                        <div class="d-flex align-items-center">
+                                                                                            <i class="fas fa-file-pdf text-danger me-2"></i>
+                                                                                            <small class="text-muted">${file.name}</small>
+                                                                                        </div>
+                                                                                    `;
+                                            previewElement.classList.remove('d-none');
+                                        }
+                                    }, 500);
                                 }
+                            }, 100);
+                        }
 
-                                // Confirmer avec l'utilisateur
-                                if (confirm('Des données non sauvegardées ont été trouvées. Voulez-vous les restaurer ?')) {
-                                    // Restaurer les données
-                                    OrganisationApp.currentStep = cacheData.currentStep || 1;
-                                    OrganisationApp.organisationType = cacheData.organisationType || null;
-                                    OrganisationApp.formData = cacheData.formData || {};
-                                    OrganisationApp.foundateurs = cacheData.foundateurs || [];
-                                    OrganisationApp.membresBureau = cacheData.membresBureau || [];
-                                    OrganisationApp.uploadedDocuments = cacheData.uploadedDocuments || {};
+                        // Stocker le fichier dans l'application
+                        OrganisationApp.uploadedDocuments[docType] = {
+                            file: file,
+                            name: file.name,
+                            size: file.size,
+                            type: file.type,
+                            uploaded: true
+                        };
 
-                                    // Restaurer les champs du formulaire
-                                    restoreFormFields();
+                        console.log('Document uploadé:', docType, file.name);
+                    }
+
+                    /**
+                     * Obtenir le label d'un type d'organisation - DYNAMIQUE DEPUIS LA DB
+                     */
+                    function getOrganizationTypeLabel(type) {
+                        const typeData = window.typesOrganisationData[type];
+                        return typeData ? typeData.nom : type;
+                    }
+
+                    /**
+                     * Afficher une notification
+                     */
+                    function showNotification(message, type = 'info') {
+                        const alertClass = {
+                            success: 'alert-success',
+                            error: 'alert-danger',
+                            warning: 'alert-warning',
+                            info: 'alert-info'
+                        }[type] || 'alert-info';
+
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = `alert ${alertClass} alert-dismissible fade show position-fixed`;
+                        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+                        alertDiv.innerHTML = `
+                                                                    ${message}
+                                                                    <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+                                                                `;
+
+                        document.body.appendChild(alertDiv);
+
+                        setTimeout(() => {
+                            alertDiv.remove();
+                        }, 5000);
+                    }
+
+                    /**
+                     * Scroll vers le haut
+                     */
+                    function scrollToTop() {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }
+
+                    // ========================================
+                    // GESTION DES TYPES D'ORGANISATION
+                    // ========================================
+
+                    /**
+                     * Initialiser les cartes de type d'organisation
+                     */
+                    function initOrganizationTypeCards() {
+                        const typeCards = document.querySelectorAll('.organization-type-card');
+                        const selectedInfo = document.getElementById('selectedTypeInfo');
+                        const selectedTypeName = document.getElementById('selectedTypeName');
+
+                        typeCards.forEach(card => {
+                            card.addEventListener('click', function () {
+                                const radio = this.querySelector('input[type="radio"]');
+                                if (radio) {
+                                    radio.checked = true;
 
                                     // Mettre à jour l'affichage
-                                    updateStepDisplay();
-                                    updateNavigationButtons();
-                                    updateFoundersList();
+                                    typeCards.forEach(c => c.classList.remove('selected'));
+                                    this.classList.add('selected');
 
-                                    // Restaurer le type d'organisation si défini
-                                    if (OrganisationApp.organisationType) {
-                                        const typeRadio = document.querySelector(`input[name="type_organisation"][value="${OrganisationApp.organisationType}"]`);
-                                        if (typeRadio) {
-                                            typeRadio.checked = true;
-                                            typeRadio.dispatchEvent(new Event('change'));
+                                    // Afficher les informations de sélection
+                                    if (selectedInfo && selectedTypeName) {
+                                        const typeLabel = this.querySelector('.card-title').textContent;
+                                        selectedTypeName.textContent = typeLabel;
+                                        selectedInfo.classList.remove('d-none');
+                                    }
+
+                                    // Mettre à jour le type dans l'application
+                                    OrganisationApp.organisationType = radio.value;
+
+                                    // Afficher/masquer la déclaration exclusivité parti politique
+                                    const partiDeclarationDiv = document.getElementById('declaration_parti_politique');
+                                    if (partiDeclarationDiv) {
+                                        if (radio.value === 'parti_politique') {
+                                            partiDeclarationDiv.classList.remove('d-none');
+                                        } else {
+                                            partiDeclarationDiv.classList.add('d-none');
                                         }
                                     }
 
-                                    showNotification('Données restaurées avec succès', 'success');
-                                    updateSaveIndicator('restored');
+                                    // Déclencher la validation
+                                    validateStep1();
+                                }
+                            });
+                        });
+                    }
 
-                                    console.log('📥 Données restaurées depuis le cache', cacheData.timestamp);
-                                    return true;
+                    // ========================================
+                    // GESTION DES FONDATEURS
+                    // ========================================
+
+                    /**
+                     * Ajouter un fondateur
+                     */
+                    function addFondateur() {
+                        const formData = {
+                            civilite: document.getElementById('fondateur_civilite')?.value || '',
+                            nom: document.getElementById('fondateur_nom')?.value?.trim() || '',
+                            prenom: document.getElementById('fondateur_prenom')?.value?.trim() || '',
+                            nip: document.getElementById('fondateur_nip')?.value?.trim() || '',
+                            fonction: document.getElementById('fondateur_fonction')?.value || '',
+                            telephone: document.getElementById('fondateur_telephone')?.value?.trim() || '',
+                            email: document.getElementById('fondateur_email')?.value?.trim() || ''
+                        };
+
+                        // Validation détaillée avec messages clairs
+                        const errors = [];
+                        const nipRegex = /^[A-Z0-9]{2}-[0-9]{4}-[0-9]{8}$/;
+
+                        if (!formData.nom) {
+                            errors.push('Nom du fondateur obligatoire');
+                            document.getElementById('fondateur_nom')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('fondateur_nom')?.classList.remove('is-invalid');
+                        }
+
+                        if (!formData.prenom) {
+                            errors.push('Prénom du fondateur obligatoire');
+                            document.getElementById('fondateur_prenom')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('fondateur_prenom')?.classList.remove('is-invalid');
+                        }
+
+                        if (!formData.nip) {
+                            errors.push('NIP obligatoire');
+                            document.getElementById('fondateur_nip')?.classList.add('is-invalid');
+                        } else if (!nipRegex.test(formData.nip)) {
+                            errors.push('NIP : format invalide. Attendu : XX-0000-AAAAMMJJ (ex: A1-2345-19901225)');
+                            document.getElementById('fondateur_nip')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('fondateur_nip')?.classList.remove('is-invalid');
+                        }
+
+                        if (!formData.fonction) {
+                            errors.push('Fonction obligatoire');
+                            document.getElementById('fondateur_fonction')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('fondateur_fonction')?.classList.remove('is-invalid');
+                        }
+
+                        if (!formData.telephone) {
+                            errors.push('Téléphone obligatoire');
+                            document.getElementById('fondateur_telephone')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('fondateur_telephone')?.classList.remove('is-invalid');
+                        }
+
+                        if (errors.length > 0) {
+                            showNotification('Veuillez corriger :<br>• ' + errors.join('<br>• '), 'warning');
+                            return;
+                        }
+
+                        // Vérifier les doublons
+                        if (OrganisationApp.foundateurs.some(f => f.nip === formData.nip)) {
+                            showNotification('Ce NIP existe déjà dans la liste des fondateurs', 'warning');
+                            document.getElementById('fondateur_nip')?.classList.add('is-invalid');
+                            return;
+                        }
+
+                        // Ajouter le fondateur
+                        const fondateur = {
+                            id: Date.now(),
+                            ...formData,
+                            dateAjout: new Date().toISOString()
+                        };
+
+                        OrganisationApp.foundateurs.push(fondateur);
+                        updateFoundersList();
+                        clearFoundersForm();
+                        saveToCache();
+
+                        const typeData = window.typesOrganisationData ? window.typesOrganisationData[OrganisationApp.organisationType] : null;
+                        const minRequired = typeData ? typeData.nb_min_fondateurs_majeurs : 3;
+                        const remaining = minRequired - OrganisationApp.foundateurs.length;
+
+                        if (remaining > 0) {
+                            showNotification(`Fondateur ${fondateur.prenom} ${fondateur.nom} ajouté. Encore ${remaining} fondateur(s) requis.`, 'success');
+                        } else {
+                            showNotification(`Fondateur ${fondateur.prenom} ${fondateur.nom} ajouté. Minimum atteint ✓`, 'success');
+                        }
+                    }
+
+                    // ========================================
+                    // GESTION DES MEMBRES DU BUREAU
+                    // ========================================
+
+                    /**
+                     * Ajouter un membre du bureau
+                     */
+                    function addMembreBureau() {
+                        const formData = {
+                            nip: document.getElementById('membre_nip')?.value?.trim() || '',
+                            nom: document.getElementById('membre_nom')?.value?.trim() || '',
+                            prenom: document.getElementById('membre_prenom')?.value?.trim() || '',
+                            fonction: document.getElementById('membre_fonction')?.value || '',
+                            contact: document.getElementById('membre_contact')?.value?.trim() || '',
+                            domicile: document.getElementById('membre_domicile')?.value?.trim() || '',
+                            afficher_recepisse: document.getElementById('membre_afficher_recepisse')?.checked || false
+                        };
+
+                        // Validation détaillée
+                        const errors = [];
+                        const nipRegex = /^[A-Z0-9]{2}-[0-9]{4}-[0-9]{8}$/;
+
+                        if (!formData.nip) {
+                            errors.push('NIP obligatoire');
+                            document.getElementById('membre_nip')?.classList.add('is-invalid');
+                        } else if (!nipRegex.test(formData.nip)) {
+                            errors.push('NIP : format attendu XX-0000-AAAAMMJJ');
+                            document.getElementById('membre_nip')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('membre_nip')?.classList.remove('is-invalid');
+                        }
+
+                        if (!formData.nom) {
+                            errors.push('Nom obligatoire');
+                            document.getElementById('membre_nom')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('membre_nom')?.classList.remove('is-invalid');
+                        }
+
+                        if (!formData.prenom) {
+                            errors.push('Prénom obligatoire');
+                            document.getElementById('membre_prenom')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('membre_prenom')?.classList.remove('is-invalid');
+                        }
+
+                        if (!formData.fonction) {
+                            errors.push('Fonction obligatoire');
+                            document.getElementById('membre_fonction')?.classList.add('is-invalid');
+                        } else {
+                            document.getElementById('membre_fonction')?.classList.remove('is-invalid');
+                        }
+
+                        if (errors.length > 0) {
+                            showNotification('Membre bureau — champs à corriger :<br>• ' + errors.join('<br>• '), 'warning');
+                            return;
+                        }
+
+                        // Vérifier les doublons
+                        if (OrganisationApp.membresBureau.some(m => m.nip === formData.nip)) {
+                            showNotification('Ce NIP existe déjà dans la liste des membres du bureau', 'warning');
+                            document.getElementById('membre_nip')?.classList.add('is-invalid');
+                            return;
+                        }
+
+                        // Vérifier le maximum de 3 membres pour le récépissé
+                        if (formData.afficher_recepisse) {
+                            const countRecepisse = OrganisationApp.membresBureau.filter(m => m.afficher_recepisse).length;
+                            if (countRecepisse >= 3) {
+                                showNotification('Maximum 3 membres peuvent être affichés sur le récépissé. Décochez l\'option pour ce membre ou retirez un autre membre du récépissé.', 'warning');
+                                return;
+                            }
+                        }
+
+                        // Ajouter le membre
+                        const membre = {
+                            id: Date.now(),
+                            ...formData,
+                            ordre: OrganisationApp.membresBureau.length,
+                            dateAjout: new Date().toISOString()
+                        };
+
+                        OrganisationApp.membresBureau.push(membre);
+                        updateMembresBureauList();
+                        clearMembresBureauForm();
+                        saveToCache();
+
+                        showNotification(`Membre ${membre.prenom} ${membre.nom} ajouté au bureau`, 'success');
+                    }
+
+                    /**
+                     * Mettre à jour la liste des membres du bureau
+                     */
+                    function updateMembresBureauList() {
+                        const listContainer = document.getElementById('membres_bureau_list');
+                        const countElement = document.getElementById('membres_bureau_count');
+                        const recepisseCountElement = document.getElementById('membres_recepisse_count');
+
+                        const totalCount = OrganisationApp.membresBureau.length;
+                        const recepisseCount = OrganisationApp.membresBureau.filter(m => m.afficher_recepisse).length;
+
+                        if (countElement) {
+                            countElement.textContent = `${totalCount} membre(s)`;
+                        }
+                        if (recepisseCountElement) {
+                            recepisseCountElement.textContent = `${recepisseCount}/3 sur récépissé`;
+                            recepisseCountElement.className = recepisseCount >= 3 ? 'badge bg-warning' : 'badge bg-success';
+                        }
+
+                        if (!listContainer) return;
+
+                        if (totalCount === 0) {
+                            listContainer.innerHTML = `
+                                                                        <div class="text-center py-4 text-muted">
+                                                                            <i class="fas fa-user-tie fa-3x mb-3"></i>
+                                                                            <p>Aucun membre du bureau ajouté</p>
+                                                                        </div>
+                                                                    `;
+                            return;
+                        }
+
+                        let html = '<div class="table-responsive"><table class="table table-hover">';
+                        html += `
+                                                                    <thead class="table-primary">
+                                                                        <tr>
+                                                                            <th>NIP</th>
+                                                                            <th>Nom</th>
+                                                                            <th>Prénom</th>
+                                                                            <th>Fonction</th>
+                                                                            <th>Contact</th>
+                                                                            <th>Sur récépissé</th>
+                                                                            <th>Actions</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                `;
+
+                        OrganisationApp.membresBureau.forEach((membre, index) => {
+                            html += `
+                                                                        <tr>
+                                                                            <td><code>${membre.nip}</code></td>
+                                                                            <td><strong>${membre.nom}</strong></td>
+                                                                            <td>${membre.prenom}</td>
+                                                                            <td><span class="badge bg-primary">${membre.fonction}</span></td>
+                                                                            <td>${membre.contact || '-'}</td>
+                                                                            <td>
+                                                                                ${membre.afficher_recepisse
+                                    ? '<span class="badge bg-success"><i class="fas fa-check"></i> Oui</span>'
+                                    : '<span class="badge bg-secondary">Non</span>'}
+                                                                            </td>
+                                                                            <td>
+                                                                                <button class="btn btn-outline-danger btn-sm" onclick="removeMembreBureau(${index})">
+                                                                                    <i class="fas fa-trash"></i>
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    `;
+                        });
+
+                        html += '</tbody></table></div>';
+                        listContainer.innerHTML = html;
+                    }
+
+                    /**
+                     * Supprimer un membre du bureau
+                     */
+                    function removeMembreBureau(index) {
+                        if (confirm('Supprimer ce membre du bureau ?')) {
+                            const membre = OrganisationApp.membresBureau[index];
+                            OrganisationApp.membresBureau.splice(index, 1);
+                            updateMembresBureauList();
+                            showNotification(`Membre ${membre.prenom} ${membre.nom} supprimé`, 'info');
+                        }
+                    }
+
+                    /**
+                     * Vider le formulaire des membres du bureau
+                     */
+                    function clearMembresBureauForm() {
+                        document.getElementById('membre_nip').value = '';
+                        document.getElementById('membre_nom').value = '';
+                        document.getElementById('membre_prenom').value = '';
+                        document.getElementById('membre_fonction').value = '';
+                        document.getElementById('membre_contact').value = '';
+                        document.getElementById('membre_domicile').value = '';
+                        document.getElementById('membre_afficher_recepisse').checked = false;
+                    }
+
+                    /**
+                     * Mettre à jour la liste des fondateurs
+                     */
+                    function updateFoundersList() {
+                        const listContainer = document.getElementById('fondateurs_list');
+                        const countElement = document.getElementById('fondateurs_count');
+
+                        if (countElement) {
+                            countElement.textContent = `${OrganisationApp.foundateurs.length} fondateur(s)`;
+                        }
+
+                        if (!listContainer) return;
+
+                        if (OrganisationApp.foundateurs.length === 0) {
+                            listContainer.innerHTML = `
+                                                                        <div class="text-center py-4 text-muted">
+                                                                            <i class="fas fa-users fa-3x mb-3"></i>
+                                                                            <p>Aucun fondateur ajouté</p>
+                                                                        </div>
+                                                                    `;
+                            return;
+                        }
+
+                        let html = '<div class="table-responsive"><table class="table table-hover">';
+                        html += `
+                                                                    <thead class="table-dark">
+                                                                        <tr>
+                                                                            <th>Civilité</th>
+                                                                            <th>Nom</th>
+                                                                            <th>Prénom</th>
+                                                                            <th>NIP</th>
+                                                                            <th>Fonction</th>
+                                                                            <th>Téléphone</th>
+                                                                            <th>Actions</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                `;
+
+                        OrganisationApp.foundateurs.forEach((fondateur, index) => {
+                            html += `
+                                                                        <tr>
+                                                                            <td>${fondateur.civilite}</td>
+                                                                            <td><strong>${fondateur.nom}</strong></td>
+                                                                            <td>${fondateur.prenom}</td>
+                                                                            <td><code>${fondateur.nip}</code></td>
+                                                                            <td>${fondateur.fonction || '-'}</td>
+                                                                            <td>${fondateur.telephone || '-'}</td>
+                                                                            <td>
+                                                                                <button class="btn btn-outline-danger btn-sm" onclick="removeFondateur(${index})">
+                                                                                    <i class="fas fa-trash"></i>
+                                                                                </button>
+                                                                            </td>
+                                                                        </tr>
+                                                                    `;
+                        });
+
+                        html += '</tbody></table></div>';
+                        listContainer.innerHTML = html;
+                    }
+
+                    /**
+                     * Supprimer un fondateur (avec sauvegarde automatique)
+                     */
+                    function removeFondateur(index) {
+                        if (confirm('Supprimer ce fondateur ?')) {
+                            const fondateur = OrganisationApp.foundateurs[index];
+                            OrganisationApp.foundateurs.splice(index, 1);
+                            updateFoundersList();
+
+                            // Sauvegarder automatiquement
+                            saveToCache();
+
+                            showNotification(`Fondateur ${fondateur.prenom} ${fondateur.nom} supprimé`, 'success');
+                        }
+                    }
+
+                    /**
+                     * Vider le formulaire des fondateurs
+                     */
+                    function clearFoundersForm() {
+                        const inputs = ['fondateur_civilite', 'fondateur_nom', 'fondateur_prenom',
+                            'fondateur_nip', 'fondateur_fonction', 'fondateur_telephone', 'fondateur_email'];
+
+                        inputs.forEach(inputId => {
+                            const input = document.getElementById(inputId);
+                            if (input) {
+                                if (input.tagName === 'SELECT') {
+                                    input.selectedIndex = 0;
                                 } else {
-                                    clearCache();
-                                    return false;
+                                    input.value = '';
+                                }
+                            }
+                        });
+                    }
+
+                    // ========================================
+                    // INITIALISATION
+                    // ========================================
+
+                    /**
+                     * Initialisation de l'application
+                     */
+                    function initApplication() {
+                        console.log('🚀 Initialisation OrganisationApp v2.0 (8 étapes)');
+
+                        // Initialiser l'affichage
+                        updateStepDisplay();
+                        updateNavigationButtons();
+
+                        // Initialiser les cartes de type
+                        initOrganizationTypeCards();
+
+                        // Événements des boutons
+                        const addFondateurBtn = document.getElementById('addFondateurBtn');
+                        if (addFondateurBtn) {
+                            addFondateurBtn.addEventListener('click', addFondateur);
+                        }
+
+                        // Événementpour ajouter un membre du bureau
+                        const addMembreBureauBtn = document.getElementById('addMembreBureauBtn');
+                        if (addMembreBureauBtn) {
+                            addMembreBureauBtn.addEventListener('click', addMembreBureau);
+                        }
+
+                        // Événements des provinces/départements
+                        const provinceSelect = document.getElementById('org_province');
+                        if (provinceSelect) {
+                            provinceSelect.addEventListener('change', updateDepartements);
+                        }
+
+                        // Initialiser la gestion zone urbaine/rurale
+                        initZoneToggle();
+
+                        console.log('✅ Application initialisée avec succès');
+                    }
+
+                    /**
+                     * Mettre à jour les départements selon la province
+                     */
+                    /**
+                     * Fonction utilitaire pour charger un select via AJAX
+                     */
+                    function loadSelectOptions(url, selectElement, placeholder, callback, preSelectValue) {
+                        selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+                        selectElement.disabled = true;
+
+                        return fetch(url, {
+                            headers: { 'Accept': 'application/json' }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.data.length > 0) {
+                                    data.data.forEach(item => {
+                                        const option = document.createElement('option');
+                                        option.value = item.id;
+                                        option.textContent = item.nom;
+                                        option.dataset.nom = item.nom;
+                                        if (item.code) option.dataset.code = item.code;
+                                        selectElement.appendChild(option);
+                                    });
+                                    selectElement.disabled = false;
+
+                                    // Pré-sélectionner une valeur si demandée (restauration cache)
+                                    if (preSelectValue) {
+                                        selectElement.value = preSelectValue;
+                                    }
+                                } else {
+                                    selectElement.innerHTML = `<option value="">Aucun résultat</option>`;
+                                }
+                                if (callback) callback(data);
+                                return data;
+                            })
+                            .catch(error => {
+                                console.error('Erreur chargement:', error);
+                                selectElement.innerHTML = `<option value="">Erreur de chargement</option>`;
+                            });
+                    }
+
+                    /**
+                     * Réinitialiser un select
+                     */
+                    function resetSelect(selectId, placeholder) {
+                        const el = document.getElementById(selectId);
+                        if (el) {
+                            el.innerHTML = `<option value="">${placeholder}</option>`;
+                            el.disabled = true;
+                        }
+                    }
+
+                    /**
+                     * Obtenir le type de zone sélectionné
+                     */
+                    function getZoneType() {
+                        const input = document.getElementById('zone_type_input');
+                        return input ? input.value : 'urbaine';
+                    }
+
+                    /**
+                     * Appliquer l'état visuel et fonctionnel d'une zone
+                     */
+                    function applyZoneState(zoneValue) {
+                        const isUrbaine = zoneValue === 'urbaine';
+                        const cardUrbaine = document.getElementById('zoneCardUrbaine');
+                        const cardRurale = document.getElementById('zoneCardRurale');
+                        const hiddenInput = document.getElementById('zone_type_input');
+                        const radioUrbaine = document.getElementById('radioUrbaine');
+                        const radioRurale = document.getElementById('radioRurale');
+
+                        // Mettre à jour la valeur cachée
+                        if (hiddenInput) hiddenInput.value = zoneValue;
+
+                        // Mettre à jour les boutons radio
+                        if (radioUrbaine) radioUrbaine.checked = isUrbaine;
+                        if (radioRurale) radioRurale.checked = !isUrbaine;
+
+                        // Afficher/masquer les champs selon la zone
+                        document.querySelectorAll('.zone-urbaine-field').forEach(function (el) {
+                            el.style.display = isUrbaine ? '' : 'none';
+                        });
+                        document.querySelectorAll('.zone-rurale-field').forEach(function (el) {
+                            el.style.display = isUrbaine ? 'none' : '';
+                        });
+
+                        // Style des cartes zone
+                        if (cardUrbaine) {
+                            cardUrbaine.style.borderColor = isUrbaine ? '#17a2b8' : '#dee2e6';
+                            cardUrbaine.style.backgroundColor = isUrbaine ? '#17a2b810' : '';
+                        }
+                        if (cardRurale) {
+                            cardRurale.style.borderColor = isUrbaine ? '#dee2e6' : '#28a745';
+                            cardRurale.style.backgroundColor = isUrbaine ? '' : '#28a74510';
+                        }
+                    }
+
+                    /**
+                     * Initialiser le toggle zone urbaine / rurale
+                     */
+                    function initZoneToggle() {
+                        document.querySelectorAll('.zone-type-btn').forEach(function (card) {
+                            card.addEventListener('click', function () {
+                                const zoneValue = this.dataset.zone;
+                                const previousZone = getZoneType();
+
+                                // Ne rien faire si c'est la même zone
+                                if (zoneValue === previousZone) return;
+
+                                // Appliquer l'état visuel
+                                applyZoneState(zoneValue);
+
+                                const isUrbaine = zoneValue === 'urbaine';
+
+                                // Réinitialiser les selects de la zone opposée
+                                if (isUrbaine) {
+                                    resetSelect('org_canton_id', 'Sélectionnez un département...');
+                                    resetSelect('org_regroupement_id', 'Sélectionnez un canton...');
+                                    resetSelect('org_village_id', 'Sélectionnez un regroupement...');
+                                    const cn = document.getElementById('canton_nom');
+                                    const rn = document.getElementById('regroupement_nom');
+                                    const vn = document.getElementById('village_nom');
+                                    if (cn) cn.value = '';
+                                    if (rn) rn.value = '';
+                                    if (vn) vn.value = '';
+                                } else {
+                                    resetSelect('org_commune_id', 'Sélectionnez un département...');
+                                    resetSelect('org_arrondissement_id', 'Sélectionnez une commune...');
+                                    resetSelect('org_quartier_id', 'Sélectionnez un arrondissement...');
+                                    const cmn = document.getElementById('commune_nom');
+                                    const atn = document.getElementById('arrondissement_text');
+                                    const qn = document.getElementById('quartier_nom');
+                                    if (cmn) cmn.value = '';
+                                    if (atn) atn.value = '';
+                                    if (qn) qn.value = '';
                                 }
 
-                            } catch (error) {
-                                console.error('❌ Erreur chargement cache:', error);
-                                clearCache(); // Nettoyer en cas d'erreur
+                                // Recharger selon le département sélectionné
+                                const deptSelect = document.getElementById('org_departement');
+                                const deptId = deptSelect ? deptSelect.value : '';
+                                if (deptId) {
+                                    if (isUrbaine) {
+                                        loadCommunes(deptId);
+                                    } else {
+                                        loadCantons(deptId);
+                                    }
+                                }
+
+                                console.log('Zone changée:', zoneValue);
+                            });
+                        });
+
+                        // État initial
+                        applyZoneState(getZoneType());
+                    }
+
+                    /**
+                     * Province → Département (réinitialise toutes les cascades)
+                     */
+                    function updateDepartements() {
+                        const provinceSelect = document.getElementById('org_province');
+                        const departementSelect = document.getElementById('org_departement');
+
+                        if (!provinceSelect || !departementSelect) return;
+
+                        // Stocker le nom de la province
+                        const selectedOpt = provinceSelect.options[provinceSelect.selectedIndex];
+                        document.getElementById('province_nom').value = selectedOpt ? (selectedOpt.dataset.nom || selectedOpt.text) : '';
+
+                        const provinceId = provinceSelect.value;
+                        if (!provinceId) {
+                            resetSelect('org_departement', 'Sélectionnez d\'abord une province');
+                            // Réinitialiser toutes les cascades
+                            resetSelect('org_commune_id', 'Sélectionnez un département...');
+                            resetSelect('org_arrondissement_id', 'Sélectionnez une commune...');
+                            resetSelect('org_quartier_id', 'Sélectionnez un arrondissement...');
+                            resetSelect('org_canton_id', 'Sélectionnez un département...');
+                            resetSelect('org_regroupement_id', 'Sélectionnez un canton...');
+                            resetSelect('org_village_id', 'Sélectionnez un regroupement...');
+                            return;
+                        }
+
+                        loadSelectOptions(
+                            `{{ url('operator/api/geo/departements') }}/${provinceId}`,
+                            departementSelect,
+                            'Sélectionnez un département',
+                            function () {
+                                // Réinitialiser les cascades en aval
+                                resetSelect('org_commune_id', 'Sélectionnez un département...');
+                                resetSelect('org_arrondissement_id', 'Sélectionnez une commune...');
+                                resetSelect('org_quartier_id', 'Sélectionnez un arrondissement...');
+                                resetSelect('org_canton_id', 'Sélectionnez un département...');
+                                resetSelect('org_regroupement_id', 'Sélectionnez un canton...');
+                                resetSelect('org_village_id', 'Sélectionnez un regroupement...');
+                            }
+                        );
+                    }
+
+                    /**
+                     * Département → Communes (Zone Urbaine) ou Cantons (Zone Rurale)
+                     */
+                    function onDepartementChange() {
+                        const deptSelect = document.getElementById('org_departement');
+                        if (!deptSelect) return;
+
+                        const selectedOpt = deptSelect.options[deptSelect.selectedIndex];
+                        document.getElementById('departement_nom').value = selectedOpt ? (selectedOpt.dataset.nom || selectedOpt.text) : '';
+
+                        const deptId = deptSelect.value;
+                        if (!deptId) return;
+
+                        if (getZoneType() === 'urbaine') {
+                            loadCommunes(deptId);
+                        } else {
+                            loadCantons(deptId);
+                        }
+                    }
+
+                    // ===== ZONE URBAINE : Commune → Arrondissement → Quartier =====
+
+                    function loadCommunes(departementId) {
+                        resetSelect('org_arrondissement_id', 'Sélectionnez une commune...');
+                        resetSelect('org_quartier_id', 'Sélectionnez un arrondissement...');
+                        document.getElementById('commune_nom').value = '';
+                        document.getElementById('arrondissement_text').value = '';
+                        document.getElementById('quartier_nom').value = '';
+
+                        loadSelectOptions(
+                            `{{ url('operator/api/geo/communes') }}/${departementId}`,
+                            document.getElementById('org_commune_id'),
+                            'Sélectionnez une commune'
+                        );
+                    }
+
+                    function onCommuneChange() {
+                        const sel = document.getElementById('org_commune_id');
+                        const selectedOpt = sel.options[sel.selectedIndex];
+                        document.getElementById('commune_nom').value = selectedOpt ? (selectedOpt.dataset.nom || selectedOpt.text) : '';
+
+                        resetSelect('org_arrondissement_id', 'Chargement...');
+                        resetSelect('org_quartier_id', 'Sélectionnez un arrondissement...');
+                        document.getElementById('arrondissement_text').value = '';
+                        document.getElementById('quartier_nom').value = '';
+
+                        if (sel.value) {
+                            loadSelectOptions(
+                                `{{ url('operator/api/geo/arrondissements') }}/${sel.value}`,
+                                document.getElementById('org_arrondissement_id'),
+                                'Sélectionnez un arrondissement'
+                            );
+                        }
+                    }
+
+                    function onArrondissementChange() {
+                        const sel = document.getElementById('org_arrondissement_id');
+                        const selectedOpt = sel.options[sel.selectedIndex];
+                        document.getElementById('arrondissement_text').value = selectedOpt ? (selectedOpt.dataset.nom || selectedOpt.text) : '';
+
+                        resetSelect('org_quartier_id', 'Chargement...');
+                        document.getElementById('quartier_nom').value = '';
+
+                        if (sel.value) {
+                            loadSelectOptions(
+                                `{{ url('operator/api/geo/quartiers') }}/${sel.value}`,
+                                document.getElementById('org_quartier_id'),
+                                'Sélectionnez un quartier'
+                            );
+                        }
+                    }
+
+                    function onQuartierChange() {
+                        const sel = document.getElementById('org_quartier_id');
+                        const selectedOpt = sel.options[sel.selectedIndex];
+                        document.getElementById('quartier_nom').value = selectedOpt ? (selectedOpt.dataset.nom || selectedOpt.text) : '';
+                    }
+
+                    // ===== ZONE RURALE : Canton → Regroupement → Village =====
+
+                    function loadCantons(departementId) {
+                        resetSelect('org_regroupement_id', 'Sélectionnez un canton...');
+                        resetSelect('org_village_id', 'Sélectionnez un regroupement...');
+                        document.getElementById('canton_nom').value = '';
+                        document.getElementById('regroupement_nom').value = '';
+                        document.getElementById('village_nom').value = '';
+
+                        loadSelectOptions(
+                            `{{ url('operator/api/geo/cantons') }}/${departementId}`,
+                            document.getElementById('org_canton_id'),
+                            'Sélectionnez un canton'
+                        );
+                    }
+
+                    function onCantonChange() {
+                        const sel = document.getElementById('org_canton_id');
+                        const selectedOpt = sel.options[sel.selectedIndex];
+                        document.getElementById('canton_nom').value = selectedOpt ? (selectedOpt.dataset.nom || selectedOpt.text) : '';
+
+                        resetSelect('org_regroupement_id', 'Chargement...');
+                        resetSelect('org_village_id', 'Sélectionnez un regroupement...');
+                        document.getElementById('regroupement_nom').value = '';
+                        document.getElementById('village_nom').value = '';
+
+                        if (sel.value) {
+                            loadSelectOptions(
+                                `{{ url('operator/api/geo/regroupements') }}/${sel.value}`,
+                                document.getElementById('org_regroupement_id'),
+                                'Sélectionnez un regroupement'
+                            );
+                        }
+                    }
+
+                    function onRegroupementChange() {
+                        const sel = document.getElementById('org_regroupement_id');
+                        const selectedOpt = sel.options[sel.selectedIndex];
+                        document.getElementById('regroupement_nom').value = selectedOpt ? (selectedOpt.dataset.nom || selectedOpt.text) : '';
+
+                        resetSelect('org_village_id', 'Chargement...');
+                        document.getElementById('village_nom').value = '';
+
+                        if (sel.value) {
+                            loadSelectOptions(
+                                `{{ url('operator/api/geo/villages') }}/${sel.value}`,
+                                document.getElementById('org_village_id'),
+                                'Sélectionnez un village'
+                            );
+                        }
+                    }
+
+                    function onVillageChange() {
+                        const sel = document.getElementById('org_village_id');
+                        const selectedOpt = sel.options[sel.selectedIndex];
+                        document.getElementById('village_nom').value = selectedOpt ? (selectedOpt.dataset.nom || selectedOpt.text) : '';
+                    }
+
+                    // Attacher les événements cascades
+                    (function initCascadeEvents() {
+                        const dept = document.getElementById('org_departement');
+                        if (dept) dept.addEventListener('change', onDepartementChange);
+
+                        const commune = document.getElementById('org_commune_id');
+                        if (commune) commune.addEventListener('change', onCommuneChange);
+
+                        const arrond = document.getElementById('org_arrondissement_id');
+                        if (arrond) arrond.addEventListener('change', onArrondissementChange);
+
+                        const quartier = document.getElementById('org_quartier_id');
+                        if (quartier) quartier.addEventListener('change', onQuartierChange);
+
+                        const canton = document.getElementById('org_canton_id');
+                        if (canton) canton.addEventListener('change', onCantonChange);
+
+                        const regroup = document.getElementById('org_regroupement_id');
+                        if (regroup) regroup.addEventListener('change', onRegroupementChange);
+
+                        const village = document.getElementById('org_village_id');
+                        if (village) village.addEventListener('change', onVillageChange);
+                    })();
+
+                    /**
+                     * Obtenir la géolocalisation
+                     */
+                    function getGeolocation() {
+                        const btn = document.getElementById('getLocationBtn');
+                        const latInput = document.getElementById('org_latitude');
+                        const lngInput = document.getElementById('org_longitude');
+
+                        if (!navigator.geolocation) {
+                            showNotification('La géolocalisation n\'est pas supportée par ce navigateur', 'warning');
+                            return;
+                        }
+
+                        // Disable button and show loading
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Localisation...';
+                        }
+
+                        navigator.geolocation.getCurrentPosition(
+                            function (position) {
+                                const lat = position.coords.latitude;
+                                const lng = position.coords.longitude;
+
+                                // Vérifier si on est au Gabon (approximativement)
+                                if (lat >= -3.978 && lat <= 2.318 && lng >= 8.695 && lng <= 14.502) {
+                                    if (latInput) latInput.value = lat.toFixed(6);
+                                    if (lngInput) lngInput.value = lng.toFixed(6);
+
+                                    showNotification('Position obtenue avec succès', 'success');
+                                } else {
+                                    showNotification('Position détectée hors du Gabon. Veuillez vérifier.', 'warning');
+                                    if (latInput) latInput.value = lat.toFixed(6);
+                                    if (lngInput) lngInput.value = lng.toFixed(6);
+                                }
+                            },
+                            function (error) {
+                                let message = 'Erreur de géolocalisation: ';
+                                switch (error.code) {
+                                    case error.PERMISSION_DENIED:
+                                        message += 'Permission refusée';
+                                        break;
+                                    case error.POSITION_UNAVAILABLE:
+                                        message += 'Position indisponible';
+                                        break;
+                                    case error.TIMEOUT:
+                                        message += 'Délai dépassé';
+                                        break;
+                                    default:
+                                        message += 'Erreur inconnue';
+                                        break;
+                                }
+                                showNotification(message, 'error');
+                            },
+                            {
+                                enableHighAccuracy: true,
+                                timeout: 10000,
+                                maximumAge: 0
+                            }
+                        );
+
+                        // Restore button state
+                        if (btn) {
+                            setTimeout(() => {
+                                btn.disabled = false;
+                                btn.innerHTML = '<i class="fas fa-map-marker-alt me-2"></i>Obtenir ma position actuelle';
+                            }, 3000);
+                        }
+                    }
+
+                    /**
+                     * Validation avancée des champs
+                     */
+                    function validateFieldsAdvanced() {
+                        // Validation email
+                        const emailInputs = document.querySelectorAll('input[type="email"]');
+                        emailInputs.forEach(input => {
+                            input.addEventListener('blur', function () {
+                                if (this.value && !isValidEmail(this.value)) {
+                                    this.classList.add('is-invalid');
+                                    showFieldError(this, 'Format email invalide');
+                                } else {
+                                    this.classList.remove('is-invalid');
+                                    clearFieldError(this);
+                                }
+                            });
+                        });
+
+                        // Validation téléphone
+                        const phoneInputs = document.querySelectorAll('input[type="tel"]');
+                        phoneInputs.forEach(input => {
+                            input.addEventListener('blur', function () {
+                                if (this.value && !isValidGabonPhone(this.value)) {
+                                    this.classList.add('is-invalid');
+                                    showFieldError(this, 'Numéro de téléphone gabonais invalide');
+                                } else {
+                                    this.classList.remove('is-invalid');
+                                    clearFieldError(this);
+                                }
+                            });
+                        });
+
+                        // Validation dates
+                        const dateInputs = document.querySelectorAll('input[type="date"]');
+                        dateInputs.forEach(input => {
+                            input.addEventListener('change', function () {
+                                if (this.id === 'demandeur_date_naissance') {
+                                    const age = calculateAge(new Date(this.value));
+                                    if (age < 18) {
+                                        this.classList.add('is-invalid');
+                                        showFieldError(this, 'Le demandeur doit être majeur (18 ans minimum)');
+                                    } else {
+                                        this.classList.remove('is-invalid');
+                                        clearFieldError(this);
+                                    }
+                                }
+                            });
+                        });
+                    }
+
+                    /**
+                     * Valider email
+                     */
+                    function isValidEmail(email) {
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                        return emailRegex.test(email);
+                    }
+
+                    /**
+                     * Valider téléphone gabonais
+                     */
+                    function isValidGabonPhone(phone) {
+                        // Format gabonais : 8-9 chiffres
+                        const phoneRegex = /^[0-9]{8,9}$/;
+                        return phoneRegex.test(phone.replace(/\s/g, ''));
+                    }
+
+                    /**
+                     * Calculer l'âge
+                     */
+                    function calculateAge(birthDate) {
+                        const today = new Date();
+                        let age = today.getFullYear() - birthDate.getFullYear();
+                        const monthDiff = today.getMonth() - birthDate.getMonth();
+
+                        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                            age--;
+                        }
+
+                        return age;
+                    }
+
+                    /**
+                     * Afficher erreur de champ
+                     */
+                    function showFieldError(field, message) {
+                        if (!field) return;
+
+                        // Supprimer l'ancienne erreur
+                        clearFieldError(field);
+
+                        // Créer le message d'erreur
+                        const errorDiv = document.createElement('div');
+                        errorDiv.className = 'invalid-feedback';
+                        errorDiv.textContent = message;
+
+                        // Ajouter après le champ
+                        field.parentNode.insertBefore(errorDiv, field.nextSibling);
+                    }
+
+                    /**
+                     * Supprimer erreur de champ
+                     */
+                    function clearFieldError(field) {
+                        if (!field) return;
+
+                        const errorDiv = field.parentNode.querySelector('.invalid-feedback');
+                        if (errorDiv) {
+                            errorDiv.remove();
+                        }
+                    }
+
+                    // ========================================
+                    // SYSTÈME DE CACHE/SAUVEGARDE AUTOMATIQUE
+                    // ========================================
+
+                    /**
+                     * Sauvegarder les données dans le cache
+                     */
+                    function saveToCache() {
+                        if (!OrganisationApp.cacheConfig.enabled) return;
+
+                        try {
+                            const cacheData = {
+                                currentStep: OrganisationApp.currentStep,
+                                organisationType: OrganisationApp.organisationType,
+                                formData: OrganisationApp.formData,
+                                foundateurs: OrganisationApp.foundateurs,
+                                membresBureau: OrganisationApp.membresBureau,
+                                uploadedDocuments: OrganisationApp.uploadedDocuments,
+                                timestamp: new Date().toISOString(),
+                                expiresAt: new Date(Date.now() + OrganisationApp.cacheConfig.expirationHours * 60 * 60 * 1000).toISOString()
+                            };
+
+                            // Collecter les données des formulaires
+                            collectAllFormData();
+                            cacheData.formData = OrganisationApp.formData;
+
+                            const cacheString = JSON.stringify(cacheData);
+
+                            // Vérifier la taille du cache
+                            if (cacheString.length > OrganisationApp.cacheConfig.maxCacheSize) {
+                                console.warn('Cache trop volumineux, sauvegarde partielle');
+                                // Sauvegarder seulement les données essentielles
+                                const essentialData = {
+                                    currentStep: cacheData.currentStep,
+                                    organisationType: cacheData.organisationType,
+                                    formData: filterEssentialFormData(cacheData.formData),
+                                    foundateurs: cacheData.foundateurs,
+                                    membresBureau: cacheData.membresBureau,
+                                    timestamp: cacheData.timestamp,
+                                    expiresAt: cacheData.expiresAt
+                                };
+                                localStorage.setItem(OrganisationApp.cacheConfig.keyPrefix + 'data', JSON.stringify(essentialData));
+                            } else {
+                                localStorage.setItem(OrganisationApp.cacheConfig.keyPrefix + 'data', cacheString);
+                            }
+
+                            // Mettre à jour l'indicateur de sauvegarde
+                            updateSaveIndicator('saved');
+
+                            console.log('💾 Données sauvegardées dans le cache', new Date().toLocaleTimeString());
+
+                        } catch (error) {
+                            console.error('❌ Erreur sauvegarde cache:', error);
+                            if (error.name === 'QuotaExceededError') {
+                                showNotification('Espace de stockage insuffisant. Données partiellement sauvegardées.', 'warning');
+                                // Essayer de nettoyer l'ancien cache
+                                clearExpiredCache();
+                            }
+                        }
+                    }
+
+                    /**
+                     * Charger les données depuis le cache
+                     */
+                    function loadFromCache() {
+                        if (!OrganisationApp.cacheConfig.enabled) return false;
+
+                        try {
+                            const cacheString = localStorage.getItem(OrganisationApp.cacheConfig.keyPrefix + 'data');
+                            if (!cacheString) return false;
+
+                            const cacheData = JSON.parse(cacheString);
+
+                            // Vérifier l'expiration
+                            if (new Date(cacheData.expiresAt) < new Date()) {
+                                console.log('🗑️ Cache expiré, suppression');
+                                clearCache();
                                 return false;
                             }
-                        }
 
-                        /**
-                         * Collecter toutes les données du formulaire
-                         */
-                        function collectAllFormData() {
-                            const form = document.getElementById('organisationForm');
-                            if (!form) return;
+                            // Confirmer avec l'utilisateur
+                            if (confirm('Des données non sauvegardées ont été trouvées. Voulez-vous les restaurer ?')) {
+                                // Restaurer les données
+                                OrganisationApp.currentStep = cacheData.currentStep || 1;
+                                OrganisationApp.organisationType = cacheData.organisationType || null;
+                                OrganisationApp.formData = cacheData.formData || {};
+                                OrganisationApp.foundateurs = cacheData.foundateurs || [];
+                                OrganisationApp.membresBureau = cacheData.membresBureau || [];
+                                OrganisationApp.uploadedDocuments = cacheData.uploadedDocuments || {};
 
-                            // Collecter tous les inputs, selects et textareas
-                            const elements = form.querySelectorAll('input, select, textarea');
+                                // Restaurer les champs du formulaire
+                                restoreFormFields();
 
-                            elements.forEach(element => {
-                                const name = element.name || element.id;
-                                if (!name) return;
-
-                                if (element.type === 'radio') {
-                                    if (element.checked) {
-                                        OrganisationApp.formData[name] = element.value;
-                                    }
-                                } else if (element.type === 'checkbox') {
-                                    OrganisationApp.formData[name] = element.checked;
-                                } else if (element.type === 'file') {
-                                    // Pour les fichiers, on ne peut pas les sauvegarder en localStorage
-                                    // On sauvegarde juste l'info qu'un fichier était sélectionné
-                                    if (element.files && element.files.length > 0) {
-                                        OrganisationApp.formData[name] = {
-                                            hasFile: true,
-                                            fileName: element.files[0].name,
-                                            fileSize: element.files[0].size
-                                        };
-                                    }
-                                } else {
-                                    OrganisationApp.formData[name] = element.value;
-                                }
-                            });
-                        }
-
-                        /**
-                         * Restaurer les champs du formulaire
-                         */
-                        function restoreFormFields() {
-                            const form = document.getElementById('organisationForm');
-                            if (!form || !OrganisationApp.formData) return;
-
-                            Object.keys(OrganisationApp.formData).forEach(name => {
-                                const element = form.querySelector(`[name="${name}"], #${name}`);
-                                if (!element) return;
-
-                                const value = OrganisationApp.formData[name];
-
-                                if (element.type === 'radio') {
-                                    if (element.value === value) {
-                                        element.checked = true;
-                                    }
-                                } else if (element.type === 'checkbox') {
-                                    element.checked = !!value;
-                                } else if (element.type === 'file') {
-                                    // On ne peut pas restaurer les fichiers, mais on peut indiquer qu'il y en avait
-                                    if (value && value.hasFile) {
-                                        const statusElement = document.getElementById(`status_${name.replace('documents[', '').replace(']', '')}`);
-                                        if (statusElement) {
-                                            statusElement.innerHTML = '<i class="fas fa-info me-1 text-info"></i>Fichier précédemment sélectionné (à re-sélectionner)';
-                                        }
-                                    }
-                                } else {
-                                    element.value = value || '';
-                                }
-                            });
-                        }
-
-                        /**
-                         * Filtrer les données essentielles pour économiser l'espace
-                         */
-                        function filterEssentialFormData(formData) {
-                            const essential = {};
-                            const essentialFields = [
-                                'type_organisation', 'demandeur_nom', 'demandeur_prenom', 'demandeur_nip',
-                                'demandeur_email', 'demandeur_telephone', 'org_nom', 'org_objet',
-                                'org_province', 'org_prefecture', 'org_adresse_complete'
-                            ];
-
-                            essentialFields.forEach(field => {
-                                if (formData[field]) {
-                                    essential[field] = formData[field];
-                                }
-                            });
-
-                            return essential;
-                        }
-
-                        /**
-                         * Nettoyer le cache
-                         */
-                        function clearCache() {
-                            try {
-                                localStorage.removeItem(OrganisationApp.cacheConfig.keyPrefix + 'data');
-                                console.log('🗑️ Cache nettoyé');
-                                updateSaveIndicator('cleared');
-                            } catch (error) {
-                                console.error('❌ Erreur nettoyage cache:', error);
-                            }
-                        }
-
-                        /**
-                         * Nettoyer les caches expirés
-                         */
-                        function clearExpiredCache() {
-                            try {
-                                // Nettoyer tous les caches de formulaire expirés
-                                for (let i = 0; i < localStorage.length; i++) {
-                                    const key = localStorage.key(i);
-                                    if (key && key.startsWith(OrganisationApp.cacheConfig.keyPrefix)) {
-                                        try {
-                                            const data = JSON.parse(localStorage.getItem(key));
-                                            if (data.expiresAt && new Date(data.expiresAt) < new Date()) {
-                                                localStorage.removeItem(key);
-                                                console.log('🗑️ Cache expiré supprimé:', key);
-                                            }
-                                        } catch (e) {
-                                            // Supprimer les caches corrompus
-                                            localStorage.removeItem(key);
-                                        }
-                                    }
-                                }
-                            } catch (error) {
-                                console.error('❌ Erreur nettoyage caches expirés:', error);
-                            }
-                        }
-
-                        /**
-                         * Mettre à jour l'indicateur de sauvegarde
-                         */
-                        function updateSaveIndicator(status) {
-                            const indicator = document.getElementById('save-indicator');
-                            if (!indicator) return;
-
-                            const now = new Date().toLocaleTimeString();
-
-                            switch (status) {
-                                case 'saving':
-                                    indicator.innerHTML = '<i class="fas fa-spinner fa-spin text-info"></i> Sauvegarde...';
-                                    break;
-                                case 'saved':
-                                    indicator.innerHTML = `<i class="fas fa-check-circle text-success"></i> Sauvegardé automatiquement à ${now}`;
-                                    break;
-                                case 'restored':
-                                    indicator.innerHTML = `<i class="fas fa-history text-info"></i> Données restaurées à ${now}`;
-                                    break;
-                                case 'error':
-                                    indicator.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Erreur de sauvegarde';
-                                    break;
-                                case 'cleared':
-                                    indicator.innerHTML = '<i class="fas fa-trash text-muted"></i> Cache nettoyé';
-                                    break;
-                                default:
-                                    indicator.innerHTML = '<i class="fas fa-circle text-muted"></i> En attente';
-                            }
-                        }
-
-                        /**
-                         * Auto-sauvegarde périodique
-                         */
-                        function setupAutoSave() {
-                            // Sauvegarde automatique
-                            setInterval(() => {
-                                if (OrganisationApp.currentStep > 1) {
-                                    updateSaveIndicator('saving');
-                                    setTimeout(() => {
-                                        saveToCache();
-                                    }, 100);
-                                }
-                            }, OrganisationApp.cacheConfig.autoSaveInterval);
-
-                            // Sauvegarde lors de changements importants
-                            document.addEventListener('input', debounce(() => {
-                                if (OrganisationApp.currentStep > 1) {
-                                    saveToCache();
-                                }
-                            }, 1000));
-
-                            // Sauvegarde avant fermeture de page
-                            window.addEventListener('beforeunload', (e) => {
-                                saveToCache();
-
-                                // Avertir l'utilisateur s'il y a des données non sauvegardées définitivement
-                                if (OrganisationApp.currentStep > 1 && !OrganisationApp.isSubmitting) {
-                                    e.preventDefault();
-                                    e.returnValue = 'Vos modifications seront sauvegardées automatiquement, mais le dossier ne sera pas soumis. Continuer ?';
-                                    return e.returnValue;
-                                }
-                            });
-                        }
-
-                        /**
-                         * Fonction debounce pour limiter les appels
-                         */
-                        function debounce(func, wait) {
-                            let timeout;
-                            return function executedFunction(...args) {
-                                const later = () => {
-                                    clearTimeout(timeout);
-                                    func(...args);
-                                };
-                                clearTimeout(timeout);
-                                timeout = setTimeout(later, wait);
-                            };
-                        }
-
-                        /**
-                         * Sauvegarder manuellement (bouton)
-                         */
-                        function saveManually() {
-                            updateSaveIndicator('saving');
-                            collectAllFormData();
-                            saveToCache();
-                            showNotification('Données sauvegardées manuellement', 'success');
-                        }
-
-                        /**
-                         * Nettoyer manuellement (bouton)
-                         */
-                        function clearCacheManually() {
-                            if (confirm('Êtes-vous sûr de vouloir supprimer toutes les données sauvegardées ?')) {
-                                clearCache();
-                                showNotification('Cache nettoyé', 'info');
-                            }
-                        }
-
-                        /**
-                         * Vérification de connectivité
-                         */
-                        function checkConnectivity() {
-                            if (!navigator.onLine) {
-                                showNotification('Connexion internet indisponible. Vos données sont sauvegardées localement.', 'warning');
-                            }
-                        }
-
-                        /**
-                         * Initialisation complète de l'application
-                         */
-                        function initApplicationComplete() {
-                            console.log('🚀 Initialisation complète OrganisationApp v2.0 (8 étapes)');
-
-                            // Nettoyer les caches expirés au démarrage
-                            clearExpiredCache();
-
-                            // Essayer de charger depuis le cache
-                            const cacheLoaded = loadFromCache();
-
-                            if (!cacheLoaded) {
-                                // Initialiser l'affichage par défaut
+                                // Mettre à jour l'affichage
                                 updateStepDisplay();
                                 updateNavigationButtons();
-                            }
+                                updateFoundersList();
+                                updateMembresBureauList(); // ✅ FIX: Restaurer aussi la liste des membres du bureau
 
-                            // Initialiser les cartes de type
-                            initOrganizationTypeCards();
-
-                            // Événements des boutons fondateurs
-                            const addFondateurBtn = document.getElementById('addFondateurBtn');
-                            if (addFondateurBtn) {
-                                addFondateurBtn.addEventListener('click', addFondateur);
-                            }
-
-                            // Événements géolocalisation
-                            const getLocationBtn = document.getElementById('getLocationBtn');
-                            if (getLocationBtn) {
-                                getLocationBtn.addEventListener('click', getGeolocation);
-                            }
-
-                            // Événements des provinces/départements
-                            const provinceSelect = document.getElementById('org_province');
-                            if (provinceSelect) {
-                                provinceSelect.addEventListener('change', updateDepartements);
-                            }
-
-                            // Validation avancée des champs
-                            validateFieldsAdvanced();
-
-                            // Auto-sauvegarde
-                            setupAutoSave();
-
-                            // Ajouter boutons de gestion cache dans l'interface
-                            addCacheManagementButtons();
-
-                            // Vérification connectivité
-                            window.addEventListener('online', () => showNotification('Connexion rétablie', 'success'));
-                            window.addEventListener('offline', checkConnectivity);
-
-                            console.log('✅ Application initialisée avec succès - Toutes fonctionnalités actives + Cache');
-                        }
-
-                        /**
-                         * Ajouter les boutons de gestion du cache
-                         */
-                        function addCacheManagementButtons() {
-                            const saveIndicator = document.getElementById('save-indicator');
-                            if (saveIndicator && saveIndicator.parentNode) {
-                                const buttonsHtml = `
-                                                                <div class="btn-group btn-group-sm ms-2" role="group">
-                                                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="saveManually()" title="Sauvegarder maintenant">
-                                                                        <i class="fas fa-save"></i>
-                                                                    </button>
-                                                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearCacheManually()" title="Vider le cache">
-                                                                        <i class="fas fa-trash"></i>
-                                                                    </button>
-                                                                </div>
-                                                            `;
-
-                                // Créer un conteneur pour l'indicateur et les boutons
-                                const container = document.createElement('div');
-                                container.className = 'd-flex align-items-center justify-content-end';
-                                container.innerHTML = `<div id="save-indicator-moved"></div>${buttonsHtml}`;
-
-                                // Déplacer l'indicateur dans le nouveau conteneur
-                                const movedIndicator = container.querySelector('#save-indicator-moved');
-                                movedIndicator.appendChild(saveIndicator);
-
-                                // Remplacer dans le DOM
-                                saveIndicator.parentNode.parentNode.replaceChild(container, saveIndicator.parentNode);
-                            }
-                        }
-
-                        // Initialisation au chargement de la page
-                        document.addEventListener('DOMContentLoaded', initApplicationComplete);
-
-                        // Fonctions globales pour les boutons et événements
-                        window.changeStep = changeStep;
-                        window.removeFondateur = removeFondateur;
-                        window.handleDocumentUpload = handleDocumentUpload;
-                        window.saveManually = saveManually;
-                        window.clearCacheManually = clearCacheManually;
-
-                        // Fonctions utilitaires globales
-                        window.OrganisationUtils = {
-                            showNotification: showNotification,
-                            getOrganizationTypeLabel: getOrganizationTypeLabel,
-                            validateStep: validateStep,
-                            updateStepDisplay: updateStepDisplay,
-                            saveToCache: saveToCache,
-                            loadFromCache: loadFromCache,
-                            clearCache: clearCache
-                        };
-
-                        console.log('📋 Script principal chargé (8 étapes) avec gestion documents et cache complet');
-                    </script>
-
-                    <!-- Scripts NIP Validation -->
-                    <script>
-                        function showNipExample() {
-                            if (window.NipValidation) {
-                                const example = window.NipValidation.generateExample();
-                                const validation = window.NipValidation.validateFormat(example);
-                                const resultDiv = document.getElementById('nipExampleResult');
-
-                                if (validation.valid && validation.extracted_info) {
-                                    resultDiv.innerHTML = `
-                                                                    <div class="alert alert-success">
-                                                                        <strong>Exemple généré :</strong> <code>${example}</code><br>
-                                                                        <small>Âge calculé : ${validation.extracted_info.age} ans</small>
-                                                                    </div>
-                                                                `;
-                                } else {
-                                    resultDiv.innerHTML = `
-                                                                    <div class="alert alert-info">
-                                                                        <strong>Exemple généré :</strong> <code>${example}</code>
-                                                                    </div>
-                                                                `;
-                                }
-                            }
-                        }
-
-                        // Ajouter bouton d'aide NIP dans les champs
-                        document.addEventListener('DOMContentLoaded', function () {
-                            const nipInputs = document.querySelectorAll('input[data-validate="nip"]');
-                            nipInputs.forEach(function (input) {
-                                const container = input.closest('.input-group');
-                                if (container && !container.querySelector('.btn-help-nip')) {
-                                    const helpBtn = document.createElement('button');
-                                    helpBtn.type = 'button';
-                                    helpBtn.className = 'btn btn-outline-info btn-help-nip';
-                                    helpBtn.innerHTML = '<i class="fas fa-question-circle"></i>';
-                                    helpBtn.title = 'Aide format NIP';
-                                    helpBtn.onclick = function () {
-                                        const modal = new bootstrap.Modal(document.getElementById('nipHelpModal'));
-                                        modal.show();
-                                    };
-
-                                    // Ajouter après l'input-group-text existant
-                                    const inputGroupText = container.querySelector('.input-group-text');
-                                    if (inputGroupText) {
-                                        container.insertBefore(helpBtn, inputGroupText.nextSibling);
-                                    } else {
-                                        container.appendChild(helpBtn);
+                                // Restaurer le type d'organisation si défini
+                                if (OrganisationApp.organisationType) {
+                                    const typeRadio = document.querySelector(`input[name="type_organisation"][value="${OrganisationApp.organisationType}"]`);
+                                    if (typeRadio) {
+                                        typeRadio.checked = true;
+                                        typeRadio.dispatchEvent(new Event('change'));
                                     }
                                 }
-                            });
-                        });
-                    </script>
 
-                    <!-- INTÉGRATION WORKFLOW 2 PHASES -->
-                    <script>
-                        // Initialisation du workflow 2 phases
-                        document.addEventListener('DOMContentLoaded', function () {
-                            console.log('🔧 Initialisation workflow 2 phases...');
+                                // ✅ FIX: Restaurer les selects de géolocalisation en cascade
+                                restoreGeolocationCascades();
 
-                            // Vérifier si le module est chargé
-                            if (window.Workflow2Phases) {
-                                try {
-                                    const workflow2PhasesInit = window.Workflow2Phases.init();
-                                    console.log('✅ Workflow 2 phases initialisé:', workflow2PhasesInit);
-                                } catch (error) {
-                                    console.error('❌ Erreur initialisation workflow 2 phases:', error);
+                                showNotification('Données restaurées avec succès', 'success');
+                                updateSaveIndicator('restored');
+
+                                console.log('📥 Données restaurées depuis le cache', cacheData.timestamp);
+                                return true;
+                            } else {
+                                clearCache();
+                                return false;
+                            }
+
+                        } catch (error) {
+                            console.error('❌ Erreur chargement cache:', error);
+                            clearCache(); // Nettoyer en cas d'erreur
+                            return false;
+                        }
+                    }
+
+                    /**
+                     * Restaurer les selects géolocalisation en cascade après chargement du cache.
+                     * Charge chaque niveau en séquence : province → département → commune/canton → etc.
+                     */
+                    async function restoreGeolocationCascades() {
+                        const fd = OrganisationApp.formData;
+
+                        // 1. Province déjà remplie côté serveur (options HTML), on vérifie juste la valeur
+                        const provinceSelect = document.getElementById('org_province');
+                        const savedProvince = fd['org_province_id'] || fd['org_province'];
+                        if (provinceSelect && savedProvince) {
+                            provinceSelect.value = savedProvince;
+                        }
+
+                        // 2. Charger les départements à partir de la province
+                        const provinceId = provinceSelect ? provinceSelect.value : null;
+                        if (!provinceId) return;
+
+                        const deptSelect = document.getElementById('org_departement');
+                        const savedDept = fd['org_departement_id'] || fd['org_departement'];
+
+                        try {
+                            await loadSelectOptions(
+                                `{{ url('operator/api/geo/departements') }}/${provinceId}`,
+                                deptSelect,
+                                'Sélectionnez un département',
+                                null,
+                                savedDept
+                            );
+
+                            if (!savedDept || !deptSelect.value) return;
+
+                            const zoneType = fd['zone_type'] || getZoneType();
+
+                            if (zoneType === 'urbaine') {
+                                // 3a. Commune
+                                const savedCommune = fd['org_commune_id'];
+                                if (savedCommune) {
+                                    const communeSelect = document.getElementById('org_commune_id');
+                                    await loadSelectOptions(
+                                        `{{ url('operator/api/geo/communes') }}/${deptSelect.value}`,
+                                        communeSelect,
+                                        'Sélectionnez une commune',
+                                        null,
+                                        savedCommune
+                                    );
+
+                                    // 4a. Arrondissement
+                                    const savedArrond = fd['org_arrondissement_id'];
+                                    if (savedArrond && communeSelect.value) {
+                                        const arrondSelect = document.getElementById('org_arrondissement_id');
+                                        await loadSelectOptions(
+                                            `{{ url('operator/api/geo/arrondissements') }}/${communeSelect.value}`,
+                                            arrondSelect,
+                                            'Sélectionnez un arrondissement',
+                                            null,
+                                            savedArrond
+                                        );
+
+                                        // 5a. Quartier
+                                        const savedQuartier = fd['org_quartier_id'];
+                                        if (savedQuartier && arrondSelect.value) {
+                                            await loadSelectOptions(
+                                                `{{ url('operator/api/geo/quartiers') }}/${arrondSelect.value}`,
+                                                document.getElementById('org_quartier_id'),
+                                                'Sélectionnez un quartier',
+                                                null,
+                                                savedQuartier
+                                            );
+                                        }
+                                    }
                                 }
                             } else {
-                                console.warn('⚠️ Module Workflow2Phases non trouvé');
+                                // 3b. Canton
+                                const savedCanton = fd['org_canton_id'];
+                                if (savedCanton) {
+                                    const cantonSelect = document.getElementById('org_canton_id');
+                                    await loadSelectOptions(
+                                        `{{ url('operator/api/geo/cantons') }}/${deptSelect.value}`,
+                                        cantonSelect,
+                                        'Sélectionnez un canton',
+                                        null,
+                                        savedCanton
+                                    );
+
+                                    // 4b. Regroupement
+                                    const savedRegroup = fd['org_regroupement_id'];
+                                    if (savedRegroup && cantonSelect.value) {
+                                        const regroupSelect = document.getElementById('org_regroupement_id');
+                                        await loadSelectOptions(
+                                            `{{ url('operator/api/geo/regroupements') }}/${cantonSelect.value}`,
+                                            regroupSelect,
+                                            'Sélectionnez un regroupement',
+                                            null,
+                                            savedRegroup
+                                        );
+
+                                        // 5b. Village
+                                        const savedVillage = fd['org_village_id'];
+                                        if (savedVillage && regroupSelect.value) {
+                                            await loadSelectOptions(
+                                                `{{ url('operator/api/geo/villages') }}/${regroupSelect.value}`,
+                                                document.getElementById('org_village_id'),
+                                                'Sélectionnez un village',
+                                                null,
+                                                savedVillage
+                                            );
+                                        }
+                                    }
+                                }
+                            }
+
+                            console.log('✅ Cascades géolocalisation restaurées');
+                        } catch (err) {
+                            console.error('❌ Erreur restauration géolocalisation:', err);
+                        }
+                    }
+
+                    /**
+                     * Collecter toutes les données du formulaire
+                     */
+                    function collectAllFormData() {
+                        const form = document.getElementById('organisationForm');
+                        if (!form) return;
+
+                        // Collecter tous les inputs, selects et textareas
+                        const elements = form.querySelectorAll('input, select, textarea');
+
+                        elements.forEach(element => {
+                            const name = element.name || element.id;
+                            if (!name) return;
+
+                            if (element.type === 'radio') {
+                                if (element.checked) {
+                                    OrganisationApp.formData[name] = element.value;
+                                }
+                            } else if (element.type === 'checkbox') {
+                                OrganisationApp.formData[name] = element.checked;
+                            } else if (element.type === 'file') {
+                                // Pour les fichiers, on ne peut pas les sauvegarder en localStorage
+                                // On sauvegarde juste l'info qu'un fichier était sélectionné
+                                if (element.files && element.files.length > 0) {
+                                    OrganisationApp.formData[name] = {
+                                        hasFile: true,
+                                        fileName: element.files[0].name,
+                                        fileSize: element.files[0].size
+                                    };
+                                }
+                            } else {
+                                OrganisationApp.formData[name] = element.value;
+                            }
+                        });
+                    }
+
+                    /**
+                     * Restaurer les champs du formulaire
+                     */
+                    function restoreFormFields() {
+                        const form = document.getElementById('organisationForm');
+                        if (!form || !OrganisationApp.formData) return;
+
+                        Object.keys(OrganisationApp.formData).forEach(name => {
+                            const element = form.querySelector(`[name="${name}"], #${name}`);
+                            if (!element) return;
+
+                            const value = OrganisationApp.formData[name];
+
+                            if (element.type === 'radio') {
+                                if (element.value === value) {
+                                    element.checked = true;
+                                }
+                            } else if (element.type === 'checkbox') {
+                                element.checked = !!value;
+                            } else if (element.type === 'file') {
+                                // On ne peut pas restaurer les fichiers, mais on peut indiquer qu'il y en avait
+                                if (value && value.hasFile) {
+                                    const statusElement = document.getElementById(`status_${name.replace('documents[', '').replace(']', '')}`);
+                                    if (statusElement) {
+                                        statusElement.innerHTML = '<i class="fas fa-info me-1 text-info"></i>Fichier précédemment sélectionné (à re-sélectionner)';
+                                    }
+                                }
+                            } else {
+                                element.value = value || '';
+                            }
+                        });
+                    }
+
+                    /**
+                     * Filtrer les données essentielles pour économiser l'espace
+                     */
+                    function filterEssentialFormData(formData) {
+                        const essential = {};
+                        const essentialFields = [
+                            'type_organisation', 'demandeur_nom', 'demandeur_prenom', 'demandeur_nip',
+                            'demandeur_email', 'demandeur_telephone', 'org_nom', 'org_objet',
+                            'org_province', 'org_adresse_complete'
+                        ];
+
+                        essentialFields.forEach(field => {
+                            if (formData[field]) {
+                                essential[field] = formData[field];
                             }
                         });
 
-                        // Fonction submitPhase1 globale
-                        window.submitPhase1 = function () {
-                            console.log('🚀 submitPhase1() appelée');
+                        return essential;
+                    }
 
-                            if (window.Workflow2Phases) {
-                                try {
-                                    return window.Workflow2Phases.submitPhase1();
-                                } catch (error) {
-                                    console.error('❌ Erreur submitPhase1:', error);
-                                    showNotification('Erreur lors de la soumission Phase 1: ' + error.message, 'error');
-                                }
-                            } else {
-                                console.error('❌ Workflow2Phases non disponible pour submitPhase1');
+                    /**
+                     * Nettoyer le cache
+                     */
+                    function clearCache() {
+                        try {
+                            localStorage.removeItem(OrganisationApp.cacheConfig.keyPrefix + 'data');
+                            console.log('🗑️ Cache nettoyé');
+                            updateSaveIndicator('cleared');
+                        } catch (error) {
+                            console.error('❌ Erreur nettoyage cache:', error);
+                        }
+                    }
 
-                                // Fallback : utiliser la soumission normale
-                                if (window.submitForm) {
-                                    console.log('🔄 Fallback vers submitForm normale');
-                                    return window.submitForm();
-                                } else {
-                                    showNotification('Erreur: Module workflow 2 phases non chargé', 'error');
+                    /**
+                     * Nettoyer les caches expirés
+                     */
+                    function clearExpiredCache() {
+                        try {
+                            // Nettoyer tous les caches de formulaire expirés
+                            for (let i = 0; i < localStorage.length; i++) {
+                                const key = localStorage.key(i);
+                                if (key && key.startsWith(OrganisationApp.cacheConfig.keyPrefix)) {
+                                    try {
+                                        const data = JSON.parse(localStorage.getItem(key));
+                                        if (data.expiresAt && new Date(data.expiresAt) < new Date()) {
+                                            localStorage.removeItem(key);
+                                            console.log('🗑️ Cache expiré supprimé:', key);
+                                        }
+                                    } catch (e) {
+                                        // Supprimer les caches corrompus
+                                        localStorage.removeItem(key);
+                                    }
                                 }
                             }
+                        } catch (error) {
+                            console.error('❌ Erreur nettoyage caches expirés:', error);
+                        }
+                    }
+
+                    /**
+                     * Mettre à jour l'indicateur de sauvegarde
+                     */
+                    function updateSaveIndicator(status) {
+                        const indicator = document.getElementById('save-indicator');
+                        if (!indicator) return;
+
+                        const now = new Date().toLocaleTimeString();
+
+                        switch (status) {
+                            case 'saving':
+                                indicator.innerHTML = '<i class="fas fa-spinner fa-spin text-info"></i> Sauvegarde...';
+                                break;
+                            case 'saved':
+                                indicator.innerHTML = `<i class="fas fa-check-circle text-success"></i> Sauvegardé automatiquement à ${now}`;
+                                break;
+                            case 'restored':
+                                indicator.innerHTML = `<i class="fas fa-history text-info"></i> Données restaurées à ${now}`;
+                                break;
+                            case 'error':
+                                indicator.innerHTML = '<i class="fas fa-exclamation-triangle text-warning"></i> Erreur de sauvegarde';
+                                break;
+                            case 'cleared':
+                                indicator.innerHTML = '<i class="fas fa-trash text-muted"></i> Cache nettoyé';
+                                break;
+                            default:
+                                indicator.innerHTML = '<i class="fas fa-circle text-muted"></i> En attente';
+                        }
+                    }
+
+                    /**
+                     * Auto-sauvegarde périodique
+                     */
+                    function setupAutoSave() {
+                        // Sauvegarde automatique
+                        setInterval(() => {
+                            if (OrganisationApp.currentStep > 1) {
+                                updateSaveIndicator('saving');
+                                setTimeout(() => {
+                                    saveToCache();
+                                }, 100);
+                            }
+                        }, OrganisationApp.cacheConfig.autoSaveInterval);
+
+                        // Sauvegarde lors de changements importants
+                        document.addEventListener('input', debounce(() => {
+                            if (OrganisationApp.currentStep > 1) {
+                                saveToCache();
+                            }
+                        }, 1000));
+
+                        // Sauvegarde avant fermeture de page
+                        window.addEventListener('beforeunload', (e) => {
+                            saveToCache();
+
+                            // Avertir l'utilisateur s'il y a des données non sauvegardées définitivement
+                            if (OrganisationApp.currentStep > 1 && !OrganisationApp.isSubmitting) {
+                                e.preventDefault();
+                                e.returnValue = 'Vos modifications seront sauvegardées automatiquement, mais le dossier ne sera pas soumis. Continuer ?';
+                                return e.returnValue;
+                            }
+                        });
+                    }
+
+                    /**
+                     * Fonction debounce pour limiter les appels
+                     */
+                    function debounce(func, wait) {
+                        let timeout;
+                        return function executedFunction(...args) {
+                            const later = () => {
+                                clearTimeout(timeout);
+                                func(...args);
+                            };
+                            clearTimeout(timeout);
+                            timeout = setTimeout(later, wait);
                         };
-                    </script>
+                    }
 
-                    <script src="{{ asset('js/unified-config-manager.js') }}"></script>
-                    <script src="{{ asset('js/unified-csrf-manager.js') }}"></script>
-                    <script src="{{ asset('js/csrf-manager.js') }}"></script> <!-- Avec détection -->
-                    <script src="{{ asset('js/workflow-2phases.js') }}"></script>
-                    <script src="{{ asset('js/chunking-import.js') }}"></script>
+                    /**
+                     * Sauvegarder manuellement (bouton)
+                     */
+                    function saveManually() {
+                        updateSaveIndicator('saving');
+                        collectAllFormData();
+                        saveToCache();
+                        showNotification('Données sauvegardées manuellement', 'success');
+                    }
+
+                    /**
+                     * Nettoyer manuellement (bouton)
+                     */
+                    function clearCacheManually() {
+                        if (confirm('Êtes-vous sûr de vouloir supprimer toutes les données sauvegardées ?')) {
+                            clearCache();
+                            showNotification('Cache nettoyé', 'info');
+                        }
+                    }
+
+                    /**
+                     * Vérification de connectivité
+                     */
+                    function checkConnectivity() {
+                        if (!navigator.onLine) {
+                            showNotification('Connexion internet indisponible. Vos données sont sauvegardées localement.', 'warning');
+                        }
+                    }
+
+                    /**
+                     * Initialisation complète de l'application
+                     */
+                    function initApplicationComplete() {
+                        console.log('🚀 Initialisation complète OrganisationApp v2.0 (8 étapes)');
+
+                        // Nettoyer les caches expirés au démarrage
+                        clearExpiredCache();
+
+                        // Essayer de charger depuis le cache
+                        const cacheLoaded = loadFromCache();
+
+                        if (!cacheLoaded) {
+                            // Initialiser l'affichage par défaut
+                            updateStepDisplay();
+                            updateNavigationButtons();
+                        }
+
+                        // Initialiser les cartes de type
+                        initOrganizationTypeCards();
+
+                        // Événements des boutons fondateurs
+                        const addFondateurBtn = document.getElementById('addFondateurBtn');
+                        if (addFondateurBtn) {
+                            addFondateurBtn.addEventListener('click', addFondateur);
+                        }
+
+                        // Événement pour ajouter un membre du bureau
+                        const addMembreBureauBtn = document.getElementById('addMembreBureauBtn');
+                        if (addMembreBureauBtn) {
+                            addMembreBureauBtn.addEventListener('click', addMembreBureau);
+                        }
+
+                        // Événements géolocalisation
+                        const getLocationBtn = document.getElementById('getLocationBtn');
+                        if (getLocationBtn) {
+                            getLocationBtn.addEventListener('click', getGeolocation);
+                        }
+
+                        // Événements des provinces/départements
+                        const provinceSelect = document.getElementById('org_province');
+                        if (provinceSelect) {
+                            provinceSelect.addEventListener('change', updateDepartements);
+                        }
+
+                        // Initialiser la gestion zone urbaine/rurale
+                        initZoneToggle();
+
+                        // Validation avancée des champs
+                        validateFieldsAdvanced();
+
+                        // Auto-sauvegarde
+                        setupAutoSave();
+
+                        // Ajouter boutons de gestion cache dans l'interface
+                        addCacheManagementButtons();
+
+                        // Vérification connectivité
+                        window.addEventListener('online', () => showNotification('Connexion rétablie', 'success'));
+                        window.addEventListener('offline', checkConnectivity);
+
+                        console.log('✅ Application initialisée avec succès - Toutes fonctionnalités actives + Cache');
+                    }
+
+                    /**
+                     * Ajouter les boutons de gestion du cache
+                     */
+                    function addCacheManagementButtons() {
+                        const saveIndicator = document.getElementById('save-indicator');
+                        if (saveIndicator && saveIndicator.parentNode) {
+                            const buttonsHtml = `
+                                                                        <div class="btn-group btn-group-sm ms-2" role="group">
+                                                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="saveManually()" title="Sauvegarder maintenant">
+                                                                                <i class="fas fa-save"></i>
+                                                                            </button>
+                                                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearCacheManually()" title="Vider le cache">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    `;
+
+                            // Créer un conteneur pour l'indicateur et les boutons
+                            const container = document.createElement('div');
+                            container.className = 'd-flex align-items-center justify-content-end';
+                            container.innerHTML = `<div id="save-indicator-moved"></div>${buttonsHtml}`;
+
+                            // Déplacer l'indicateur dans le nouveau conteneur
+                            const movedIndicator = container.querySelector('#save-indicator-moved');
+                            movedIndicator.appendChild(saveIndicator);
+
+                            // Remplacer dans le DOM
+                            saveIndicator.parentNode.parentNode.replaceChild(container, saveIndicator.parentNode);
+                        }
+                    }
+
+                    // Initialisation au chargement de la page
+                    document.addEventListener('DOMContentLoaded', initApplicationComplete);
+
+                    // Fonctions globales pour les boutons et événements
+                    window.changeStep = changeStep;
+                    window.removeFondateur = removeFondateur;
+                    window.handleDocumentUpload = handleDocumentUpload;
+                    window.saveManually = saveManually;
+                    window.clearCacheManually = clearCacheManually;
+
+                    // Fonctions utilitaires globales
+                    window.OrganisationUtils = {
+                        showNotification: showNotification,
+                        getOrganizationTypeLabel: getOrganizationTypeLabel,
+                        validateStep: validateStep,
+                        updateStepDisplay: updateStepDisplay,
+                        saveToCache: saveToCache,
+                        loadFromCache: loadFromCache,
+                        clearCache: clearCache
+                    };
+
+                    console.log('📋 Script principal chargé (8 étapes) avec gestion documents et cache complet');
+                </script>
+
+                <!-- Scripts NIP Validation -->
+                <script>
+                    function showNipExample() {
+                        if (window.NipValidation) {
+                            const example = window.NipValidation.generateExample();
+                            const validation = window.NipValidation.validateFormat(example);
+                            const resultDiv = document.getElementById('nipExampleResult');
+
+                            if (validation.valid && validation.extracted_info) {
+                                resultDiv.innerHTML = `
+                                                                            <div class="alert alert-success">
+                                                                                <strong>Exemple généré :</strong> <code>${example}</code><br>
+                                                                                <small>Âge calculé : ${validation.extracted_info.age} ans</small>
+                                                                            </div>
+                                                                        `;
+                            } else {
+                                resultDiv.innerHTML = `
+                                                                            <div class="alert alert-info">
+                                                                                <strong>Exemple généré :</strong> <code>${example}</code>
+                                                                            </div>
+                                                                        `;
+                            }
+                        }
+                    }
+
+                    // Ajouter bouton d'aide NIP dans les champs
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const nipInputs = document.querySelectorAll('input[data-validate="nip"]');
+                        nipInputs.forEach(function (input) {
+                            const container = input.closest('.input-group');
+                            if (container && !container.querySelector('.btn-help-nip')) {
+                                const helpBtn = document.createElement('button');
+                                helpBtn.type = 'button';
+                                helpBtn.className = 'btn btn-outline-info btn-help-nip';
+                                helpBtn.innerHTML = '<i class="fas fa-question-circle"></i>';
+                                helpBtn.title = 'Aide format NIP';
+                                helpBtn.onclick = function () {
+                                    $('#nipHelpModal').modal('show');
+                                };
+
+                                // Ajouter après l'input-group-text existant
+                                const inputGroupText = container.querySelector('.input-group-text');
+                                if (inputGroupText) {
+                                    container.insertBefore(helpBtn, inputGroupText.nextSibling);
+                                } else {
+                                    container.appendChild(helpBtn);
+                                }
+                            }
+                        });
+                    });
+                </script>
+
+                <!-- INTÉGRATION WORKFLOW 2 PHASES -->
+                <script>
+                    // Initialisation du workflow 2 phases
+                    document.addEventListener('DOMContentLoaded', function () {
+                        console.log('🔧 Initialisation workflow 2 phases...');
+
+                        // Vérifier si le module est chargé
+                        if (window.Workflow2Phases) {
+                            try {
+                                const workflow2PhasesInit = window.Workflow2Phases.init();
+                                console.log('✅ Workflow 2 phases initialisé:', workflow2PhasesInit);
+                            } catch (error) {
+                                console.error('❌ Erreur initialisation workflow 2 phases:', error);
+                            }
+                        } else {
+                            console.warn('⚠️ Module Workflow2Phases non trouvé');
+                        }
+                    });
+
+                    // ============================================================
+                    // 🔍 DEBUG SOUMISSION - À CONSULTER DANS LA CONSOLE NAVIGATEUR
+                    // ============================================================
+                    window._debugSubmission = function (label) {
+                        const formEl = document.getElementById('organisationForm');
+                        const formAction = formEl ? formEl.action : 'FORM_NOT_FOUND';
+                        const formMethod = formEl ? formEl.method : 'FORM_NOT_FOUND';
+                        const currentUrl = window.location.href;
+                        const currentOrigin = window.location.origin;
+                        const csrfMeta = document.querySelector('meta[name="csrf-token"]');
+                        const csrfToken = csrfMeta ? csrfMeta.content : 'META_NOT_FOUND';
+
+                        console.group('🔍 DEBUG SOUMISSION - ' + label);
+                        console.log('📍 Page actuelle:', currentUrl);
+                        console.log('🌐 Origin:', currentOrigin);
+                        console.log('📝 Form action (raw HTML):', formEl ? formEl.getAttribute('action') : 'N/A');
+                        console.log('📝 Form action (resolved):', formAction);
+                        console.log('📝 Form method:', formMethod);
+                        console.log('🔑 CSRF token:', csrfToken ? csrfToken.substring(0, 15) + '...' : 'ABSENT');
+                        console.log('🔧 Workflow2Phases chargé:', !!window.Workflow2Phases);
+                        if (window.Workflow2Phases) {
+                            console.log('🔧 W2P config.routes.phase1:', window.Workflow2Phases.config.routes.phase1);
+                        }
+                        console.groupEnd();
+
+                        return { formAction, formMethod, currentOrigin, csrfToken };
+                    };
+
+                    // Fonction submitPhase1 globale — utilise TOUJOURS le workflow Blade
+                    // qui construit le FormData manuellement avec fondateurs + membres bureau
+                    // NE PAS utiliser Workflow2Phases.submitPhase1() car preparePhase1Data()
+                    // ne collecte PAS les fondateurs depuis OrganisationApp.foundateurs
+                    window.submitPhase1 = submitPhase1;
+
+                    // 🔍 Intercepteur global fetch pour debug
+                    (function () {
+                        const originalFetch = window.fetch;
+                        window.fetch = function (url, options) {
+                            if (options && options.method === 'POST' && String(url).includes('organisation')) {
+                                console.group('🔍 FETCH INTERCEPTÉ - POST organisations');
+                                console.log('📡 URL:', url);
+                                console.log('📋 Method:', options.method);
+                                console.log('📋 Headers:', JSON.stringify(options.headers || {}));
+                                console.log('📋 Body type:', options.body ? options.body.constructor.name : 'none');
+                                console.log('📋 Credentials:', options.credentials || 'default');
+                                console.groupEnd();
+                            }
+                            return originalFetch.apply(this, arguments).then(function (response) {
+                                if (String(url).includes('organisation')) {
+                                    console.group('🔍 FETCH RESPONSE - organisations');
+                                    console.log('📡 URL:', response.url);
+                                    console.log('📊 Status:', response.status, response.statusText);
+                                    console.log('📊 Redirected:', response.redirected);
+                                    console.log('📊 Type:', response.type);
+                                    console.groupEnd();
+                                }
+                                return response;
+                            });
+                        };
+                    })();
+                    // 🔍 DEBUG PANEL - Test de route au chargement de la page
+                    document.addEventListener('DOMContentLoaded', function () {
+                        const formEl = document.getElementById('organisationForm');
+                        const rawAction = formEl ? formEl.getAttribute('action') : 'N/A';
+                        const resolvedAction = formEl ? formEl.action : 'N/A';
+
+                        // Créer panneau de debug visible
+                        const debugPanel = document.createElement('div');
+                        debugPanel.id = 'submission-debug-panel';
+                        debugPanel.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#1a1a2e;color:#0f0;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;z-index:99999;max-width:500px;max-height:300px;overflow:auto;border:1px solid #0f0;opacity:0.9;';
+                        debugPanel.innerHTML = '<div style="color:#ff0;font-weight:bold;margin-bottom:6px;">🔍 DEBUG SOUMISSION</div>'
+                            + '<div>📍 Page: ' + window.location.href + '</div>'
+                            + '<div>🌐 Origin: ' + window.location.origin + '</div>'
+                            + '<div>📝 Form action (raw): <span style="color:#ff0">' + rawAction + '</span></div>'
+                            + '<div>📝 Form action (resolved): <span style="color:#ff0">' + resolvedAction + '</span></div>'
+                            + '<div>🔧 Workflow2Phases: <span style="color:' + (window.Workflow2Phases ? '#0f0' : '#f00') + '">' + (window.Workflow2Phases ? 'OUI' : 'NON') + '</span></div>'
+                            + '<div id="debug-route-test" style="color:#ccc;">⏳ Test de route en cours...</div>'
+                            + '<div id="debug-submit-log" style="margin-top:6px;border-top:1px solid #333;padding-top:6px;"></div>'
+                            + '<button onclick="this.parentElement.remove()" style="position:absolute;top:4px;right:8px;background:none;border:none;color:#f00;cursor:pointer;font-size:14px;">✕</button>';
+                        document.body.appendChild(debugPanel);
+
+                        // Test GET vers la route debug (pour vérifier que le serveur est accessible)
+                        fetch('/operator/organisations-debug-test', { method: 'GET' })
+                            .then(function (r) {
+                                document.getElementById('debug-route-test').innerHTML =
+                                    '✅ Route debug test: HTTP ' + r.status;
+                                document.getElementById('debug-route-test').style.color = '#0f0';
+                                return r.text();
+                            })
+                            .then(function (body) {
+                                console.log('🔍 Debug route response:', body);
+                            })
+                            .catch(function (err) {
+                                document.getElementById('debug-route-test').innerHTML =
+                                    '❌ Route debug test ÉCHOUÉ: ' + err.message;
+                                document.getElementById('debug-route-test').style.color = '#f00';
+                            });
+
+                        // Vérifier après chargement de workflow-2phases.js
+                        setTimeout(function () {
+                            const w2pStatus = document.querySelector('#submission-debug-panel div:nth-child(6) span');
+                            if (w2pStatus) {
+                                const loaded = !!window.Workflow2Phases;
+                                w2pStatus.textContent = loaded ? 'OUI' : 'NON';
+                                w2pStatus.style.color = loaded ? '#0f0' : '#f00';
+                                if (loaded && window.Workflow2Phases.config) {
+                                    const el = document.createElement('div');
+                                    el.innerHTML = '🔧 W2P route phase1: <span style="color:#ff0">'
+                                        + window.Workflow2Phases.config.routes.phase1 + '</span>';
+                                    document.getElementById('debug-route-test').after(el);
+                                }
+                            }
+                        }, 2000);
+                    });
+                </script>
+
+                <script src="{{ asset('js/unified-config-manager.js') }}"></script>
+                <script src="{{ asset('js/unified-csrf-manager.js') }}"></script>
+                <script src="{{ asset('js/csrf-manager.js') }}"></script> <!-- Avec détection -->
+                <script src="{{ asset('js/workflow-2phases.js') }}"></script>
+                <script src="{{ asset('js/chunking-import.js') }}"></script>
 
         @endpush

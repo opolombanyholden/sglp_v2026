@@ -16,8 +16,8 @@ class WorkflowStep extends Model
         'code',
         'nom',
         'description',
-        'type_organisation',
-        'type_operation',
+        'organisation_type_id',
+        'operation_type_id',
         'ordre',
         'delai_traitement',
         'is_active',
@@ -49,13 +49,19 @@ class WorkflowStep extends Model
         static::creating(function ($step) {
             // Générer un code unique si non fourni
             if (empty($step->code)) {
-                $step->code = self::generateCode($step->nom, $step->type_organisation, $step->type_operation);
+                $orgCode = $step->organisation_type_id
+                    ? (OrganisationType::find($step->organisation_type_id)->code ?? 'ORG')
+                    : 'ORG';
+                $opCode = $step->operation_type_id
+                    ? (OperationType::find($step->operation_type_id)->code ?? 'OP')
+                    : 'OP';
+                $step->code = self::generateCode($step->nom, $orgCode, $opCode);
             }
 
             // Définir l'ordre si non fourni
             if (empty($step->ordre)) {
-                $maxOrdre = self::where('type_organisation', $step->type_organisation)
-                    ->where('type_operation', $step->type_operation)
+                $maxOrdre = self::where('organisation_type_id', $step->organisation_type_id)
+                    ->where('operation_type_id', $step->operation_type_id)
                     ->max('ordre');
                 $step->ordre = ($maxOrdre ?? 0) + 1;
             }
@@ -123,6 +129,25 @@ class WorkflowStep extends Model
     public function operationType(): BelongsTo
     {
         return $this->belongsTo(OperationType::class, 'operation_type_id');
+    }
+
+    /**
+     * Relation : Entités de validation (many-to-many via workflow_step_entities)
+     */
+    public function entities(): BelongsToMany
+    {
+        return $this->belongsToMany(ValidationEntity::class, 'workflow_step_entities')
+            ->withPivot(['ordre', 'is_optional'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Accesseur : Entité de validation principale (première entité liée)
+     * Compatibilité avec les services qui utilisent $step->validationEntity
+     */
+    public function getValidationEntityAttribute()
+    {
+        return $this->entities->first();
     }
 
     public function validations(): HasMany
@@ -201,8 +226,8 @@ class WorkflowStep extends Model
     public function getNextStep()
     {
         return self::actifs()
-            ->where('type_organisation', $this->type_organisation)
-            ->where('type_operation', $this->type_operation)
+            ->where('organisation_type_id', $this->organisation_type_id)
+            ->where('operation_type_id', $this->operation_type_id)
             ->where('ordre', '>', $this->ordre)
             ->ordered()
             ->first();
@@ -214,8 +239,8 @@ class WorkflowStep extends Model
     public function getPreviousStep()
     {
         return self::actifs()
-            ->where('type_organisation', $this->type_organisation)
-            ->where('type_operation', $this->type_operation)
+            ->where('organisation_type_id', $this->organisation_type_id)
+            ->where('operation_type_id', $this->operation_type_id)
             ->where('ordre', '<', $this->ordre)
             ->orderBy('ordre', 'desc')
             ->first();
@@ -226,13 +251,13 @@ class WorkflowStep extends Model
      */
     public function getIsFirstStepAttribute(): bool
     {
-        $firstStep = self::getFirstStep($this->type_organisation, $this->type_operation);
+        $firstStep = self::getFirstStep($this->organisation_type_id, $this->operation_type_id);
         return $firstStep && $firstStep->id === $this->id;
     }
 
     public function getIsLastStepAttribute(): bool
     {
-        $lastStep = self::getLastStep($this->type_organisation, $this->type_operation);
+        $lastStep = self::getLastStep($this->organisation_type_id, $this->operation_type_id);
         return $lastStep && $lastStep->id === $this->id;
     }
 
@@ -246,8 +271,8 @@ class WorkflowStep extends Model
 
     public function getPositionLabelAttribute(): string
     {
-        $total = self::where('type_organisation', $this->type_organisation)
-            ->where('type_operation', $this->type_operation)
+        $total = self::where('organisation_type_id', $this->organisation_type_id)
+            ->where('operation_type_id', $this->operation_type_id)
             ->where('is_active', true)
             ->count();
 
@@ -294,12 +319,12 @@ class WorkflowStep extends Model
     /**
      * Réordonner les étapes
      */
-    public static function reorder($typeOrganisation, $typeOperation, array $orderedIds): void
+    public static function reorder($orgTypeId, $opTypeId, array $orderedIds): void
     {
         foreach ($orderedIds as $ordre => $id) {
             self::where('id', $id)
-                ->where('type_organisation', $typeOrganisation)
-                ->where('type_operation', $typeOperation)
+                ->where('organisation_type_id', $orgTypeId)
+                ->where('operation_type_id', $opTypeId)
                 ->update(['ordre' => $ordre + 1]);
         }
     }
@@ -427,16 +452,18 @@ class WorkflowStep extends Model
     /**
      * Dupliquer pour un autre type d'organisation
      */
-    public function duplicateFor($typeOrganisation, $typeOperation = null): WorkflowStep
+    public function duplicateFor($orgTypeId, $opTypeId = null): WorkflowStep
     {
         $newStep = $this->replicate();
-        $newStep->type_organisation = $typeOrganisation;
-        
-        if ($typeOperation) {
-            $newStep->type_operation = $typeOperation;
+        $newStep->organisation_type_id = $orgTypeId;
+
+        if ($opTypeId) {
+            $newStep->operation_type_id = $opTypeId;
         }
-        
-        $newStep->code = self::generateCode($this->nom, $typeOrganisation, $newStep->type_operation);
+
+        $orgCode = OrganisationType::find($orgTypeId)->code ?? 'ORG';
+        $opCode = OperationType::find($newStep->operation_type_id)->code ?? 'OP';
+        $newStep->code = self::generateCode($this->nom, $orgCode, $opCode);
         $newStep->save();
 
         // Dupliquer les entités associées

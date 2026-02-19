@@ -281,6 +281,19 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
     /*
     |--------------------------------------------------------------------------
+    | ADHERENTS - Consultation et validation par organisation (Admin)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('organisations/{organisation}/adherents')->name('adherents.')->group(function () {
+        Route::get('/', [DossierController::class, 'organisationAdherents'])->name('index');
+        Route::get('/pending', [DossierController::class, 'adminPendingRegistrations'])->name('pending');
+        Route::get('/{adherent}', [DossierController::class, 'showAdherent'])->name('show');
+        Route::post('/{adherent}/validate', [DossierController::class, 'adminValidateRegistration'])->name('validate');
+        Route::post('/{adherent}/reject', [DossierController::class, 'adminRejectRegistration'])->name('reject');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
     | 📝 PERSONNALISATION DE DOCUMENTS - ROUTES (3 routes)
     |--------------------------------------------------------------------------
     */

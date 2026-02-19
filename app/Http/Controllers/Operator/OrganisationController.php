@@ -750,73 +750,204 @@ class OrganisationController extends Controller
         ]);
 
         try {
+            $totalInserted = 0;
+
+            // Déterminer et normaliser le type d'organisation
+            $type = $request->input('type_organisation', '');
+            $typeMapping = [
+                'association' => 'association',
+                'ong' => 'ong',
+                'parti_politique' => 'parti_politique',
+                'parti' => 'parti_politique',
+                'confession_religieuse' => 'confession_religieuse',
+                'confession' => 'confession_religieuse',
+            ];
+            $type = $typeMapping[$type] ?? $type;
+
             // Limitation par utilisateur
-            $this->checkUserOrganisationLimit($request);
+            $canCreate = $this->checkOrganisationLimits($type);
+            if (!$canCreate['success']) {
+                \Log::warning('❌ Limite organisation atteinte - Standard', $canCreate);
+
+                if ($request->ajax() || $request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $canCreate['message'],
+                        'errors' => ['limite' => $canCreate['message']]
+                    ], 422);
+                }
+
+                return redirect()->back()
+                    ->with('error', $canCreate['message'])
+                    ->withInput();
+            }
 
             // Validation complète
-            $validatedData = $this->validateCompleteOrganisationData($request);
+            try {
+                $validatedData = $this->validateCompleteOrganisationData($request, $type);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                \Log::error('❌ Erreur validation standard', [
+                    'errors' => $e->errors(),
+                    'user_id' => auth()->id(),
+                    'type' => $type,
+                ]);
 
-            \Log::info('Validation réussie v3', [
-                'organisation_data_keys' => array_keys($validatedData['organisation'] ?? []),
+                if ($request->ajax() || $request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Erreurs de validation détectées',
+                        'errors' => $e->errors()
+                    ], 422);
+                }
+
+                throw $e;
+            }
+
+            \Log::info('Validation réussie', [
                 'fondateurs_count' => count($validatedData['fondateurs'] ?? []),
                 'adherents_count' => count($validatedData['adherents'] ?? []),
-                'documents_count' => count($validatedData['documents'] ?? [])
             ]);
 
             DB::beginTransaction();
 
-            // ✅ CRÉATION ORGANISATION
-            $organisation = Organisation::create($validatedData['organisation']);
-            \Log::info('Organisation créée v3', ['organisation_id' => $organisation->id]);
+            // ✅ CRÉATION ORGANISATION (même logique que storePhase1)
+            $organisation = Organisation::create([
+                'user_id' => auth()->id(),
+                'type' => $type,
+                'nom' => $validatedData['org_nom'],
+                'sigle' => $validatedData['org_sigle'] ?? null,
+                'objet' => $validatedData['org_objet'],
+                'siege_social' => $validatedData['org_adresse_complete'],
+                'province' => $validatedData['org_province'],
+                'departement' => $validatedData['org_departement'] ?? null,
+                'prefecture' => $validatedData['org_prefecture'] ?? null,
+                'zone_type' => $validatedData['org_zone_type'],
+                'latitude' => $validatedData['org_latitude'] ?? null,
+                'longitude' => $validatedData['org_longitude'] ?? null,
+                'email' => $validatedData['org_email'] ?? null,
+                'telephone' => $validatedData['org_telephone'],
+                'site_web' => $validatedData['org_site_web'] ?? null,
+                'date_creation' => $validatedData['org_date_creation'],
+                'statut' => 'soumis',
+                'nombre_adherents_min' => $this->getMinAdherents($type)
+            ]);
+            \Log::info('Organisation créée', ['organisation_id' => $organisation->id]);
 
-            // ✅ CRÉATION DOSSIER
-            $dossier = $this->createDossierV3($organisation, $validatedData);
-            \Log::info('Dossier créé v3', ['dossier_id' => $dossier->id, 'donnees_supplementaires_size' => strlen(json_encode($dossier->donnees_supplementaires ?? []))]);
+            // Générer et assigner le numéro de récépissé
+            $numeroRecepisse = $this->generateRecepisseNumber($type);
+            $organisation->update(['numero_recepisse' => $numeroRecepisse]);
 
             // ✅ TRAITEMENT FONDATEURS
             if (!empty($validatedData['fondateurs'])) {
-                $this->processFondateursV3($validatedData['fondateurs'], $organisation, $dossier);
+                $this->createFondateurs($organisation, $validatedData['fondateurs']);
+                \Log::info('Fondateurs créés', ['count' => count($validatedData['fondateurs'])]);
             }
 
-            // ✅ TRAITEMENT ADHÉRENTS avec système d'anomalies v5
-            if (!empty($validatedData['adherents'])) {
-                $this->processAdherentsV5($validatedData['adherents'], $organisation, $dossier);
+            // ✅ TRAITEMENT MEMBRES DU BUREAU
+            if (!empty($validatedData['membresBureau'])) {
+                $this->createMembresBureau($organisation, $validatedData['membresBureau']);
+                \Log::info('Membres bureau créés', ['count' => count($validatedData['membresBureau'])]);
             }
+
+            // ✅ TRAITEMENT ADHÉRENTS avec système d'anomalies
+            if (!empty($validatedData['adherents'])) {
+                $this->createAdherents($organisation, $validatedData['adherents']);
+                $totalInserted = count($validatedData['adherents']);
+                \Log::info('Adhérents créés', ['count' => $totalInserted]);
+            }
+
+            // ✅ CRÉATION DOSSIER
+            $donneesSupplementaires = [
+                'demandeur' => [
+                    'nip' => $validatedData['demandeur_nip'],
+                    'nom' => $validatedData['demandeur_nom'],
+                    'prenom' => $validatedData['demandeur_prenom'],
+                    'email' => $validatedData['demandeur_email'],
+                    'telephone' => $validatedData['demandeur_telephone'],
+                    'role' => $validatedData['demandeur_role'] ?? null
+                ],
+                'guide_lu' => $validatedData['guide_read_confirm'] ?? false,
+                'declarations' => [
+                    'veracite' => $validatedData['declaration_veracite'] ?? false,
+                    'conformite' => $validatedData['declaration_conformite'] ?? false,
+                    'autorisation' => $validatedData['declaration_autorisation'] ?? false
+                ],
+                'phase_creation' => 'complete',
+                'completed_at' => now()->toISOString(),
+            ];
+
+            $donneesSupplementairesCleaned = $this->sanitizeJsonData($donneesSupplementaires);
+
+            $dossier = Dossier::create([
+                'organisation_id' => $organisation->id,
+                'type_operation' => 'creation',
+                'numero_dossier' => $this->generateDossierNumber($type),
+                'statut' => 'soumis',
+                'submitted_at' => now(),
+                'donnees_supplementaires' => json_encode($donneesSupplementairesCleaned, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION)
+            ]);
+            \Log::info('Dossier créé', ['dossier_id' => $dossier->id]);
 
             // ✅ TRAITEMENT DOCUMENTS
-            if (!empty($validatedData['documents'])) {
-                $this->processDocumentsV3($validatedData['documents'], $dossier);
+            if ($request->hasFile('documents')) {
+                $this->handleDocumentUploads($request, $dossier);
             }
 
+            // Initialiser le workflow FIFO
+            $this->workflowService->initializeWorkflow($dossier);
+
             // ✅ GÉNÉRATION QR CODE
-            $qrCode = $this->generateQRCodeV3($dossier);
-            \Log::info('QR Code généré avec succès v3', ['qr_code_id' => $qrCode->id]);
+            $qrCode = null;
+            try {
+                $qrCode = $this->qrCodeService->generateForDossier($dossier);
+                if ($qrCode) {
+                    \Log::info('QR Code généré avec succès', ['qr_code_id' => $qrCode->id]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('⚠️ Erreur QR Code non bloquante', [
+                    'dossier_id' => $dossier->id,
+                    'error' => $e->getMessage()
+                ]);
+                $qrCode = null;
+            }
 
             DB::commit();
-            \Log::info('Transaction validée avec succès v3', [
+            \Log::info('Transaction validée avec succès', [
                 'organisation_id' => $organisation->id,
                 'dossier_id' => $dossier->id,
-                'numero_recepisse' => $dossier->numero_recepisse
+                'numero_recepisse' => $numeroRecepisse,
             ]);
+
+            // Déterminer le mode de soumission
+            $submissionMode = $request->input('submission_mode', 'traditional');
+            $isPhase1 = in_array($submissionMode, ['phase1_only', '2_phases']) || $request->input('_phase') == 1;
 
             // Vérifier le type de requête pour décider du type de réponse
             if ($request->ajax() || $request->expectsJson()) {
                 // Pour les requêtes AJAX : retourner JSON avec instruction de redirection
-                return response()->json([
+                $responseData = [
                     'success' => true,
-                    'message' => 'Adhérents traités avec succès',
+                    'message' => 'Organisation créée avec succès',
+                    'phase' => $isPhase1 ? 1 : 'complete',
                     'data' => [
                         'total_inserted' => $totalInserted,
                         'errors' => [],
-                        'dossier_id' => $dossier->id
+                        'dossier_id' => $dossier->id,
+                        'organisation_id' => $organisation->id,
+                        'numero_recepisse' => $numeroRecepisse,
+                        'next_phase_url' => $isPhase1 ? route('operator.dossiers.adherents-import', $dossier->id) : null,
                     ],
                     'solution' => 'STANDARD',
-                    'redirect_url' => route('operator.dossiers.confirmation', $dossier->id),
+                    'redirect_url' => $isPhase1
+                        ? route('operator.dossiers.adherents-import', $dossier->id)
+                        : route('operator.dossiers.confirmation', $dossier->id),
                     'should_redirect' => true,
-                    'redirect_type' => 'confirmation',
+                    'redirect_type' => $isPhase1 ? 'phase2' : 'confirmation',
                     'auto_redirect' => true,
                     'redirect_delay' => 2000
-                ]);
+                ];
+
+                return response()->json($responseData);
             } else {
                 // Pour les requêtes normales : redirection directe
                 return redirect()
@@ -1236,6 +1367,74 @@ class OrganisationController extends Controller
         // 🔧 EXTRACTION FLEXIBLE DES DONNÉES
         $extractedData = $this->extractFormDataFlexible($request);
 
+        // ✅ NORMALISATION DES NOMS DE CHAMPS (même logique que validateCompleteOrganisationData)
+        // 1. org_adresse → org_adresse_complete
+        if (isset($extractedData['org_adresse']) && !isset($extractedData['org_adresse_complete'])) {
+            $extractedData['org_adresse_complete'] = $extractedData['org_adresse'];
+        }
+
+        // 2. org_province_id → org_province (résoudre le nom depuis l'ID)
+        if (isset($extractedData['org_province_id']) && !isset($extractedData['org_province'])) {
+            $provinceId = $extractedData['org_province_id'];
+            $province = \App\Models\Province::find($provinceId);
+            $extractedData['org_province'] = $province ? $province->nom : ($extractedData['province'] ?? '');
+        }
+        if (empty($extractedData['org_province']) && isset($extractedData['province'])) {
+            $extractedData['org_province'] = $extractedData['province'];
+        }
+
+        // 2b. org_departement_id → org_departement (résoudre le nom depuis l'ID)
+        if (isset($extractedData['org_departement_id']) && !isset($extractedData['org_departement'])) {
+            $departementId = $extractedData['org_departement_id'];
+            $departement = \App\Models\Departement::find($departementId);
+            $extractedData['org_departement'] = $departement ? $departement->nom : '';
+        }
+        if (empty($extractedData['org_departement']) && isset($extractedData['departement'])) {
+            $extractedData['org_departement'] = $extractedData['departement'];
+        }
+
+        // 3. zone_type → org_zone_type
+        if (isset($extractedData['zone_type']) && !isset($extractedData['org_zone_type'])) {
+            $extractedData['org_zone_type'] = $extractedData['zone_type'];
+        }
+        if (empty($extractedData['org_zone_type']) && isset($extractedData['zone_type_radio'])) {
+            $extractedData['org_zone_type'] = $extractedData['zone_type_radio'];
+        }
+
+        // 4. Normalisation checkboxes : "true"/"false" (string) → "1"/"0"
+        $checkboxFields = [
+            'declaration_veracite', 'declaration_conformite', 'declaration_autorisation',
+            'declaration_exclusivite_parti', 'guide_read_confirm',
+        ];
+        foreach ($checkboxFields as $field) {
+            if (isset($extractedData[$field])) {
+                $val = $extractedData[$field];
+                if ($val === 'true' || $val === true || $val === 'on') {
+                    $extractedData[$field] = '1';
+                }
+            }
+        }
+
+        // 5. Fondateurs : s'assurer que c'est un array depuis la request si non extrait
+        if (empty($extractedData['fondateurs']) || !is_array($extractedData['fondateurs'])) {
+            $fondateursFromRequest = $request->input('fondateurs', []);
+            if (is_string($fondateursFromRequest)) {
+                $decoded = json_decode($fondateursFromRequest, true);
+                $fondateursFromRequest = (json_last_error() === JSON_ERROR_NONE) ? $decoded : [];
+            }
+            if (!empty($fondateursFromRequest) && is_array($fondateursFromRequest)) {
+                $extractedData['fondateurs'] = $fondateursFromRequest;
+            }
+        }
+
+        \Log::info('🔍 Données après normalisation Phase 1', [
+            'has_org_adresse_complete' => isset($extractedData['org_adresse_complete']),
+            'has_org_province' => isset($extractedData['org_province']),
+            'org_province_value' => $extractedData['org_province'] ?? 'ABSENT',
+            'has_org_zone_type' => isset($extractedData['org_zone_type']),
+            'fondateurs_count' => is_array($extractedData['fondateurs'] ?? null) ? count($extractedData['fondateurs']) : 0,
+        ]);
+
         // 🔧 RÈGLES DE VALIDATION PHASE 1 ADAPTATIVES
         $rules = [
             // Type déjà validé plus haut
@@ -1244,7 +1443,7 @@ class OrganisationController extends Controller
             'org_telephone' => 'required|string|max:255',
             'org_adresse_complete' => 'required|string|max:255',
             'org_province' => 'required|string|max:255',
-            'org_prefecture' => 'required|string|max:255',
+            'org_prefecture' => 'nullable|string|max:255',
             'org_zone_type' => 'required|in:urbaine,rurale',
 
             // Demandeur - NOUVEAU FORMAT NIP
@@ -1418,12 +1617,12 @@ class OrganisationController extends Controller
             'demandeur_prenom' => 'required|string|max:255',
             'demandeur_email' => 'required|email|max:255',
             'demandeur_telephone' => 'required|string|max:20',
-            'demandeur_role' => 'sometimes|string',
-            'demandeur_civilite' => 'sometimes|in:M,Mme,Mlle',
-            'demandeur_date_naissance' => 'sometimes|date|before:-18 years',
-            'demandeur_nationalite' => 'sometimes|string|max:255',
-            'demandeur_adresse' => 'sometimes|string|max:500',
-            'demandeur_profession' => 'sometimes|string|max:255',
+            'demandeur_role' => 'nullable|string|max:255',
+            'demandeur_civilite' => 'nullable|in:M,Mme,Mlle',
+            'demandeur_date_naissance' => 'nullable|date|before:-18 years',
+            'demandeur_nationalite' => 'nullable|string|max:255',
+            'demandeur_adresse' => 'nullable|string|max:500',
+            'demandeur_profession' => 'nullable|string|max:255',
 
             // ÉTAPE 4 : Organisation - COLONNES CONFORMES À ORGANISATIONS TABLE
             'org_nom' => 'required|string|max:255|unique:organisations,nom',
@@ -1433,13 +1632,13 @@ class OrganisationController extends Controller
             'org_telephone' => 'required|string|max:255',
             'org_email' => 'nullable|email|max:255',
             'org_site_web' => 'nullable|url|max:255',
-            'org_domaine' => 'sometimes|string|max:255',
+            'org_domaine' => 'nullable|string|max:255',
 
             // ÉTAPE 5 : Coordonnées - COLONNES CONFORMES À ORGANISATIONS TABLE
             'org_adresse_complete' => 'required|string|max:255',
             'org_province' => 'required|string|max:255',
             'org_departement' => 'nullable|string|max:255',
-            'org_prefecture' => 'required|string|max:255',
+            'org_prefecture' => 'nullable|string|max:255',
             'org_zone_type' => 'required|in:urbaine,rurale',
             'org_latitude' => 'nullable|numeric|between:-3.978,2.318',
             'org_longitude' => 'nullable|numeric|between:8.695,14.502',
@@ -2244,12 +2443,139 @@ class OrganisationController extends Controller
      */
     private function validateCompleteOrganisationData(Request $request, $type)
     {
-        // Log des données reçues pour debugging
-        \Log::info('Validation DB v5 - Règle métier NIP appliquée', [
-            'keys' => array_keys($request->all()),
-            'type' => $type,
-            'regle_metier' => 'Enregistrement de tous les adhérents avec détection anomalies',
-            'version' => 'conforme_PNGDI_v5'
+        // ✅ NORMALISATION DES NOMS DE CHAMPS (formulaire → validation)
+        // Le formulaire Blade envoie des noms différents de ceux attendus par la validation
+        $mergeData = [];
+
+        // 1. org_adresse → org_adresse_complete
+        if ($request->has('org_adresse') && !$request->has('org_adresse_complete')) {
+            $mergeData['org_adresse_complete'] = $request->input('org_adresse');
+        }
+
+        // 2. org_province_id → org_province (résoudre le nom depuis l'ID)
+        if ($request->has('org_province_id') && !$request->has('org_province')) {
+            $provinceId = $request->input('org_province_id');
+            $province = \App\Models\Province::find($provinceId);
+            $mergeData['org_province'] = $province ? $province->nom : $request->input('province', '');
+        }
+        // Fallback: utiliser le champ caché "province" (nom) si disponible
+        if (empty($mergeData['org_province']) && $request->has('province') && !$request->has('org_province')) {
+            $mergeData['org_province'] = $request->input('province');
+        }
+
+        // 2b. org_departement_id → org_departement (résoudre le nom depuis l'ID)
+        if ($request->has('org_departement_id') && !$request->has('org_departement')) {
+            $departementId = $request->input('org_departement_id');
+            $departement = \App\Models\Departement::find($departementId);
+            $mergeData['org_departement'] = $departement ? $departement->nom : '';
+        }
+        // Fallback: utiliser le champ caché "departement" (nom) si disponible
+        if (empty($mergeData['org_departement']) && $request->has('departement') && !$request->has('org_departement')) {
+            $mergeData['org_departement'] = $request->input('departement');
+        }
+
+        // 3. zone_type → org_zone_type
+        if ($request->has('zone_type') && !$request->has('org_zone_type')) {
+            $mergeData['org_zone_type'] = $request->input('zone_type');
+        }
+        // Fallback: zone_type_radio
+        if (empty($mergeData['org_zone_type']) && $request->has('zone_type_radio') && !$request->has('org_zone_type')) {
+            $mergeData['org_zone_type'] = $request->input('zone_type_radio');
+        }
+
+        // 4. Normalisation des checkboxes : JS envoie "true"/"false" (string) via FormData
+        // Laravel 'accepted' attend : "yes", "on", 1, "1", true (boolean)
+        // "true" (string) n'est PAS accepté → convertir en "1"
+        $checkboxFields = [
+            'declaration_veracite',
+            'declaration_conformite',
+            'declaration_autorisation',
+            'declaration_exclusivite_parti',
+            'guide_read_confirm',
+        ];
+        foreach ($checkboxFields as $field) {
+            $val = $request->input($field);
+            if ($val === 'true' || $val === true || $val === 'on' || $val === '1' || $val === 1) {
+                $mergeData[$field] = '1';
+            } elseif ($val === 'false' || $val === false || $val === '0' || $val === 0) {
+                // Ne pas merger : laisser absent pour que 'sometimes' passe
+            }
+        }
+
+        // 5. Fondateurs : s'assurer qu'un tableau vide existe si aucun fondateur envoyé
+        $fondateurs = $request->input('fondateurs');
+        if (is_null($fondateurs) && !$request->has('fondateurs')) {
+            // Le champ est totalement absent - ne rien faire, la validation 'required' signalera l'erreur
+            \Log::warning('⚠️ Aucun fondateur reçu dans la requête');
+        } elseif (is_string($fondateurs)) {
+            // Si envoyé comme JSON string, décoder
+            $decoded = json_decode($fondateurs, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $mergeData['fondateurs'] = $decoded;
+            }
+        }
+
+        if (!empty($mergeData)) {
+            $request->merge($mergeData);
+            \Log::info('✅ Normalisation champs formulaire → validation', [
+                'merged_fields' => array_keys($mergeData),
+                'merged_values_summary' => collect($mergeData)->map(function($v) {
+                    return is_array($v) ? '[array:' . count($v) . ']' : $v;
+                })->toArray()
+            ]);
+        }
+
+        // ═══════════════════════════════════════════════════════════════
+        // 🔍 TEST PAR ÉLIMINATION — Vérification bloc par bloc
+        // ═══════════════════════════════════════════════════════════════
+        \Log::info('🔍 TEST ÉLIMINATION — Données reçues par bloc', [
+            'ONGLET_1_TYPE' => [
+                'type_organisation' => $request->input('type_organisation'),
+            ],
+            'ONGLET_2_GUIDE' => [
+                'guide_read_confirm' => $request->input('guide_read_confirm'),
+            ],
+            'ONGLET_3_DEMANDEUR' => [
+                'demandeur_nip' => $request->input('demandeur_nip'),
+                'demandeur_nom' => $request->input('demandeur_nom'),
+                'demandeur_prenom' => $request->input('demandeur_prenom'),
+                'demandeur_email' => $request->input('demandeur_email'),
+                'demandeur_telephone' => $request->input('demandeur_telephone'),
+            ],
+            'ONGLET_4_ORGANISATION' => [
+                'org_nom' => $request->input('org_nom'),
+                'org_sigle' => $request->input('org_sigle'),
+                'org_objet' => substr($request->input('org_objet', ''), 0, 50) . '...',
+                'org_date_creation' => $request->input('org_date_creation'),
+                'org_telephone' => $request->input('org_telephone'),
+            ],
+            'ONGLET_5_LOCALISATION' => [
+                'org_adresse_complete' => $request->input('org_adresse_complete'),
+                'org_province' => $request->input('org_province'),
+                'org_departement' => $request->input('org_departement'),
+                'org_zone_type' => $request->input('org_zone_type'),
+                'BRUT_org_adresse' => $request->input('org_adresse'),
+                'BRUT_org_province_id' => $request->input('org_province_id'),
+                'BRUT_zone_type' => $request->input('zone_type'),
+                'BRUT_province_hidden' => $request->input('province'),
+            ],
+            'ONGLET_6_FONDATEURS' => [
+                'fondateurs_present' => $request->has('fondateurs'),
+                'fondateurs_type' => gettype($request->input('fondateurs')),
+                'fondateurs_count' => is_array($request->input('fondateurs')) ? count($request->input('fondateurs')) : 'N/A',
+                'fondateurs_sample' => is_array($request->input('fondateurs')) ? array_keys($request->input('fondateurs')[0] ?? []) : 'ABSENT',
+            ],
+            'ONGLET_7_DOCUMENTS' => [
+                'has_files' => $request->hasFile('documents'),
+            ],
+            'ONGLET_8_DECLARATIONS' => [
+                'declaration_veracite' => $request->input('declaration_veracite'),
+                'declaration_conformite' => $request->input('declaration_conformite'),
+                'declaration_autorisation' => $request->input('declaration_autorisation'),
+                'declaration_exclusivite_parti' => $request->input('declaration_exclusivite_parti'),
+                'submission_mode' => $request->input('submission_mode'),
+                '_phase' => $request->input('_phase'),
+            ],
         ]);
 
         $rules = [
@@ -2274,12 +2600,12 @@ class OrganisationController extends Controller
             'demandeur_prenom' => 'required|string|max:255',
             'demandeur_email' => 'required|email|max:255',
             'demandeur_telephone' => 'required|string|max:20',
-            'demandeur_role' => 'sometimes|string',
-            'demandeur_civilite' => 'sometimes|in:M,Mme,Mlle',
-            'demandeur_date_naissance' => 'sometimes|date|before:-18 years',
-            'demandeur_nationalite' => 'sometimes|string|max:255',
-            'demandeur_adresse' => 'sometimes|string|max:500',
-            'demandeur_profession' => 'sometimes|string|max:255',
+            'demandeur_role' => 'nullable|string|max:255',
+            'demandeur_civilite' => 'nullable|in:M,Mme,Mlle',
+            'demandeur_date_naissance' => 'nullable|date|before:-18 years',
+            'demandeur_nationalite' => 'nullable|string|max:255',
+            'demandeur_adresse' => 'nullable|string|max:500',
+            'demandeur_profession' => 'nullable|string|max:255',
 
             // ÉTAPE 4 : Organisation - COLONNES CONFORMES À ORGANISATIONS TABLE
             'org_nom' => 'required|string|max:255|unique:organisations,nom',
@@ -2289,13 +2615,13 @@ class OrganisationController extends Controller
             'org_telephone' => 'required|string|max:255',
             'org_email' => 'nullable|email|max:255',
             'org_site_web' => 'nullable|url|max:255',
-            'org_domaine' => 'sometimes|string|max:255',
+            'org_domaine' => 'nullable|string|max:255',
 
             // ÉTAPE 5 : Coordonnées - COLONNES CONFORMES À ORGANISATIONS TABLE
             'org_adresse_complete' => 'required|string|max:255',
             'org_province' => 'required|string|max:255',
             'org_departement' => 'nullable|string|max:255',
-            'org_prefecture' => 'required|string|max:255',
+            'org_prefecture' => 'nullable|string|max:255',
             'org_zone_type' => 'required|in:urbaine,rurale',
             'org_latitude' => 'nullable|numeric|between:-3.978,2.318',
             'org_longitude' => 'nullable|numeric|between:8.695,14.502',
@@ -2337,11 +2663,11 @@ class OrganisationController extends Controller
                         // ✅ VALIDATION NOUVEAU FORMAT NIP
                         if (empty($fondateur['nip'])) {
                             $fail("Le NIP du fondateur ligne " . ($index + 1) . " ne peut pas être vide.");
-                        } else// ✅ REMPLACER PAR:
-                            if (!empty($adherent['nip']) && !$this->validateNipFormat($adherent['nip'])) {
+                        } else
+                            if (!empty($fondateur['nip']) && !$this->validateNipFormat($fondateur['nip'])) {
                                 \Log::info('NIP invalide détecté (sera enregistré comme anomalie)', [
                                     'ligne' => $index + 1,
-                                    'nip' => $adherent['nip'],
+                                    'nip' => $fondateur['nip'],
                                     'sera_traite_comme' => 'anomalie_majeure'
                                 ]);
                             }
@@ -2471,7 +2797,7 @@ class OrganisationController extends Controller
 
         // Règles spécifiques pour parti politique
         if ($type === 'parti_politique') {
-            $rules['declaration_exclusivite_parti'] = 'required|accepted';
+            $rules['declaration_exclusivite_parti'] = 'sometimes|accepted';
             $rules['adherents'][] = function ($attribute, $value, $fail) {
                 if (is_array($value) && count($value) < 2) {
                     $fail("Un parti politique doit avoir au minimum 50 adhérents.");
@@ -2865,47 +3191,29 @@ class OrganisationController extends Controller
     }
 
     /**
-     * Obtenir le nombre minimum de fondateurs requis
+     * Obtenir le nombre minimum de fondateurs requis — depuis la BD (organisation_types)
      */
     private function getMinFondateurs($type)
     {
-        switch ($type) {
-            case 'parti_politique':
-                return 3;
-            case 'association':
-                return 2;
-            case 'confession_religieuse':
-                return 2;
-            case 'ong':
-                return 2;
-            default:
-                return 2;
+        $orgType = \App\Models\OrganisationType::where('code', $type)->first();
+        if ($orgType) {
+            return $orgType->nb_min_fondateurs_majeurs;
         }
+        // Fallback si type non trouvé en BD
+        return 2;
     }
 
     /**
-     * Obtenir le nombre minimum d'adhérents requis
+     * Obtenir le nombre minimum d'adhérents requis — depuis la BD (organisation_types)
      */
     private function getMinAdherents($type)
     {
-        \Log::info('🔧 MINIMUM ADHÉRENTS TEMPORAIRE', [
-            'type' => $type,
-            'minimum_applique' => $type === 'parti_politique' ? 2 : 'standard',
-            'note' => 'Configuration temporaire pour validation Phase 2'
-        ]);
-
-        switch ($type) {
-            case 'parti_politique':
-                return 50;
-            case 'association':
-                return 7;
-            case 'confession_religieuse':
-                return 100;
-            case 'ong':
-                return 10;
-            default:
-                return 7;
+        $orgType = \App\Models\OrganisationType::where('code', $type)->first();
+        if ($orgType) {
+            return $orgType->nb_min_adherents_creation;
         }
+        // Fallback si type non trouvé en BD
+        return 10;
     }
 
     /**
@@ -3288,6 +3596,17 @@ class OrganisationController extends Controller
     {
         $uploadedFiles = [];
 
+        // Format 1 : documents[{docTypeId}] (envoyé par le JS du formulaire de création)
+        if ($request->hasFile('documents')) {
+            $documents = $request->file('documents');
+            foreach ($documents as $docTypeId => $file) {
+                if ($file instanceof \Illuminate\Http\UploadedFile && $file->isValid()) {
+                    $uploadedFiles[] = $this->processDocumentUpload($file, $dossier, $docTypeId);
+                }
+            }
+        }
+
+        // Format 2 : document_{type} (ancien format, rétro-compatibilité)
         foreach ($request->allFiles() as $fieldName => $files) {
             if (strpos($fieldName, 'document_') === 0) {
                 $documentType = str_replace('document_', '', $fieldName);
@@ -3297,37 +3616,47 @@ class OrganisationController extends Controller
                 }
 
                 foreach ($files as $file) {
-                    $timestamp = time();
-                    $filename = $timestamp . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
-
-                    $path = $file->storeAs('documents/organisations', $filename, 'public');
-                    $hashFichier = hash_file('sha256', $file->getPathname());
-
-                    \App\Models\Document::create([
-                        'dossier_id' => $dossier->id,
-                        'document_type_id' => $this->getDocumentTypeId($documentType),
-                        'nom_fichier' => $filename,
-                        'nom_original' => $file->getClientOriginalName(),
-                        'chemin_fichier' => $path,
-                        'type_mime' => $file->getMimeType(),
-                        'taille' => $file->getSize(),
-                        'hash_fichier' => $hashFichier,
-                        'uploaded_by' => auth()->id(),
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-
-                    $uploadedFiles[] = [
-                        'nom_fichier' => $filename,
-                        'nom_original' => $file->getClientOriginalName(),
-                        'chemin' => $path,
-                        'type' => $documentType
-                    ];
+                    if ($file instanceof \Illuminate\Http\UploadedFile && $file->isValid()) {
+                        $uploadedFiles[] = $this->processDocumentUpload($file, $dossier, $documentType);
+                    }
                 }
             }
         }
 
         return $uploadedFiles;
+    }
+
+    /**
+     * Traiter l'upload d'un document individuel
+     */
+    private function processDocumentUpload(\Illuminate\Http\UploadedFile $file, Dossier $dossier, $documentType): array
+    {
+        $timestamp = time();
+        $filename = $timestamp . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
+
+        $path = $file->storeAs('documents/organisations', $filename, 'public');
+        $hashFichier = hash_file('sha256', $file->getPathname());
+
+        \App\Models\Document::create([
+            'dossier_id' => $dossier->id,
+            'document_type_id' => $this->getDocumentTypeId($documentType),
+            'nom_fichier' => $filename,
+            'nom_original' => $file->getClientOriginalName(),
+            'chemin_fichier' => $path,
+            'type_mime' => $file->getMimeType(),
+            'taille' => $file->getSize(),
+            'hash_fichier' => $hashFichier,
+            'uploaded_by' => auth()->id(),
+            'created_at' => now(),
+            'updated_at' => now()
+        ]);
+
+        return [
+            'nom_fichier' => $filename,
+            'nom_original' => $file->getClientOriginalName(),
+            'chemin' => $path,
+            'type' => $documentType
+        ];
     }
 
     /**
@@ -4189,32 +4518,6 @@ class OrganisationController extends Controller
         }
     }
 
-    /**
-     * ✅ NOUVELLE MÉTHODE : Créer dossier pour organisation
-     */
-    private function createDossierForOrganisation(Organisation $organisation, array $validatedData)
-    {
-        // Réutiliser la logique existante de createDossierV3
-        return $this->createDossierV3($organisation, $validatedData);
-    }
-
-    /**
-     * ✅ NOUVELLE MÉTHODE : Traiter fondateurs
-     */
-    private function processFondateurs(array $fondateurs, Organisation $organisation, Dossier $dossier)
-    {
-        // Réutiliser la logique existante
-        return $this->processFondateursV3($fondateurs, $organisation, $dossier);
-    }
-
-    /**
-     * ✅ NOUVELLE MÉTHODE : Traiter documents
-     */
-    private function processDocuments(array $documents, Dossier $dossier)
-    {
-        // Réutiliser la logique existante
-        return $this->processDocumentsV3($documents, $dossier);
-    }
 
 
     /**

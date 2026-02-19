@@ -318,6 +318,11 @@
                                                         <div>
                                                             <h6 class="mb-1">{{ $agent->name }}</h6>
                                                             <small class="text-muted">{{ $agent->email }}</small>
+                                                            @if(!$agent->email_verified_at)
+                                                                <span class="badge bg-warning text-dark ms-1" title="Email non vérifié">
+                                                                    <i class="fas fa-exclamation-triangle fa-xs"></i> Non vérifié
+                                                                </span>
+                                                            @endif
                                                             @if($agent->nip)
                                                                 <br><small class="text-info">NIP: {{ $agent->nip }}</small>
                                                             @endif
@@ -409,7 +414,7 @@
                                                                 @if(!$agent->email_verified_at)
                                                                     <li><a class="dropdown-item text-success" href="#"
                                                                             onclick="activerCompte({{ $agent->id }})">
-                                                                            <i class="fas fa-user-check me-2"></i>Activer le compte
+                                                                            <i class="fas fa-envelope-check me-2"></i>Valider l'adresse email
                                                                         </a></li>
                                                                 @endif
                                                                 <li>
@@ -1002,12 +1007,12 @@
         function voirStatistiques(agentId) { console.log('Voir stats:', agentId); }
         function supprimerAgent(agentId) { console.log('Supprimer agent:', agentId); }
         
-        // Activer le compte (forcer la vérification email)
+        // Valider l'adresse email de l'utilisateur
         function activerCompte(userId) {
-            if (!confirm('Voulez-vous vraiment activer ce compte ? L\'utilisateur pourra se connecter immédiatement.')) {
+            if (!confirm('Voulez-vous valider l\'adresse email de cet utilisateur ? Il pourra se connecter sans avoir à vérifier son email.')) {
                 return;
             }
-            
+
             fetch(`/admin/users/${userId}/force-verify-email`, {
                 method: 'POST',
                 headers: {
@@ -1018,15 +1023,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(data.message || 'Compte activé avec succès');
+                    alert(data.message || 'Adresse email validée avec succès');
                     setTimeout(() => window.location.reload(), 1000);
                 } else {
-                    alert(data.message || 'Erreur lors de l\'activation');
+                    alert(data.message || 'Erreur lors de la validation');
                 }
             })
             .catch(error => {
                 console.error('Erreur:', error);
-                alert('Erreur lors de l\'activation du compte');
+                alert('Erreur lors de la validation de l\'email');
             });
         }
     </script>

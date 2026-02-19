@@ -261,6 +261,34 @@ class Organisation extends Model
             ->where('is_active', true);
     }
 
+    /**
+     * Relation : Liens d'inscription publique
+     */
+    public function inscriptionLinks(): HasMany
+    {
+        return $this->hasMany(InscriptionLink::class);
+    }
+
+    /**
+     * Relation : Lien d'inscription actif (le plus récent)
+     */
+    public function activeInscriptionLink()
+    {
+        return $this->hasOne(InscriptionLink::class)
+            ->where('is_active', true)
+            ->latest();
+    }
+
+    /**
+     * Adhérents en attente de validation (auto-inscription)
+     */
+    public function adherentsEnAttenteValidation(): HasMany
+    {
+        return $this->hasMany(Adherent::class)
+            ->where('source_inscription', 'auto_inscription')
+            ->where('statut_inscription', 'en_attente_validation');
+    }
+
     public function personnes()
     {
         // Retourner une collection fusionnant fondateurs et adhérents

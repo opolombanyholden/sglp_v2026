@@ -31,7 +31,8 @@ class Adherent extends Model
         'email',
         'profession',
         'fonction',
-        
+        'motif_adhesion',
+
         // Adresse complète
         'adresse_complete',
         'province',
@@ -65,7 +66,18 @@ class Adherent extends Model
         'has_anomalies',
         'anomalies_data',
         'anomalies_severity',
-        
+        'statut_validation',
+        'appartenance_multiple',
+        'organisations_precedentes',
+
+        // Auto-inscription
+        'inscription_link_id',
+        'source_inscription',
+        'statut_inscription',
+        'validee_par',
+        'validee_le',
+        'motif_rejet_inscription',
+
         // Historique
         'historique'
     ];
@@ -82,6 +94,7 @@ class Adherent extends Model
         'has_anomalies' => 'boolean',
         'anomalies_data' => 'array',
         'historique' => 'array',
+        'validee_le' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -159,9 +172,12 @@ class Adherent extends Model
             
             // Initialiser l'historique si vide
             if (empty($adherent->historique)) {
+                $source = $adherent->source_inscription === 'auto_inscription'
+                    ? 'auto_inscription'
+                    : 'creation_manuelle';
                 $adherent->historique = [
                     'creation' => now()->toISOString(),
-                    'source' => 'creation_manuelle',
+                    'source' => $source,
                     'events' => []
                 ];
             }
@@ -296,6 +312,71 @@ class Adherent extends Model
             $this->anomalies_data = null;
             $this->anomalies_severity = null;
             $this->is_active = true;
+        }
+    }
+
+    /**
+     * Synchroniser la table adherent_anomalies pour CET adhérent uniquement.
+     * Compare par (champ_concerne + message_anomalie) :
+     *  - anomalie en table mais plus détectée → marquée resolu
+     *  - anomalie détectée mais absente en table → créée
+     *  - anomalie identique déjà en table → inchangée
+     */
+    public function syncAnomaliesTable(): void
+    {
+        try {
+            $mapping = \App\Models\AdherentAnomalie::ANOMALIE_CHAMP_MAPPING;
+
+            // Construire la liste des anomalies actuelles sous forme de paires (champ, message)
+            $anomaliesActuelles = [];
+            if ($this->has_anomalies && !empty($this->anomalies_data)) {
+                foreach ($this->anomalies_data as $a) {
+                    $champ = $mapping[$a['code']] ?? 'general';
+                    $anomaliesActuelles[] = [
+                        'champ'   => $champ,
+                        'message' => $a['message'],
+                        'data'    => $a, // garder pour création éventuelle
+                    ];
+                }
+            }
+
+            // Récupérer les anomalies ouvertes en table pour cet adhérent
+            $enTable = \App\Models\AdherentAnomalie::where('adherent_id', $this->id)
+                ->whereIn('statut', ['detectee', 'en_attente'])
+                ->get();
+
+            // 1. Résoudre celles qui ne sont plus détectées
+            foreach ($enTable as $row) {
+                $encorePresente = collect($anomaliesActuelles)->contains(function ($a) use ($row) {
+                    return $a['champ'] === $row->champ_concerne && $a['message'] === $row->message_anomalie;
+                });
+
+                if (!$encorePresente) {
+                    $row->update([
+                        'statut'                => 'resolu',
+                        'valeur_corrigee'       => 'Corrigé par l\'opérateur',
+                        'commentaire_correction' => 'Résolu après mise à jour des informations',
+                        'corrige_par'           => \Illuminate\Support\Facades\Auth::id(),
+                        'date_correction'       => now(),
+                    ]);
+                }
+            }
+
+            // 2. Créer celles qui sont nouvellement détectées
+            foreach ($anomaliesActuelles as $actuelle) {
+                $existeEnTable = $enTable->contains(function ($row) use ($actuelle) {
+                    return $row->champ_concerne === $actuelle['champ'] && $row->message_anomalie === $actuelle['message'];
+                });
+
+                if (!$existeEnTable) {
+                    \App\Models\AdherentAnomalie::createFromAdherentData($this, $actuelle['data'], 0);
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Erreur synchronisation anomalies', [
+                'adherent_id' => $this->id,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 
@@ -857,6 +938,38 @@ class Adherent extends Model
     }
 
     /**
+     * Exclure un adhérent
+     */
+    public function exclude(string $motif, $dateExclusion = null, ?string $documentPath = null): void
+    {
+        $this->is_active = false;
+        $this->date_exclusion = $dateExclusion ?? now();
+        $this->motif_exclusion = $motif;
+        $this->save();
+
+        $this->addToHistorique('exclusion', [
+            'motif' => $motif,
+            'date_exclusion' => $this->date_exclusion->toDateString(),
+            'document' => $documentPath,
+        ]);
+    }
+
+    /**
+     * Réactiver un adhérent précédemment exclu ou désactivé
+     */
+    public function reactivate(string $motif): void
+    {
+        $this->is_active = true;
+        $this->date_exclusion = null;
+        $this->motif_exclusion = null;
+        $this->save();
+
+        $this->addToHistorique('reactivation', [
+            'motif' => $motif,
+        ]);
+    }
+
+    /**
      * ✅ RELATIONS
      */
     public function organisation(): BelongsTo
@@ -890,6 +1003,46 @@ class Adherent extends Model
     public function anomalies(): HasMany
     {
         return $this->hasMany(AdherentAnomalie::class);
+    }
+
+    /**
+     * ✅ RELATION - Lien d'inscription (auto-inscription publique)
+     */
+    public function inscriptionLink(): BelongsTo
+    {
+        return $this->belongsTo(InscriptionLink::class);
+    }
+
+    /**
+     * ✅ RELATION - Validé par (utilisateur ayant confirmé l'inscription)
+     */
+    public function validateurInscription(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'validee_par');
+    }
+
+    // =========================================================================
+    // SCOPES - Auto-inscription
+    // =========================================================================
+
+    public function scopeAutoInscriptions($query)
+    {
+        return $query->where('source_inscription', 'auto_inscription');
+    }
+
+    public function scopeEnAttenteValidation($query)
+    {
+        return $query->where('statut_inscription', 'en_attente_validation');
+    }
+
+    public function scopeInscriptionsValidees($query)
+    {
+        return $query->where('statut_inscription', 'validee');
+    }
+
+    public function scopeInscriptionsRejetees($query)
+    {
+        return $query->where('statut_inscription', 'rejetee');
     }
 
     /**

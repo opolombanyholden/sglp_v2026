@@ -24,7 +24,7 @@ window.Workflow2Phases = {
     
     config: {
         routes: {
-            phase1: '/operator/organisations/store-phase1',
+            phase1: '/operator/organisations',
             // ✅ CORRECTION CRITIQUE : Route corrigée dossiers au lieu d'organisations
             phase2_template: '/operator/dossiers/{dossier}/adherents-import',
             // ✅ CORRECTION : confirmation_template corrigée selon recommandations
@@ -334,7 +334,7 @@ window.Workflow2Phases.showPhase2RedirectDialog = function(phase1Response) {
     
     // Créer le modal
     const modalHTML = `
-        <div class="modal fade" id="phase2ChoiceModal" tabindex="-1" data-bs-backdrop="static">
+        <div class="modal fade" id="phase2ChoiceModal" tabindex="-1" data-backdrop="static">
             <div class="modal-dialog modal-lg">
                 <div class="modal-content">
                     <div class="modal-header bg-success text-white">
@@ -391,20 +391,20 @@ window.Workflow2Phases.showPhase2RedirectDialog = function(phase1Response) {
     
     // Ajouter au DOM
     document.body.insertAdjacentHTML('beforeend', modalHTML);
-    const modal = new bootstrap.Modal(document.getElementById('phase2ChoiceModal'));
+    const modal = $('#phase2ChoiceModal');
     
     // Événements
     document.getElementById('phase2-now').addEventListener('click', () => {
-        modal.hide();
+        modal.modal('hide');
         this.redirectToPhase2(phase1Response);
     });
-    
+
     document.getElementById('phase2-later').addEventListener('click', () => {
-        modal.hide();
+        modal.modal('hide');
         this.redirectToConfirmation(phase1Response);
     });
-    
-    modal.show();
+
+    modal.modal('show');
 };
 
 /**
@@ -676,8 +676,23 @@ window.Workflow2Phases.submitWithCSRFRetry = async function(formData, maxAttempt
                 });
             }
 
+            // Utiliser l'URL du formulaire HTML (générée par Blade route()) en priorité
+            const formEl = document.getElementById('organisationForm');
+            const submitUrl = (formEl && formEl.action) ? formEl.action : this.config.routes.phase1;
+            this.log('📡 URL de soumission:', submitUrl);
+
+            // ✅ CORRECTION: redirect manual pour détecter session expirée
+            requestConfig.redirect = 'manual';
+
             // Envoyer la requête
-            const response = await fetch(this.config.routes.phase1, requestConfig);
+            const response = await fetch(submitUrl, requestConfig);
+
+            // ✅ CORRECTION: Détecter redirection (session expirée → login)
+            if (response.type === 'opaqueredirect' || response.status === 0 ||
+                response.status === 301 || response.status === 302) {
+                this.log('⚠️ Redirection détectée (session expirée ?), status:', response.status, 'type:', response.type);
+                throw new Error('Session expirée. Veuillez rafraîchir la page et vous reconnecter.');
+            }
 
             // Retry automatique en cas d'erreur 419
             if (response.status === 419 && attempt < maxAttempts) {
@@ -760,7 +775,7 @@ window.Workflow2Phases.showSimpleNotification = function(message, type = 'info')
         <div class="alert ${alertClass} alert-dismissible fade show position-fixed" 
              style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;">
             ${message}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
         </div>
     `;
     

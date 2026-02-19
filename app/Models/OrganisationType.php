@@ -115,7 +115,8 @@ class OrganisationType extends Model
         )
         ->withPivot([
             'is_obligatoire',
-            'ordre'
+            'ordre',
+            'aide_texte'
         ])
         ->withTimestamps()
         ->orderBy('document_type_organisation_type.ordre');

@@ -40,6 +40,11 @@ class DatabaseSeeder extends Seeder
                 'class' => SuperAdminSeeder::class,
                 'name' => 'Utilisateurs Système',
                 'description' => 'Création du Super Admin et comptes de test'
+            ],
+            [
+                'class' => GeolocalisationSeeder::class,
+                'name' => 'Géolocalisation Gabon',
+                'description' => 'Peuplement des 9 provinces et subdivisions administratives'
             ]
         ];
         

@@ -523,29 +523,23 @@ class OrganisationStepService
      */
     private function getMinFondateurs(string $type): int
     {
-        $minimums = [
-            'association' => 3,
-            'ong' => 5,
-            'parti_politique' => 3,
-            'confession_religieuse' => 3
-        ];
-
-        return $minimums[$type] ?? 3;
+        $orgType = \App\Models\OrganisationType::where('code', $type)->first();
+        if ($orgType) {
+            return $orgType->nb_min_fondateurs_majeurs;
+        }
+        return 2;
     }
 
     /**
-     * Obtenir le minimum d'adhérents requis
+     * Obtenir le minimum d'adhérents requis — depuis la BD (organisation_types)
      */
     private function getMinAdherents(string $type): int
     {
-        $minimums = [
-            'association' => 10,
-            'ong' => 15,
-            'parti_politique' => 50,
-            'confession_religieuse' => 10
-        ];
-
-        return $minimums[$type] ?? 10;
+        $orgType = \App\Models\OrganisationType::where('code', $type)->first();
+        if ($orgType) {
+            return $orgType->nb_min_adherents_creation;
+        }
+        return 10;
     }
 
     /**

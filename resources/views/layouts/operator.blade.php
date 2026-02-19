@@ -1,18 +1,19 @@
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Espace Opérateur') - PNGDI</title>
-    
+    <title>@yield('title', 'Espace Opérateur') - SGLP</title>
+
     <!-- ✅ Bootstrap 4.6.2 CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- CSS personnalisé -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
-    
+
     <style>
         /* Variables CSS */
         :root {
@@ -23,7 +24,7 @@
             --sidebar-bg: #003366;
             --sidebar-hover: #004080;
             --text-muted: #b3d1ff;
-            --border-color: rgba(255,255,255,0.2);
+            --border-color: rgba(255, 255, 255, 0.2);
         }
 
         /* Reset et base */
@@ -56,7 +57,7 @@
             display: flex;
             flex-direction: column;
             transition: all 0.3s ease;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
         }
 
         /* Header sidebar */
@@ -113,7 +114,7 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            background: rgba(255,255,255,0.03);
+            background: rgba(255, 255, 255, 0.03);
             margin: 0.5rem;
             border-radius: 15px;
         }
@@ -174,11 +175,11 @@
         }
 
         .sidebar-nav::-webkit-scrollbar-track {
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         .sidebar-nav::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 3px;
         }
 
@@ -239,7 +240,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             margin-right: 12px;
             font-size: 1rem;
@@ -303,7 +304,7 @@
         .nav-submenu-item:hover {
             color: white;
             text-decoration: none;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
         }
 
         /* Footer sidebar */
@@ -321,7 +322,7 @@
             justify-content: center;
             gap: 8px;
             padding: 0.75rem;
-            background: rgba(255,255,255,0.05);
+            background: rgba(255, 255, 255, 0.05);
             border: none;
             border-radius: 10px;
             color: var(--text-muted);
@@ -361,7 +362,7 @@
             align-items: center;
             justify-content: space-between;
             padding: 0 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -525,7 +526,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 999;
             display: none;
             transition: opacity 0.3s ease;
@@ -572,6 +573,7 @@
                 opacity: 0;
                 transform: translateX(-20px);
             }
+
             to {
                 opacity: 1;
                 transform: translateX(0);
@@ -586,7 +588,7 @@
         .alert {
             border: none;
             border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
         }
 
         /* Ancien CSS navbar-custom pour éviter les conflits */
@@ -598,7 +600,7 @@
         .dropdown-menu-custom {
             min-width: 300px;
             border: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
             padding: 0.5rem 0;
         }
@@ -613,9 +615,10 @@
             color: #667eea;
         }
     </style>
-    
+
     @stack('styles')
 </head>
+
 <body>
     <div class="operator-wrapper">
         <!-- Sidebar moderne -->
@@ -654,15 +657,17 @@
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <span class="nav-section-title">PRINCIPAL</span>
-                    
-                    <a href="{{ route('operator.dashboard') }}" class="nav-item-custom {{ request()->routeIs('operator.dashboard') ? 'active' : '' }}">
+
+                    <a href="{{ route('operator.dashboard') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.dashboard') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-tachometer-alt"></i>
                         </div>
                         <span class="nav-text">Tableau de bord</span>
                     </a>
 
-                    <a href="{{ route('operator.dossiers.index') }}" class="nav-item-custom {{ request()->routeIs('operator.dossiers.*') ? 'active' : '' }}">
+                    <a href="{{ route('operator.dossiers.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.dossiers.*') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-folder"></i>
                         </div>
@@ -670,41 +675,28 @@
                         <span class="nav-badge">0</span>
                     </a>
 
-                    <a href="#" class="nav-item-custom" onclick="toggleSubmenu(event, 'newOrgMenu')">
+                    <a href="{{ route('operator.dossiers.create') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.dossiers.create') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-plus-circle"></i>
                         </div>
                         <span class="nav-text">Nouvelle organisation</span>
-                        <i class="fas fa-chevron-down ml-auto"></i>
                     </a>
-                    <div class="nav-submenu" id="newOrgMenu">
-                        <a href="{{ route('operator.dossiers.create', 'association') }}" class="nav-submenu-item">
-                            <i class="fas fa-users mr-2"></i> Association
-                        </a>
-                        <a href="{{ route('operator.dossiers.create', 'ong') }}" class="nav-submenu-item">
-                            <i class="fas fa-hands-helping mr-2"></i> ONG
-                        </a>
-                        <a href="{{ route('operator.dossiers.create', 'parti') }}" class="nav-submenu-item">
-                            <i class="fas fa-landmark mr-2"></i> Parti politique
-                        </a>
-                        <a href="{{ route('operator.dossiers.create', 'confession') }}" class="nav-submenu-item">
-                            <i class="fas fa-pray mr-2"></i> Confession religieuse
-                        </a>
-                    </div>
                 </div>
 
                 <div class="nav-section">
                     <span class="nav-section-title">GESTION</span>
-                    
-                    <a href="{{ route('operator.members.index') }}" class="nav-item-custom {{ request()->routeIs('operator.members.*') ? 'active' : '' }}">
+
+                    <a href="{{ route('operator.members.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.members.*') || request()->routeIs('operator.adherents.*') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-users"></i>
                         </div>
                         <span class="nav-text">Adhérents</span>
-                        <span class="nav-badge">0</span>
                     </a>
 
-                    <a href="{{ route('operator.documents.index') }}" class="nav-item-custom {{ request()->routeIs('operator.files.*') ? 'active' : '' }}">
+                    <a href="{{ route('operator.documents.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.files.*') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-file-alt"></i>
                         </div>
@@ -714,22 +706,25 @@
 
                 <div class="nav-section">
                     <span class="nav-section-title">OBLIGATIONS</span>
-                    
-                    <a href="{{ route('operator.declarations.index') }}" class="nav-item-custom {{ request()->routeIs('operator.declarations.*') ? 'active' : '' }}">
+
+                    <a href="{{ route('operator.declarations.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.declarations.*') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-file-contract"></i>
                         </div>
                         <span class="nav-text">Déclarations annuelles</span>
                     </a>
 
-                    <a href="{{ route('operator.reports.index') }}" class="nav-item-custom {{ request()->routeIs('operator.reports.*') ? 'active' : '' }}">
+                    <a href="{{ route('operator.reports.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.reports.*') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-chart-line"></i>
                         </div>
                         <span class="nav-text">Rapports d'activité</span>
                     </a>
 
-                    <a href="{{ route('operator.grants.index') }}" class="nav-item-custom {{ request()->routeIs('operator.grants.*') ? 'active' : '' }}">
+                    <a href="{{ route('operator.grants.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.grants.*') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-money-check-alt"></i>
                         </div>
@@ -739,8 +734,9 @@
 
                 <div class="nav-section">
                     <span class="nav-section-title">COMMUNICATION</span>
-                    
-                    <a href="{{ route('operator.messages.index') }}" class="nav-item-custom {{ request()->routeIs('operator.messages.*') ? 'active' : '' }}">
+
+                    <a href="{{ route('operator.messages.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.messages.*') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-envelope"></i>
                         </div>
@@ -748,7 +744,8 @@
                         <span class="nav-badge danger">0</span>
                     </a>
 
-                    <a href="{{ route('operator.notifications.index') }}" class="nav-item-custom {{ request()->routeIs('operator.notifications.*') ? 'active' : '' }}">
+                    <a href="{{ route('operator.notifications.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.notifications.*') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-bell"></i>
                         </div>
@@ -756,7 +753,8 @@
                         <span class="nav-badge info">0</span>
                     </a>
 
-                    <a href="{{ route('calendrier') }}" class="nav-item-custom {{ request()->routeIs('calendrier') ? 'active' : '' }}">
+                    <a href="{{ route('calendrier') }}"
+                        class="nav-item-custom {{ request()->routeIs('calendrier') ? 'active' : '' }}">
                         <div class="nav-icon">
                             <i class="fas fa-calendar-alt"></i>
                         </div>
@@ -766,7 +764,7 @@
 
                 <div class="nav-section">
                     <span class="nav-section-title">RESSOURCES</span>
-                    
+
                     <a href="{{ route('guides') }}" class="nav-item-custom" target="_blank">
                         <div class="nav-icon">
                             <i class="fas fa-book"></i>
@@ -829,11 +827,13 @@
                             <div class="dropdown-menu dropdown-menu-end dropdown-menu-custom">
                                 <h6 class="dropdown-header">Notifications</h6>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item dropdown-item-custom" href="{{ route('operator.notifications.index') }}">
+                                <a class="dropdown-item dropdown-item-custom"
+                                    href="{{ route('operator.notifications.index') }}">
                                     <small class="text-muted">Aucune nouvelle notification</small>
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item dropdown-item-custom text-center" href="{{ route('operator.notifications.index') }}">
+                                <a class="dropdown-item dropdown-item-custom text-center"
+                                    href="{{ route('operator.notifications.index') }}">
                                     Voir toutes les notifications
                                 </a>
                             </div>
@@ -847,11 +847,13 @@
                             <div class="dropdown-menu dropdown-menu-end dropdown-menu-custom">
                                 <h6 class="dropdown-header">Messages</h6>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item dropdown-item-custom" href="{{ route('operator.messages.index') }}">
+                                <a class="dropdown-item dropdown-item-custom"
+                                    href="{{ route('operator.messages.index') }}">
                                     <small class="text-muted">Aucun nouveau message</small>
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item dropdown-item-custom text-center" href="{{ route('operator.messages.index') }}">
+                                <a class="dropdown-item dropdown-item-custom text-center"
+                                    href="{{ route('operator.messages.index') }}">
                                     Voir tous les messages
                                 </a>
                             </div>
@@ -865,13 +867,16 @@
                                 <i class="fas fa-chevron-down ml-2"></i>
                             </button>
                             <ul class="dropdown-menu dropdown-menu-end dropdown-menu-custom">
-                                <li><a class="dropdown-item dropdown-item-custom" href="{{ route('operator.profile.index') }}">
-                                    <i class="fas fa-user mr-2"></i> Mon profil
-                                </a></li>
+                                <li><a class="dropdown-item dropdown-item-custom"
+                                        href="{{ route('operator.profile.index') }}">
+                                        <i class="fas fa-user mr-2"></i> Mon profil
+                                    </a></li>
                                 <li><a class="dropdown-item dropdown-item-custom" href="{{ route('home') }}">
-                                    <i class="fas fa-home mr-2"></i> Retour au site
-                                </a></li>
-                                <li><hr class="dropdown-divider"></li>
+                                        <i class="fas fa-home mr-2"></i> Retour au site
+                                    </a></li>
+                                <li>
+                                    <hr class="dropdown-divider">
+                                </li>
                                 <li>
                                     <form action="{{ route('logout') }}" method="POST">
                                         @csrf
@@ -941,19 +946,19 @@
     <!-- Scripts -->
     <!-- ✅ jQuery (requis pour Bootstrap 4) -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    
+
     <!-- ✅ Bootstrap 4.6.2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ asset('js/app.js') }}"></script>
     {{-- Module commun upload - NOUVEAU --}}
-     <!-- <script src="{{ asset('js/file-upload-common_.js') }}"></script> -->
-    
+    <!-- <script src="{{ asset('js/file-upload-common_.js') }}"></script> -->
+
 
     <script>
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.querySelector('.sidebar-overlay');
-            
+
             sidebar.classList.toggle('active');
             overlay.classList.toggle('active');
         }
@@ -962,7 +967,7 @@
             event.preventDefault();
             const submenu = document.getElementById(submenuId);
             const chevron = event.currentTarget.querySelector('.fa-chevron-down');
-            
+
             submenu.classList.toggle('show');
             if (chevron) {
                 chevron.style.transform = submenu.classList.contains('show') ? 'rotate(180deg)' : 'rotate(0)';
@@ -979,7 +984,7 @@
         });
 
         // Ouvrir automatiquement le sous-menu si une page enfant est active
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const currentPath = window.location.pathname;
             if (currentPath.includes('/dossiers/create/')) {
                 document.getElementById('newOrgMenu').classList.add('show');
@@ -988,7 +993,8 @@
             }
         });
     </script>
-    
+
     @stack('scripts')
 </body>
+
 </html>

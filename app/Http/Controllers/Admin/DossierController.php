@@ -4335,4 +4335,115 @@ class DossierController extends Controller
         ];
     }
 
+    // =========================================================================
+    // ADHERENTS - Consultation et validation par organisation (Admin)
+    // =========================================================================
+
+    /**
+     * Liste des adhérents d'une organisation (lecture seule)
+     */
+    public function organisationAdherents(Organisation $organisation)
+    {
+        $adherents = Adherent::where('organisation_id', $organisation->id)
+            ->orderBy('nom')
+            ->paginate(25);
+
+        $stats = [
+            'total' => Adherent::where('organisation_id', $organisation->id)->count(),
+            'actifs' => Adherent::where('organisation_id', $organisation->id)->where('is_active', true)->count(),
+            'inactifs' => Adherent::where('organisation_id', $organisation->id)->where('is_active', false)->count(),
+            'fondateurs' => Fondateur::where('organisation_id', $organisation->id)->count(),
+            'avec_anomalies' => Adherent::where('organisation_id', $organisation->id)->where('has_anomalies', true)->count(),
+            'en_attente' => Adherent::where('organisation_id', $organisation->id)
+                ->where('source_inscription', 'auto_inscription')
+                ->where('statut_inscription', 'en_attente_validation')
+                ->count(),
+        ];
+
+        return view('admin.adherents.index', compact('organisation', 'adherents', 'stats'));
+    }
+
+    /**
+     * Détail d'un adhérent (lecture seule)
+     */
+    public function showAdherent(Organisation $organisation, Adherent $adherent)
+    {
+        if ($adherent->organisation_id !== $organisation->id) {
+            abort(404);
+        }
+
+        return view('admin.adherents.show', compact('organisation', 'adherent'));
+    }
+
+    /**
+     * Inscriptions en attente de validation (admin)
+     */
+    public function adminPendingRegistrations(Organisation $organisation)
+    {
+        $pendingAdherents = Adherent::where('organisation_id', $organisation->id)
+            ->where('source_inscription', 'auto_inscription')
+            ->where('statut_inscription', 'en_attente_validation')
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+
+        $stats = [
+            'en_attente' => Adherent::where('organisation_id', $organisation->id)
+                ->where('source_inscription', 'auto_inscription')
+                ->where('statut_inscription', 'en_attente_validation')->count(),
+            'validees' => Adherent::where('organisation_id', $organisation->id)
+                ->where('source_inscription', 'auto_inscription')
+                ->where('statut_inscription', 'validee')->count(),
+            'rejetees' => Adherent::where('organisation_id', $organisation->id)
+                ->where('source_inscription', 'auto_inscription')
+                ->where('statut_inscription', 'rejetee')->count(),
+        ];
+
+        return view('admin.adherents.pending', compact('organisation', 'pendingAdherents', 'stats'));
+    }
+
+    /**
+     * Valider une inscription (admin)
+     */
+    public function adminValidateRegistration(Request $request, Organisation $organisation, Adherent $adherent)
+    {
+        if ($adherent->organisation_id !== $organisation->id || $adherent->source_inscription !== 'auto_inscription') {
+            abort(404);
+        }
+
+        $adherent->update([
+            'statut_inscription' => 'validee',
+            'is_active' => true,
+            'validee_par' => Auth::id(),
+            'validee_le' => now(),
+        ]);
+
+        return redirect()->back()->with('success',
+            'L\'inscription de ' . $adherent->nom . ' ' . $adherent->prenom . ' a été validée.');
+    }
+
+    /**
+     * Rejeter une inscription (admin)
+     */
+    public function adminRejectRegistration(Request $request, Organisation $organisation, Adherent $adherent)
+    {
+        if ($adherent->organisation_id !== $organisation->id || $adherent->source_inscription !== 'auto_inscription') {
+            abort(404);
+        }
+
+        $request->validate([
+            'motif' => 'required|string|max:500',
+        ]);
+
+        $adherent->update([
+            'statut_inscription' => 'rejetee',
+            'is_active' => false,
+            'motif_rejet_inscription' => $request->motif,
+            'validee_par' => Auth::id(),
+            'validee_le' => now(),
+        ]);
+
+        return redirect()->back()->with('success',
+            'L\'inscription de ' . $adherent->nom . ' ' . $adherent->prenom . ' a été rejetée.');
+    }
+
 }

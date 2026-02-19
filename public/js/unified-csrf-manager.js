@@ -187,33 +187,46 @@ window.UnifiedCSRFManager = {
      */
     async submitWithCSRFRetry(url, data, options = {}) {
         const maxAttempts = this.config.maxRetries;
-        
+
+        // ✅ CORRECTION: Utiliser l'URL du formulaire HTML si disponible
+        const formEl = document.getElementById('organisationForm');
+        const resolvedUrl = (formEl && formEl.action) ? formEl.action : url;
+        this.log('📡 URL de soumission résolue:', resolvedUrl, '(original:', url, ')');
+
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 this.log(`🔄 Tentative ${attempt}/${maxAttempts} - Soumission avec CSRF`);
-                
+
                 // Obtenir token actuel
                 const token = await this.getCurrentToken();
-                
+
                 // ✅ CORRECTION CRITIQUE: Préparation correcte des données
                 const { requestData, requestOptions } = this.prepareRequest(data, token, options);
-                
+
                 this.log('📦 Données préparées v2.1:', {
-                    url,
+                    url: resolvedUrl,
                     method: 'POST',
                     headers: requestOptions.headers,
                     dataKeys: typeof requestData === 'object' ? Object.keys(requestData) : 'non-object',
-                    bodyPreview: typeof requestOptions.body === 'string' ? 
-                        requestOptions.body.substring(0, 100) + '...' : 
+                    bodyPreview: typeof requestOptions.body === 'string' ?
+                        requestOptions.body.substring(0, 100) + '...' :
                         typeof requestOptions.body
                 });
-                
-                // Envoyer la requête
-                const response = await fetch(url, {
+
+                // ✅ CORRECTION: redirect 'manual' pour détecter les redirections (session expirée)
+                const response = await fetch(resolvedUrl, {
                     method: 'POST',
+                    redirect: 'manual',
                     ...requestOptions
                 });
-                
+
+                // ✅ CORRECTION: Détecter redirection (302/301 vers login = session expirée)
+                if (response.type === 'opaqueredirect' || response.status === 0 ||
+                    response.status === 301 || response.status === 302) {
+                    this.log('⚠️ Redirection détectée (session expirée ?), status:', response.status, 'type:', response.type);
+                    throw new Error('Session expirée. Veuillez rafraîchir la page et vous reconnecter.');
+                }
+
                 // Retry automatique sur erreur 419
                 if (response.status === 419 && attempt < maxAttempts) {
                     this.log('⚠️ Erreur 419 CSRF, retry avec nouveau token...');
@@ -221,21 +234,23 @@ window.UnifiedCSRFManager = {
                     await this.delay(this.config.retryDelay);
                     continue;
                 }
-                
+
                 if (!response.ok) {
+                    const errorBody = await response.text().catch(() => '');
+                    this.log('❌ Erreur HTTP:', response.status, response.statusText, 'Body:', errorBody.substring(0, 200));
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
-                
+
                 this.log(`✅ Soumission réussie après ${attempt} tentative(s)`);
                 return await response.json();
-                
+
             } catch (error) {
                 this.log(`❌ Tentative ${attempt} échouée:`, error.message);
-                
+
                 if (attempt === maxAttempts) {
                     throw error;
                 }
-                
+
                 await this.delay(this.config.retryDelay * attempt);
             }
         }

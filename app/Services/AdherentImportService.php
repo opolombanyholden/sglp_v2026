@@ -410,7 +410,7 @@ class AdherentImportService
                 $adherent->sexe,
                 $adherent->nationalite,
                 $adherent->profession,
-                $adherent->adresse,
+                $adherent->adresse_complete,
                 $adherent->province,
                 $adherent->departement,
                 $adherent->telephone,

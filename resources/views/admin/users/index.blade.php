@@ -326,6 +326,11 @@
                                                         <div>
                                                             <h6 class="mb-1">{{ $user->name }}</h6>
                                                             <small class="text-muted">{{ $user->email }}</small>
+                                                            @if(!$user->email_verified_at)
+                                                                <span class="badge bg-warning text-dark ms-1" title="Email non vérifié">
+                                                                    <i class="fas fa-exclamation-triangle fa-xs"></i> Non vérifié
+                                                                </span>
+                                                            @endif
                                                             @if($user->phone)
                                                                 <br><small class="text-info">{{ $user->phone }}</small>
                                                             @endif
@@ -438,7 +443,7 @@
                                                                     @if(!$user->email_verified_at)
                                                                         <li><a class="dropdown-item text-success" href="#"
                                                                                 onclick="activateAccount({{ $user->id }})">
-                                                                                <i class="fas fa-user-check me-2"></i>Activer le compte
+                                                                                <i class="fas fa-envelope-check me-2"></i>Valider l'adresse email
                                                                             </a></li>
                                                                     @endif
                                                                     <li>
@@ -818,9 +823,9 @@
                 });
         }
 
-        // Activer le compte (forcer la vérification email)
+        // Valider l'adresse email de l'utilisateur
         function activateAccount(userId) {
-            if (!confirm('Voulez-vous vraiment activer ce compte ? L\'utilisateur pourra se connecter immédiatement.')) {
+            if (!confirm('Voulez-vous valider l\'adresse email de cet utilisateur ? Il pourra se connecter sans avoir à vérifier son email.')) {
                 return;
             }
 
@@ -841,7 +846,7 @@
                     }
                 })
                 .catch(error => {
-                    showNotification('error', 'Erreur lors de l\'activation du compte');
+                    showNotification('error', 'Erreur lors de la validation de l\'email');
                 });
         }
 

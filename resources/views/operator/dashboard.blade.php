@@ -727,7 +727,7 @@
                 </h4>
             </div>
             <div class="col-lg-3 col-md-6 mb-3">
-                <div class="quick-action-card" onclick="location.href='{{ route('operator.organisations.create') }}'">
+                <div class="quick-action-card" onclick="location.href='{{ route('operator.dossiers.create') }}'">
                     <i class="fas fa-plus-circle"></i>
                     <h5>Créer une organisation</h5>
                     <p>Commencez votre formalisation</p>
@@ -825,7 +825,7 @@
                 <p class="cta-text">
                     Créez votre première organisation et lancez le processus de formalisation en quelques clics
                 </p>
-                <button class="btn btn-cta" onclick="location.href='{{ route('operator.organisations.create') }}'">
+                <button class="btn btn-cta" onclick="location.href='{{ route('operator.dossiers.create') }}'">
                     <i class="fas fa-rocket me-2"></i>
                     Commencer maintenant
                 </button>

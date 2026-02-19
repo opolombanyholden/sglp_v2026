@@ -247,6 +247,18 @@
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
+                                            @if($dossier->organisation && $dossier->organisation->isApprouvee())
+                                                @php $pendingCount = $dossier->organisation->adherentsEnAttenteValidation()->count(); @endphp
+                                                <div class="mt-1">
+                                                    <a href="{{ route('operator.inscription.pending', $dossier->organisation->id) }}"
+                                                       class="btn btn-sm btn-outline-warning" title="Inscriptions en attente">
+                                                        <i class="fas fa-user-plus mr-1"></i>
+                                                        @if($pendingCount > 0)
+                                                            <span class="badge badge-warning">{{ $pendingCount }}</span>
+                                                        @endif
+                                                    </a>
+                                                </div>
+                                            @endif
                                         </td>
                                     </tr>
                                     @endforeach

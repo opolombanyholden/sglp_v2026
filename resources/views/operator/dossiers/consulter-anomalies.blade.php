@@ -140,15 +140,14 @@
                                 <th>Type</th>
                                 <th>Champ Concerné</th>
                                 <th>Message</th>
-                                <th>Impact Métier</th>
                                 <th>Priorité</th>
-                                <th>Détectée le</th>
                                 <th>Statut</th>
+                                <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($anomalies as $anomalie)
-                            <tr>
+                            <tr class="{{ $anomalie->statut == 'resolu' ? 'table-success' : ($anomalie->type_anomalie == 'critique' ? 'table-danger' : '') }}">
                                 <td>
                                     <code class="text-primary">{{ $anomalie->nip }}</code>
                                 </td>
@@ -169,9 +168,9 @@
                                 </td>
                                 <td>
                                     <small>{{ $anomalie->message_anomalie }}</small>
-                                </td>
-                                <td>
-                                    <small class="text-muted">{{ $anomalie->impact_metier }}</small>
+                                    @if($anomalie->impact_metier)
+                                        <br><small class="text-muted fst-italic">{{ $anomalie->impact_metier }}</small>
+                                    @endif
                                 </td>
                                 <td>
                                     <span class="badge bg-{{ $anomalie->priorite == 1 ? 'danger' : ($anomalie->priorite == 2 ? 'warning' : 'info') }}">
@@ -179,16 +178,27 @@
                                     </span>
                                 </td>
                                 <td>
-                                    <small>{{ \Carbon\Carbon::parse($anomalie->detectee_le)->format('d/m/Y H:i') }}</small>
-                                </td>
-                                <td>
-                                    @if($anomalie->statut == 'detectee')
+                                    @if($anomalie->statut == 'detectee' || $anomalie->statut == 'en_attente')
                                         <span class="badge bg-warning">En Attente</span>
                                     @elseif($anomalie->statut == 'resolu')
                                         <span class="badge bg-success">Résolue</span>
+                                    @elseif($anomalie->statut == 'ignore')
+                                        <span class="badge bg-secondary">Ignorée</span>
                                     @else
                                         <span class="badge bg-secondary">{{ ucfirst($anomalie->statut) }}</span>
                                     @endif
+                                </td>
+                                <td class="text-center">
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ route('operator.adherents.edit', [$anomalie->organisation_id, $anomalie->adherent_id]) }}"
+                                           class="btn btn-outline-primary btn-sm" title="Corriger les informations">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{{ route('operator.adherents.show', [$anomalie->organisation_id, $anomalie->adherent_id]) }}"
+                                           class="btn btn-outline-info btn-sm" title="Voir la fiche">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach
