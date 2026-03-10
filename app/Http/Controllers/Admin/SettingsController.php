@@ -162,9 +162,9 @@ public function index()
             $database = config('database.connections.mysql.database');
             $result = DB::select("
                 SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
-                FROM information_schema.tables 
-                WHERE table_schema = '{$database}'
-            ");
+                FROM information_schema.tables
+                WHERE table_schema = ?
+            ", [$database]);
             return ($result[0]->size_mb ?? 0) . ' MB';
         } catch (\Exception $e) {
             return 'N/A';

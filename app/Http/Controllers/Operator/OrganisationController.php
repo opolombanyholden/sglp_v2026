@@ -2340,7 +2340,14 @@ class OrganisationController extends Controller
             $filename = basename($path);
             $fullPath = storage_path('app/public/accuses_reception/' . $filename);
 
-            if (!file_exists($fullPath)) {
+            // Protection contre le path traversal
+            $realPath = realpath($fullPath);
+            $allowedBasePath = realpath(storage_path('app/public/accuses_reception'));
+            if (!$realPath || !$allowedBasePath || !str_starts_with($realPath, $allowedBasePath)) {
+                abort(403, 'Accès non autorisé.');
+            }
+
+            if (!file_exists($realPath)) {
                 abort(404, 'Fichier non trouvé.');
             }
 
@@ -2361,7 +2368,7 @@ class OrganisationController extends Controller
                 'download_time' => now()
             ]);
 
-            return response()->download($fullPath, $filename, [
+            return response()->download($realPath, $filename, [
                 'Content-Type' => 'application/pdf',
                 'Cache-Control' => 'no-cache, no-store, must-revalidate',
                 'Pragma' => 'no-cache',

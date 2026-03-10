@@ -56,12 +56,19 @@ Route::prefix('documents')->name('documents.')->group(function () {
 
 // Annuaire des organisations
 Route::prefix('annuaire')->name('annuaire.')->group(function () {
-    Route::get('/', [AnnuaireController::class, 'index'])->name('index');
+    Route::get('/', [AnnuaireController::class, 'index'])->name('index')->middleware('throttle:60,1');
     Route::get('/associations', [AnnuaireController::class, 'associations'])->name('associations');
     Route::get('/ong', [AnnuaireController::class, 'ong'])->name('ong');
     Route::get('/partis-politiques', [AnnuaireController::class, 'partisPolitiques'])->name('partis');
     Route::get('/confessions-religieuses', [AnnuaireController::class, 'confessionsReligieuses'])->name('confessions');
-    Route::get('/{type}/{slug}', [AnnuaireController::class, 'show'])->name('show');
+    // Vérification récépissé (QR code, numéro ou ID) — throttle strict anti-scraping
+    Route::get('/verify/{code}', [AnnuaireController::class, 'verify'])->name('verify')
+        ->middleware('throttle:20,1')
+        ->where('code', '[a-zA-Z0-9\-\_\/]+');
+    // Fiche détail par ID — DOIT être après /verify pour éviter conflit de routage
+    Route::get('/{id}', [AnnuaireController::class, 'show'])->name('show')
+        ->middleware('throttle:60,1')
+        ->where('id', '[0-9]+');
 });
 
 // Calendrier des événements
@@ -237,41 +244,6 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
 | ⚠️ Seules les routes essentielles sont définies ici
 |--------------------------------------------------------------------------
 */
-// 🔍 DEBUG ROUTE - Test de connectivité (pas de middleware auth)
-Route::any('/operator/organisations-debug-test', function (Request $request) {
-    \Log::warning('🔍 DEBUG-ROUTE organisations-debug-test atteint', [
-        'method' => $request->method(),
-        'url' => $request->fullUrl(),
-        'path' => $request->path(),
-        'ip' => $request->ip(),
-        'is_ajax' => $request->ajax(),
-        'content_type' => $request->header('Content-Type'),
-        'accept' => $request->header('Accept'),
-    ]);
-    return response()->json(['debug' => true, 'method' => $request->method(), 'message' => 'Debug route atteinte']);
-});
-
-// 🔍 DEBUG ROUTE - Intercepte POST /operator/organisations SANS middleware pour tester
-Route::post('/operator/organisations-debug-post', function (Request $request) {
-    \Log::warning('🔍 DEBUG-POST organisations atteint SANS middleware', [
-        'method' => $request->method(),
-        'url' => $request->fullUrl(),
-        'path' => $request->path(),
-        'all_keys' => array_keys($request->all()),
-        'content_type' => $request->header('Content-Type'),
-        'accept' => $request->header('Accept'),
-        'x_csrf' => $request->header('X-CSRF-TOKEN') ? 'present' : 'absent',
-        'has_token' => $request->has('_token'),
-        'user_agent' => substr($request->header('User-Agent'), 0, 50),
-    ]);
-    return response()->json([
-        'debug' => true,
-        'method' => $request->method(),
-        'message' => 'POST Debug route atteinte sans middleware',
-        'keys_received' => array_keys($request->all()),
-    ]);
-})->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class]);
-
 Route::middleware(['auth', 'verified', 'operator'])->prefix('operator')->name('operator.')->group(function () {
 
     // Profil operator
@@ -317,7 +289,7 @@ Route::middleware(['auth', 'verified', 'operator'])->prefix('operator')->name('o
         ]);
         
         $file = $request->file('file');
-        $fileName = time() . '_' . $file->getClientOriginalName();
+        $fileName = \Illuminate\Support\Str::uuid() . '.' . $file->getClientOriginalExtension();
         $path = $file->storeAs('documents/operators', $fileName, 'public');
         
         return response()->json([
@@ -377,44 +349,14 @@ Route::middleware(['auth', 'verified', 'operator'])->prefix('operator')->name('o
 
 /*
 |--------------------------------------------------------------------------
-| Routes pour gestion CSRF et diagnostics
+| Route CSRF token (protégée par authentification)
 |--------------------------------------------------------------------------
 */
-Route::get('/csrf-token', function () {
+Route::middleware(['web', 'auth'])->get('/csrf-token', function () {
     return response()->json([
         'token' => csrf_token(),
-        'csrf_token' => csrf_token(),
-        'expires_at' => now()->addMinutes(config('session.lifetime'))->toISOString(),
-        'timestamp' => now()->toISOString(),
-        'session_lifetime' => config('session.lifetime')
     ]);
-})->middleware('web');
-
-// Route de diagnostic CSRF (pour debug uniquement)
-Route::get('/csrf-debug', function () {
-    return response()->json([
-        'csrf_token' => csrf_token(),
-        'session_id' => session()->getId(),
-        'session_driver' => config('session.driver'),
-        'session_lifetime' => config('session.lifetime'),
-        'session_cookie' => config('session.cookie'),
-        'app_key_set' => !empty(config('app.key')),
-        'user_authenticated' => auth()->check(),
-        'user_id' => auth()->id(),
-        'middleware_applied' => 'web',
-        'timestamp' => now()->toISOString()
-    ]);
-})->middleware('web');
-
-// Route de test CSRF POST
-Route::post('/csrf-test', function (Request $request) {
-    return response()->json([
-        'success' => true,
-        'message' => 'Token CSRF valide',
-        'token_received' => $request->input('_token') ? 'Présent' : 'Absent',
-        'timestamp' => now()->toISOString()
-    ]);
-})->middleware('web');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -452,35 +394,6 @@ Route::prefix('operator/diagnostic')->name('operator.diagnostic.')->middleware([
     })->name('verrous.status');
 });
 
-// Routes de test (développement uniquement)
-if (config('app.debug')) {
-    Route::get('/test', function () {
-        return [
-            'laravel_version' => app()->version(),
-            'php_version' => PHP_VERSION,
-            'environment' => config('app.env'),
-            'database_connected' => DB::connection()->getPdo() ? 'Yes' : 'No',
-            'current_user' => auth()->check() ? auth()->user()->email : 'Non connecté',
-        ];
-    })->name('test');
-    
-    Route::get('/create-test-users', function () {
-        \App\Models\User::firstOrCreate(
-            ['email' => 'operator@pngdi.ga'],
-            [
-                'name' => 'Jean NGUEMA',
-                'password' => bcrypt('operator123'),
-                'role' => 'operator',
-                'phone' => '+24101234569',
-                'city' => 'Port-Gentil',
-                'is_active' => true,
-                'email_verified_at' => now(),
-            ]
-        );
-
-        return 'Utilisateur de test créé !<br><strong>Opérateur :</strong> operator@pngdi.ga / operator123<br><a href="/login">Se connecter</a>';
-    })->name('create-test-users');
-}
 
 /*
 |--------------------------------------------------------------------------

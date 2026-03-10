@@ -16,7 +16,7 @@ class PdfTemplateHelper
      */
     private static function getLogoPath()
     {
-        return public_path('storage/images/logo-ministere.png');
+        return storage_path('app/public/images/logo-ministere.png');
     }
 
     /**
@@ -179,7 +179,7 @@ class PdfTemplateHelper
 
             // Charger l'image de fond
             $bgImageBase64 = '';
-            $bgImagePath = public_path('storage/images/bg-pied-page.png');
+            $bgImagePath = storage_path('app/public/images/bg-pied-page.png');
             if (file_exists($bgImagePath)) {
                 $imageData = file_get_contents($bgImagePath);
                 $bgImageBase64 = 'data:image/png;base64,' . base64_encode($imageData);

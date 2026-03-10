@@ -67,7 +67,8 @@ class QrCodeService
      */
     public function getVerificationUrl(string $token): string
     {
-        $url = url("/annuaire/verify/{$token}");
+        $baseUrl = rtrim(config('app.qr_verification_base_url', 'https://www.sglp.ga'), '/');
+        $url = $baseUrl . "/annuaire/verify/{$token}";
 
         Log::debug('URL de vérification générée', [
             'token' => $token,
@@ -194,9 +195,10 @@ class QrCodeService
             // Générer token (pour référence interne uniquement)
             $code = $this->generateToken();
 
-            // ✅ CORRECTION : URL utilise le numéro de document
-            // Format : /annuaire/verify/{numero_document}
-            $verificationUrl = url("/annuaire/verify/{$documentNumero}");
+            // ✅ CORRECTION : URL utilise le domaine de production + numéro de document
+            // Format : https://www.sglp.ga/annuaire/verify/{numero_document}
+            $baseUrl = rtrim(config('app.qr_verification_base_url', 'https://www.sglp.ga'), '/');
+            $verificationUrl = $baseUrl . "/annuaire/verify/{$documentNumero}";
 
             Log::info('URL de vérification générée', [
                 'document_numero' => $documentNumero,
@@ -279,9 +281,11 @@ class QrCodeService
 
             $organisation = $dossier->organisation;
 
-            // ✅ CORRECTION : Générer token et URL correcte
+            // ✅ CORRECTION : Générer token et URL avec numéro de récépissé
             $code = $this->generateToken();
-            $verificationUrl = $this->getVerificationUrl($code); // URL : domaine/annuaire/verify/{code}
+            $numeroRecepisse = $organisation->numero_recepisse ?? $dossier->numero_dossier;
+            $baseUrl = rtrim(config('app.qr_verification_base_url', 'https://www.sglp.ga'), '/');
+            $verificationUrl = $baseUrl . "/annuaire/verify/{$numeroRecepisse}";
 
             $dateSubmission = $this->formatDateSafely($dossier->submitted_at);
 

@@ -193,36 +193,3 @@ Route::prefix('api/auth')->name('api.auth.')->middleware(['throttle:30,1'])->gro
     })->name('session-status');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Routes de développement pour les tests d'authentification
-|--------------------------------------------------------------------------
-*/
-if (config('app.debug')) {
-    // Test rapide 2FA
-    Route::get('test-2fa', function () {
-        if (!auth()->check()) {
-            return redirect()->route('login');
-        }
-        
-        $user = auth()->user();
-        return [
-            'user' => $user->only(['name', 'email', 'role']),
-            '2fa_enabled' => $user->two_factor_enabled ?? false,
-            '2fa_required' => in_array($user->role, ['admin', 'agent']),
-            'email_verified' => !is_null($user->email_verified_at),
-            'can_access_dashboard' => $user->email_verified_at && 
-                (!in_array($user->role, ['admin', 'agent']) || ($user->two_factor_enabled ?? false))
-        ];
-    })->name('test-2fa');
-    
-    // Forcer la vérification d'email
-    Route::get('force-verify-email/{user}', function ($userId) {
-        $user = \App\Models\User::find($userId);
-        if ($user) {
-            $user->markEmailAsVerified();
-            return "Email vérifié pour {$user->email}";
-        }
-        return "Utilisateur non trouvé";
-    })->name('force-verify-email');
-}

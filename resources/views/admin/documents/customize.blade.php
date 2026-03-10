@@ -49,7 +49,7 @@
                         </div>
                         <div class="card-body">
                             <textarea name="header_text" id="header_text" class="form-control wysiwyg-editor"
-                                rows="6">{!! old('header_text', $headerText) !!}</textarea>
+                                rows="6">{{ old('header_text', $headerText) }}</textarea>
                             <small class="form-text text-muted mt-2 d-block">
                                 Ce texte sera affiché en haut du document généré. Vous pouvez le modifier selon vos besoins.
                             </small>
@@ -65,7 +65,7 @@
                         </div>
                         <div class="card-body">
                             <textarea name="signature_text" id="signature_text" class="form-control wysiwyg-editor"
-                                rows="6">{!! old('signature_text', $signatureText) !!}</textarea>
+                                rows="6">{{ old('signature_text', $signatureText) }}</textarea>
                             <small class="form-text text-muted mt-2 d-block">
                                 Texte de signature (nom, titre, fonction) qui apparaîtra en bas du document.
                             </small>

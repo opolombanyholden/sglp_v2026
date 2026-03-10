@@ -89,12 +89,12 @@ class DossierController extends Controller
                 $query->where('province', $request->province);
             }
 
-            // Filtre par date de création
-            if ($request->filled('date_debut')) {
+            // Filtre par date de création (avec validation)
+            if ($request->filled('date_debut') && strtotime($request->date_debut) !== false) {
                 $query->where('created_at', '>=', $request->date_debut);
             }
 
-            if ($request->filled('date_fin')) {
+            if ($request->filled('date_fin') && strtotime($request->date_fin) !== false) {
                 $query->where('created_at', '<=', $request->date_fin);
             }
 
@@ -390,7 +390,7 @@ class DossierController extends Controller
 
                 // Localisation
                 'org_adresse' => 'required|string|max:500',
-                'org_prefecture' => 'required|string|max:255',
+                'org_prefecture' => 'nullable|string|max:255',
                 'org_sous_prefecture' => 'nullable|string|max:255',
                 'org_lieu_dit' => 'nullable|string|max:255',
                 'org_latitude' => 'nullable|string|max:50',
@@ -1245,23 +1245,25 @@ class DossierController extends Controller
             // Nom de fichier sécurisé avec timestamp unique
             $filename = $this->sanitizeFilename("recepisse_definitif_{$dossier->organisation->nom}_{$dossier->numero_dossier}") . "_" . now()->format('YmdHis') . ".pdf";
 
-            // Sauvegarder dans public/storage/documents (accessible directement)
-            $publicPath = public_path('storage/documents/' . $filename);
+            // Utiliser storage_path() pour éviter les problèmes de symlink sur serveur de production
+            $storagePath = storage_path('app/public/documents');
 
             // S'assurer que le dossier existe
-            if (!file_exists(public_path('storage/documents'))) {
-                mkdir(public_path('storage/documents'), 0755, true);
+            if (!is_dir($storagePath)) {
+                mkdir($storagePath, 0755, true);
             }
 
-            // Sauvegarder le PDF
-            $pdf->Output($publicPath, \Mpdf\Output\Destination::FILE);
+            $fullPath = $storagePath . '/' . $filename;
 
-            if (!file_exists($publicPath)) {
+            // Sauvegarder le PDF
+            $pdf->Output($fullPath, \Mpdf\Output\Destination::FILE);
+
+            if (!file_exists($fullPath)) {
                 throw new \Exception('Le fichier PDF n\'a pas pu être créé');
             }
 
-            $fileSize = filesize($publicPath);
-            \Log::info("PDF sauvegardé en public, taille: {$fileSize} octets, fichier: {$filename}");
+            $fileSize = filesize($fullPath);
+            \Log::info("PDF sauvegardé, taille: {$fileSize} octets, fichier: {$filename}");
 
             // Log de l'activité
             \Log::info("Téléchargement récépissé définitif pour dossier {$dossier->id}", [
@@ -1271,10 +1273,10 @@ class DossierController extends Controller
                 'user' => auth()->user()->name
             ]);
 
-            // Rediriger vers le fichier pour téléchargement direct
-            $fileUrl = asset('storage/documents/' . $filename);
-
-            return redirect($fileUrl);
+            // Retourner le PDF directement en téléchargement (évite de dépendre du symlink public/storage)
+            return response()->download($fullPath, $filename, [
+                'Content-Type' => 'application/pdf',
+            ])->deleteFileAfterSend(false);
 
         } catch (\Exception $e) {
             \Log::error('Erreur téléchargement récépissé définitif: ' . $e->getMessage(), [
@@ -2942,7 +2944,14 @@ class DossierController extends Controller
 
             $cheminComplet = storage_path('app/' . $document->chemin_fichier);
 
-            if (!file_exists($cheminComplet)) {
+            // Protection contre le path traversal
+            $realPath = realpath($cheminComplet);
+            $allowedBasePath = realpath(storage_path('app'));
+            if (!$realPath || !str_starts_with($realPath, $allowedBasePath)) {
+                return response()->json(['error' => 'Accès non autorisé'], 403);
+            }
+
+            if (!file_exists($realPath)) {
                 return response()->json(['error' => 'Fichier introuvable'], 404);
             }
 
@@ -2952,7 +2961,7 @@ class DossierController extends Controller
                 ->causedBy(auth()->user())
                 ->log('Document téléchargé');
 
-            return response()->download($cheminComplet, $document->nom_original);
+            return response()->download($realPath, basename($document->nom_original));
 
         } catch (\Exception $e) {
             \Log::error('Erreur téléchargement document: ' . $e->getMessage());
@@ -2972,7 +2981,14 @@ class DossierController extends Controller
 
             $cheminComplet = storage_path('app/' . $document->chemin_fichier);
 
-            if (!file_exists($cheminComplet)) {
+            // Protection contre le path traversal
+            $realPath = realpath($cheminComplet);
+            $allowedBasePath = realpath(storage_path('app'));
+            if (!$realPath || !str_starts_with($realPath, $allowedBasePath)) {
+                abort(403, 'Accès non autorisé');
+            }
+
+            if (!file_exists($realPath)) {
                 abort(404, 'Fichier introuvable');
             }
 
@@ -2982,9 +2998,9 @@ class DossierController extends Controller
                 ->causedBy(auth()->user())
                 ->log('Document prévisualisé');
 
-            return response()->file($cheminComplet, [
+            return response()->file($realPath, [
                 'Content-Type' => 'application/pdf',
-                'Content-Disposition' => 'inline; filename="' . $document->nom_original . '"'
+                'Content-Disposition' => 'inline; filename="' . basename($document->nom_original) . '"'
             ]);
 
         } catch (\Exception $e) {

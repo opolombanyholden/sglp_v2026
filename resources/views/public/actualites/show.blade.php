@@ -52,7 +52,14 @@
 
                     <!-- Contenu -->
                     <div class="article-body">
-                        {!! $actualite['contenu'] !!}
+                        @php
+                            $contenu = strip_tags($actualite['contenu'], '<p><br><strong><em><ul><ol><li><h1><h2><h3><h4><h5><h6><a><img><table><thead><tbody><tr><th><td><blockquote><span><div><hr>');
+                            // Strip event handler attributes (onclick, onerror, onload, etc.)
+                            $contenu = preg_replace('/\s+on\w+\s*=\s*(?:"[^"]*"|\'[^\']*\'|[^\s>]*)/i', '', $contenu);
+                            // Strip javascript: URI scheme
+                            $contenu = preg_replace('/\b(?:href|src|action)\s*=\s*["\']?\s*javascript\s*:/i', 'href="#" data-blocked=', $contenu);
+                        @endphp
+                        {!! $contenu !!}
                     </div>
 
                     <!-- Tags -->

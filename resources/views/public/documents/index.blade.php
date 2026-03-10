@@ -180,7 +180,7 @@
                     <div class="col-md-6">
                         <div class="document-card">
                             <div class="document-icon">
-                                @switch($doc['format'])
+                                @switch($doc->format)
                                     @case('PDF')
                                         <i class="far fa-file-pdf text-danger"></i>
                                         @break
@@ -193,23 +193,20 @@
                             </div>
                             <div class="document-content">
                                 <div class="document-header">
-                                    <h5 class="document-title">{{ $doc['titre'] }}</h5>
-                                    <span class="badge bg-primary">{{ $doc['categorie'] }}</span>
+                                    <h5 class="document-title">{{ $doc->titre }}</h5>
+                                    <span class="badge bg-primary">{{ $doc->categorie }}</span>
                                 </div>
-                                <p class="document-description">{{ $doc['description'] }}</p>
+                                <p class="document-description">{{ $doc->description }}</p>
                                 <div class="document-meta">
-                                    <span><i class="fas fa-file-alt me-1"></i>{{ $doc['format'] }}</span>
-                                    <span><i class="fas fa-weight me-1"></i>{{ $doc['taille'] }}</span>
-                                    <span><i class="fas fa-calendar me-1"></i>{{ \Carbon\Carbon::parse($doc['date_mise_jour'])->format('d/m/Y') }}</span>
-                                    <span><i class="fas fa-download me-1"></i>{{ number_format($doc['telechargements']) }}</span>
-                                </div>
-                                <div class="document-tags">
-                                    @foreach($doc['tags'] as $tag)
-                                        <span class="tag">#{{ $tag }}</span>
-                                    @endforeach
+                                    <span><i class="fas fa-file-alt me-1"></i>{{ $doc->format ?? 'PDF' }}</span>
+                                    @if($doc->taille)
+                                    <span><i class="fas fa-weight me-1"></i>{{ number_format($doc->taille / 1024, 0) }} Ko</span>
+                                    @endif
+                                    <span><i class="fas fa-calendar me-1"></i>{{ $doc->updated_at->format('d/m/Y') }}</span>
+                                    <span><i class="fas fa-download me-1"></i>{{ number_format($doc->nombre_telechargements) }}</span>
                                 </div>
                                 <div class="document-action">
-                                    <a href="{{ route('documents.download', $doc['id']) }}" 
+                                    <a href="{{ route('documents.download', $doc->id) }}"
                                        class="btn btn-primary btn-sm">
                                         <i class="fas fa-download me-2"></i>Télécharger
                                     </a>

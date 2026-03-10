@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide Administrateur — SGLP v2.1</title>
+<style>
+  /* ── Polices & reset ── */
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:    #002B7F;
+    --blue-lt: #1a4db8;
+    --gold:    #FFD700;
+    --gold-dk: #c9a800;
+    --green:   #198754;
+    --red:     #dc3545;
+    --orange:  #fd7e14;
+    --gray-50: #f8f9fa;
+    --gray-100:#f0f2f5;
+    --gray-200:#dee2e6;
+    --gray-600:#6c757d;
+    --gray-800:#343a40;
+    --white:   #ffffff;
+    --shadow:  0 2px 16px rgba(0,43,127,.10);
+  }
+
+  html { font-size: 10pt; }
+  body { font-family: 'Inter', Arial, sans-serif; color: var(--gray-800); background: #fff; line-height: 1.55; }
+
+  /* ── Couverture ── */
+  .cover {
+    page-break-after: always;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(160deg, var(--blue) 0%, #001a4d 100%);
+    color: white;
+    padding: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -30%; right: -20%;
+    width: 70%; height: 70%;
+    background: radial-gradient(circle, rgba(255,215,0,.15) 0%, transparent 70%);
+    border-radius: 50%;
+  }
+  .cover-band {
+    background: var(--gold);
+    height: 8px;
+    width: 100%;
+  }
+  .cover-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    position: relative;
+    z-index: 1;
+  }
+  .cover-logo {
+    width: 80px; height: 80px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.2rem; font-weight: 800;
+    color: var(--blue);
+    margin-bottom: 40px;
+  }
+  .cover-ministry {
+    font-size: 10pt; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 2px;
+    color: rgba(255,255,255,.65);
+    margin-bottom: 12px;
+  }
+  .cover-title {
+    font-size: 38pt; font-weight: 800; line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .cover-subtitle {
+    font-size: 14pt; font-weight: 300;
+    color: var(--gold);
+    margin-bottom: 48px;
+  }
+  .cover-meta {
+    display: flex; gap: 40px; flex-wrap: wrap;
+  }
+  .cover-meta-item label {
+    display: block; font-size: 8pt; text-transform: uppercase;
+    letter-spacing: 1px; color: rgba(255,255,255,.5); margin-bottom: 4px;
+  }
+  .cover-meta-item span { font-size: 11pt; font-weight: 600; }
+  .cover-footer {
+    padding: 24px 80px;
+    border-top: 1px solid rgba(255,255,255,.15);
+    font-size: 8pt; color: rgba(255,255,255,.5);
+    display: flex; justify-content: space-between;
+  }
+
+  /* ── Table des matières ── */
+  .toc-page {
+    page-break-after: always;
+    padding: 60px 80px;
+  }
+  .toc-page h1 { color: var(--blue); font-size: 22pt; font-weight: 800; margin-bottom: 32px; }
+  .toc-section { margin-bottom: 8px; display: flex; align-items: baseline; gap: 8px; }
+  .toc-num {
+    background: var(--blue); color: white;
+    font-size: 8pt; font-weight: 700;
+    padding: 2px 8px; border-radius: 12px;
+    min-width: 28px; text-align: center; flex-shrink: 0;
+  }
+  .toc-label { font-size: 11pt; font-weight: 600; color: var(--blue); }
+  .toc-dots { flex: 1; border-bottom: 1px dotted var(--gray-200); margin: 0 8px 4px; }
+  .toc-page-num { font-size: 10pt; color: var(--gray-600); }
+  .toc-sub { margin-left: 52px; font-size: 9.5pt; color: var(--gray-600); margin-bottom: 4px; }
+
+  /* ── Chapitres ── */
+  .chapter-cover {
+    page-break-before: always;
+    page-break-after: always;
+    background: var(--gray-50);
+    border-left: 8px solid var(--blue);
+    padding: 80px 80px 80px 72px;
+    min-height: 40vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .chapter-num {
+    font-size: 60pt; font-weight: 800;
+    color: var(--gray-200); line-height: 1;
+    margin-bottom: 8px;
+  }
+  .chapter-title {
+    font-size: 26pt; font-weight: 800;
+    color: var(--blue); margin-bottom: 16px;
+  }
+  .chapter-desc {
+    font-size: 11pt; color: var(--gray-600);
+    max-width: 500px; line-height: 1.6;
+  }
+
+  /* ── Corps de page ── */
+  .page {
+    padding: 48px 80px;
+    page-break-after: always;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  h2 {
+    font-size: 16pt; font-weight: 800; color: var(--blue);
+    margin: 0 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--gold);
+  }
+  h3 {
+    font-size: 12pt; font-weight: 700; color: var(--blue-lt);
+    margin: 24px 0 12px;
+  }
+  h4 {
+    font-size: 10pt; font-weight: 700; color: var(--gray-800);
+    margin: 16px 0 8px;
+  }
+  p { margin-bottom: 10px; }
+  ul, ol { margin: 8px 0 12px 20px; }
+  li { margin-bottom: 4px; }
+
+  /* ── Composants ── */
+  .screenshot {
+    border: 2px dashed var(--gray-200);
+    border-radius: 12px;
+    background: var(--gray-50);
+    padding: 24px;
+    text-align: center;
+    margin: 16px 0;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .screenshot .icon { font-size: 28pt; }
+  .screenshot .label {
+    font-size: 9pt; font-weight: 700; color: var(--gray-600);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .screenshot .desc { font-size: 9pt; color: var(--gray-600); }
+  .screenshot .url {
+    font-family: monospace; font-size: 8.5pt;
+    background: var(--gray-200); padding: 3px 10px; border-radius: 4px;
+    color: var(--blue);
+  }
+
+  .info-box {
+    border-left: 4px solid var(--blue-lt);
+    background: #e8eef8;
+    border-radius: 0 8px 8px 0;
+    padding: 12px 16px;
+    margin: 12px 0;
+    font-size: 9.5pt;
+  }
+  .info-box.warning { border-color: var(--orange); background: #fff3e0; }
+  .info-box.danger  { border-color: var(--red);    background: #fdecea; }
+  .info-box.success { border-color: var(--green);  background: #e8f5e9; }
+  .info-box strong  { display: block; margin-bottom: 4px; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 10px; border-radius: 12px;
+    font-size: 8pt; font-weight: 700;
+    vertical-align: middle;
+  }
+  .badge-blue   { background: var(--blue);  color: white; }
+  .badge-green  { background: var(--green); color: white; }
+  .badge-gold   { background: var(--gold);  color: var(--blue); }
+  .badge-red    { background: var(--red);   color: white; }
+  .badge-orange { background: var(--orange);color: white; }
+  .badge-gray   { background: var(--gray-200); color: var(--gray-800); }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    margin: 12px 0; font-size: 9.5pt;
+  }
+  th {
+    background: var(--blue); color: white;
+    padding: 8px 12px; text-align: left; font-weight: 600;
+  }
+  td { padding: 7px 12px; border-bottom: 1px solid var(--gray-200); }
+  tr:nth-child(even) td { background: var(--gray-50); }
+
+  .step {
+    display: flex; gap: 16px; margin-bottom: 16px; align-items: flex-start;
+  }
+  .step-num {
+    width: 28px; height: 28px; flex-shrink: 0;
+    background: var(--blue); color: white;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 10pt;
+  }
+  .step-content { flex: 1; }
+  .step-content strong { display: block; font-weight: 700; margin-bottom: 4px; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .card {
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .card h4 { margin-top: 0; }
+
+  code {
+    background: var(--gray-100);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'Courier New', monospace;
+    font-size: 9pt;
+    color: #c0392b;
+  }
+  pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 8.5pt;
+    overflow: hidden;
+    margin: 10px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .role-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 8.5pt; font-weight: 600;
+    margin: 2px;
+  }
+  .role-admin  { background: #e8eef8; color: var(--blue); border: 1px solid var(--blue-lt); }
+  .role-agent  { background: #e8f5e9; color: var(--green); border: 1px solid var(--green); }
+  .role-op     { background: #fff3e0; color: var(--orange); border: 1px solid var(--orange); }
+
+  .nav-preview {
+    background: var(--blue);
+    border-radius: 8px;
+    padding: 12px 20px;
+    display: flex; align-items: center; gap: 20px;
+    font-size: 9pt; color: rgba(255,255,255,.8);
+    margin: 12px 0;
+  }
+  .nav-preview .brand { font-weight: 800; color: white; font-size: 12pt; }
+  .nav-preview .nav-item { padding: 4px 12px; border-radius: 4px; }
+  .nav-preview .nav-item.active { background: rgba(255,255,255,.2); color: white; }
+
+  .status-flow {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+    margin: 12px 0;
+  }
+  .status-box {
+    padding: 4px 14px; border-radius: 6px;
+    font-size: 8.5pt; font-weight: 700;
+  }
+  .arrow { font-size: 14pt; color: var(--gray-600); }
+
+  /* ── En-tête / pied de page d'impression ── */
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  @media print {
+    html { font-size: 9.5pt; }
+    .cover { min-height: 100vh; }
+    .page { page-break-inside: avoid; }
+    .screenshot { page-break-inside: avoid; }
+    .step { page-break-inside: avoid; }
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════
+     COUVERTURE
+══════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div class="cover-band"></div>
+  <div class="cover-body">
+    <div class="cover-logo">S</div>
+    <div class="cover-ministry">République Gabonaise — Ministère de l'Intérieur et de la Sécurité</div>
+    <div class="cover-title">Guide<br>Administrateur</div>
+    <div class="cover-subtitle">SGLP — Système de Gestion des Libertés Publiques</div>
+    <div class="cover-meta">
+      <div class="cover-meta-item">
+        <label>Version</label>
+        <span>2.1</span>
+      </div>
+      <div class="cover-meta-item">
+        <label>Date</label>
+        <span>Mars 2026</span>
+      </div>
+      <div class="cover-meta-item">
+        <label>Plateforme</label>
+        <span>Laravel 9 · PHP 8.2</span>
+      </div>
+      <div class="cover-meta-item">
+        <label>Confidentialité</label>
+        <span>Usage interne</span>
+      </div>
+    </div>
+  </div>
+  <div class="cover-footer">
+    <span>SGLP — Guide Administrateur v2.1</span>
+    <span>Ministère de l'Intérieur et de la Sécurité — Gabon</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     TABLE DES MATIÈRES
+══════════════════════════════════════════════════════════════ -->
+<div class="toc-page">
+  <h1>Table des matières</h1>
+
+  <div class="toc-section">
+    <span class="toc-num">1</span>
+    <span class="toc-label">Architecture et accès</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page-num">3</span>
+  </div>
+  <div class="toc-sub">URLs de connexion · Rôles et permissions · Tableau de bord</div>
+
+  <div class="toc-section" style="margin-top:12px">
+    <span class="toc-num">2</span>
+    <span class="toc-label">Gestion des dossiers et organisations</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page-num">5</span>
+  </div>
+  <div class="toc-sub">Cycle de vie d'un dossier · Statuts · Traitement administratif · Génération de récépissé</div>
+
+  <div class="toc-section" style="margin-top:12px">
+    <span class="toc-num">3</span>
+    <span class="toc-label">Portail Public CMS</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page-num">8</span>
+  </div>
+  <div class="toc-sub">Actualités · Documents · FAQ · Guides · Événements · Messages · Paramètres</div>
+
+  <div class="toc-section" style="margin-top:12px">
+    <span class="toc-num">4</span>
+    <span class="toc-label">Annuaire public et vérification des récépissés</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page-num">11</span>
+  </div>
+  <div class="toc-sub">Fonctionnement de l'annuaire · Vérification QR / numéro · Résultats</div>
+
+  <div class="toc-section" style="margin-top:12px">
+    <span class="toc-num">5</span>
+    <span class="toc-label">API Interopérabilité V1</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page-num">13</span>
+  </div>
+  <div class="toc-sub">Gestion des tokens · Endpoints · Sécurité · Documentation</div>
+
+  <div class="toc-section" style="margin-top:12px">
+    <span class="toc-num">6</span>
+    <span class="toc-label">Référentiels et paramétrage</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page-num">16</span>
+  </div>
+  <div class="toc-sub">Types d'organisations · Fonctions · Domaines d'activité · Paramètres système</div>
+
+  <div class="toc-section" style="margin-top:12px">
+    <span class="toc-num">7</span>
+    <span class="toc-label">Rapports, exports et surveillance</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page-num">18</span>
+  </div>
+  <div class="toc-sub">Tableaux de bord · Exports CSV · Logs d'activité · QR codes</div>
+
+  <div class="toc-section" style="margin-top:12px">
+    <span class="toc-num">8</span>
+    <span class="toc-label">Résolution des problèmes courants</span>
+    <span class="toc-dots"></span>
+    <span class="toc-page-num">20</span>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAPITRE 1 — ARCHITECTURE ET ACCÈS
+══════════════════════════════════════════════════════════════ -->
+<div class="chapter-cover">
+  <div class="chapter-num">01</div>
+  <div class="chapter-title">Architecture et accès</div>
+  <div class="chapter-desc">URLs de connexion, rôles utilisateurs, structure du tableau de bord administrateur.</div>
+</div>
+
+<div class="page">
+  <h2>1.1 URLs de connexion</h2>
+
+  <p>Le SGLP dispose de <strong>deux interfaces distinctes</strong> selon le profil utilisateur :</p>
+
+  <div class="two-col" style="margin: 20px 0;">
+    <div class="card">
+      <h4>🔐 Espace Administrateur / Agent</h4>
+      <p style="font-size:9pt; color:#555;">Accès à la gestion complète des dossiers, référentiels, CMS, API et rapports.</p>
+      <pre>/admin/login</pre>
+      <span class="badge badge-blue">admin</span>
+      <span class="badge badge-green" style="margin-left:6px">agent</span>
+    </div>
+    <div class="card">
+      <h4>👤 Espace Opérateur</h4>
+      <p style="font-size:9pt; color:#555;">Accès à la soumission et au suivi des dossiers d'une organisation.</p>
+      <pre>/login</pre>
+      <span class="badge badge-orange">operator</span>
+    </div>
+  </div>
+
+  <div class="info-box warning">
+    <strong>⚠️ Important</strong>
+    Les deux URLs de connexion sont distinctes et volontaires. Un compte <em>admin</em> ne peut pas se connecter via <code>/login</code> et inversement.
+  </div>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Page de connexion administrateur</div>
+    <div class="url">/admin/login</div>
+  </div>
+
+  <h2>1.2 Rôles et permissions</h2>
+
+  <table>
+    <thead>
+      <tr><th>Rôle</th><th>Accès</th><th>Restrictions</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><span class="role-tag role-admin">⚙️ Admin</span></td>
+        <td>Accès complet à toutes les fonctionnalités</td>
+        <td>Aucune</td>
+      </tr>
+      <tr>
+        <td><span class="role-tag role-agent">👁 Agent</span></td>
+        <td>Traitement dossiers, consultation, génération documents</td>
+        <td>Pas de gestion des utilisateurs ni des référentiels</td>
+      </tr>
+      <tr>
+        <td><span class="role-tag role-op">📋 Opérateur</span></td>
+        <td>Dépôt et suivi de ses propres dossiers</td>
+        <td>Espace isolé, pas d'accès à l'administration</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>1.3 Tableau de bord administrateur</h2>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Tableau de bord principal — statistiques, dossiers récents, alertes</div>
+    <div class="url">/admin/dashboard</div>
+  </div>
+
+  <p>Le tableau de bord affiche en temps réel :</p>
+  <ul>
+    <li>Nombre de dossiers par statut (brouillon, soumis, en validation, approuvé…)</li>
+    <li>Dossiers récemment soumis ou modifiés</li>
+    <li>Messages non lus du portail public</li>
+    <li>Alertes système (QR codes expirés, erreurs de génération)</li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAPITRE 2 — GESTION DES DOSSIERS
+══════════════════════════════════════════════════════════════ -->
+<div class="chapter-cover">
+  <div class="chapter-num">02</div>
+  <div class="chapter-title">Gestion des dossiers<br>et organisations</div>
+  <div class="chapter-desc">Cycle de vie complet d'un dossier, depuis la soumission par l'opérateur jusqu'à la délivrance du récépissé officiel.</div>
+</div>
+
+<div class="page">
+  <h2>2.1 Cycle de vie d'un dossier</h2>
+
+  <div class="status-flow">
+    <div class="status-box" style="background:#e8eef8; color:#002B7F;">Brouillon</div>
+    <span class="arrow">→</span>
+    <div class="status-box" style="background:#fff3e0; color:#fd7e14;">Soumis</div>
+    <span class="arrow">→</span>
+    <div class="status-box" style="background:#e3f2fd; color:#1565c0;">En validation</div>
+    <span class="arrow">→</span>
+    <div class="status-box" style="background:#e8f5e9; color:#198754;">Approuvé ✓</div>
+  </div>
+  <div class="status-flow" style="margin-top: 4px;">
+    <div style="margin-left: 130px; display:flex; gap:8px; align-items:center;">
+      <span class="arrow">→</span>
+      <div class="status-box" style="background:#fdecea; color:#dc3545;">Rejeté ✗</div>
+    </div>
+    <span style="margin-left:20px; color:#666; font-size:8.5pt">ou</span>
+    <div style="display:flex; gap:8px; align-items:center; margin-left:8px">
+      <span class="arrow">→</span>
+      <div class="status-box" style="background:#fff8e1; color:#f57f17;">Suspendu ⚠</div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; margin-left:8px">
+      <span class="arrow">→</span>
+      <div class="status-box" style="background:#f5f5f5; color:#555;">Radié 🚫</div>
+    </div>
+  </div>
+
+  <h2 style="margin-top:28px">2.2 Traiter un dossier soumis</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Accéder à la liste des dossiers</strong>
+      Navigation : <em>Administration → Dossiers → En attente de traitement</em>
+    </div>
+  </div>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Liste des dossiers — filtres par statut, type, province</div>
+    <div class="url">/admin/dossiers</div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Ouvrir le dossier et vérifier les pièces jointes</strong>
+      Vérifier les documents fournis : statuts, PV d'assemblée, pièces d'identité des membres du bureau.
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Valider les membres du bureau via le NIP</strong>
+      Chaque membre doit avoir un NIP valide dans la base nationale (vérification automatique).
+    </div>
+  </div>
+
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <strong>Approuver ou rejeter</strong>
+      Cliquer sur <em>"Approuver"</em> pour passer au statut <code>approuve</code> et déclencher la génération du récépissé, ou <em>"Rejeter"</em> avec un motif obligatoire.
+    </div>
+  </div>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Fiche dossier — détail, membres bureau, boutons d'action</div>
+    <div class="url">/admin/dossiers/{id}</div>
+  </div>
+
+  <h2>2.3 Génération du récépissé</h2>
+
+  <p>À l'approbation, le système génère automatiquement :</p>
+  <ul>
+    <li><strong>Récépissé PDF officiel</strong> avec numéro unique, QR code d'authentification, données de l'organisation et membres du bureau</li>
+    <li><strong>QR code actif</strong> dans la table <code>qr_codes</code> pointant vers l'organisation</li>
+    <li>L'organisation devient <strong>visible dans l'annuaire public</strong></li>
+  </ul>
+
+  <div class="info-box">
+    <strong>ℹ️ Format du numéro de récépissé</strong>
+    <code>TYPE-ANNÉE-NUMÉRO</code> — exemple : <code>ASS-2026-000042</code> pour une association.
+    Préfixes : <code>ASS</code> association · <code>ONG</code> ONG · <code>PP</code> parti politique · <code>CR</code> confession religieuse.
+  </div>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Aperçu du récépissé PDF généré avec QR code</div>
+    <div class="url">/admin/dossiers/{id}/recepisse</div>
+  </div>
+
+  <h2>2.4 Personnalisation des modèles de documents</h2>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Interface de personnalisation des modèles PDF (en-tête, pied de page, signature)</div>
+    <div class="url">/admin/documents/customize</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAPITRE 3 — PORTAIL PUBLIC CMS
+══════════════════════════════════════════════════════════════ -->
+<div class="chapter-cover">
+  <div class="chapter-num">03</div>
+  <div class="chapter-title">Portail Public CMS</div>
+  <div class="chapter-desc">Gestion du contenu du portail public : actualités, documents téléchargeables, FAQ, guides pratiques, calendrier d'événements et messages de contact.</div>
+</div>
+
+<div class="page">
+  <h2>3.1 Tableau de bord Portail</h2>
+
+  <p>Accès : <em>Administration → Portail Public</em> (icône 🌐 dans la barre latérale)</p>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Tableau de bord du Portail — vue d'ensemble des modules CMS</div>
+    <div class="url">/admin/portail</div>
+  </div>
+
+  <h2>3.2 Gestion des Actualités</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Créer une actualité</strong>
+      Navigation : <em>Portail → Actualités → Nouvelle actualité</em>
+    </div>
+  </div>
+
+  <table>
+    <thead><tr><th>Champ</th><th>Description</th><th>Obligatoire</th></tr></thead>
+    <tbody>
+      <tr><td>Titre</td><td>Titre de l'article (max 255 caractères)</td><td>✅ Oui</td></tr>
+      <tr><td>Contenu</td><td>Corps de l'article (HTML limité)</td><td>✅ Oui</td></tr>
+      <tr><td>Catégorie</td><td>Actualité · Communiqué · Événement</td><td>✅ Oui</td></tr>
+      <tr><td>Image</td><td>JPEG/PNG/WebP, max 2 Mo — nom UUID généré automatiquement</td><td>Non</td></tr>
+      <tr><td>Statut</td><td>Brouillon / Publié</td><td>✅ Oui</td></tr>
+      <tr><td>Date de publication</td><td>Date d'affichage sur le portail</td><td>✅ Oui</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box warning">
+    <strong>⚠️ Sécurité des images uploadées</strong>
+    Les images sont renommées avec un UUID aléatoire à l'upload. L'ancien fichier est supprimé automatiquement lors d'une mise à jour ou suppression.
+  </div>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Formulaire de création / édition d'une actualité</div>
+    <div class="url">/admin/portail/actualites/create</div>
+  </div>
+
+  <h2>3.3 Gestion des Documents publics</h2>
+
+  <p>Les documents téléchargeables (formulaires, guides, textes légaux) sont gérés depuis <em>Portail → Documents</em>.</p>
+
+  <table>
+    <thead><tr><th>Champ</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td>Titre</td><td>Nom affiché sur le portail</td></tr>
+      <tr><td>Catégorie</td><td>Guides · Formulaires · Textes légaux · Modèles</td></tr>
+      <tr><td>Type d'organisation</td><td>Tous · Association · ONG · Parti · Confession</td></tr>
+      <tr><td>Format</td><td>PDF · DOCX · XLSX</td></tr>
+      <tr><td>Fichier</td><td>PDF ou DOCX, max 20 Mo — stocké avec nom UUID</td></tr>
+      <tr><td>URL externe</td><td>Alternative au fichier : lien externe</td></tr>
+    </tbody>
+  </table>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Liste des documents publics avec compteur de téléchargements</div>
+    <div class="url">/admin/portail/documents</div>
+  </div>
+
+  <h2>3.4 FAQ, Guides et Événements</h2>
+
+  <div class="two-col">
+    <div class="card">
+      <h4>❓ FAQ</h4>
+      <p style="font-size:9pt">Questions/réponses classées par catégorie et ordonnées par glisser-déposer. Chaque entrée peut être publiée ou laissée en brouillon.</p>
+      <code>/admin/portail/faqs</code>
+    </div>
+    <div class="card">
+      <h4>📚 Guides pratiques</h4>
+      <p style="font-size:9pt">Guides PDF pour les démarches. Upload sécurisé avec UUID, suppression automatique de l'ancienne version.</p>
+      <code>/admin/portail/guides</code>
+    </div>
+  </div>
+  <div class="two-col" style="margin-top: 16px;">
+    <div class="card">
+      <h4>📅 Événements</h4>
+      <p style="font-size:9pt">Calendrier des événements institutionnels. Date de début/fin, lieu, description.</p>
+      <code>/admin/portail/evenements</code>
+    </div>
+    <div class="card">
+      <h4>⚙️ Paramètres</h4>
+      <p style="font-size:9pt">Paramètres du portail (nom du site, texte de pied de page, coordonnées de contact…).</p>
+      <code>/admin/portail/parametres</code>
+    </div>
+  </div>
+
+  <h2 style="margin-top:28px">3.5 Messages de contact</h2>
+
+  <p>Les messages reçus via le formulaire de contact public s'affichent dans <em>Portail → Messages</em>. Un badge rouge dans la navigation indique les messages non lus.</p>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Liste des messages reçus — badge compteur en temps réel</div>
+    <div class="url">/admin/portail/messages</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAPITRE 4 — ANNUAIRE ET VÉRIFICATION
+══════════════════════════════════════════════════════════════ -->
+<div class="chapter-cover">
+  <div class="chapter-num">04</div>
+  <div class="chapter-title">Annuaire public et<br>vérification des récépissés</div>
+  <div class="chapter-desc">L'annuaire public présente les organisations ayant reçu un récépissé. La vérification permet d'authentifier tout document officiel.</div>
+</div>
+
+<div class="page">
+  <h2>4.1 L'annuaire public</h2>
+
+  <p>L'annuaire (<code>/annuaire</code>) est accessible à tous sans connexion. Il affiche les organisations dont le statut est <span class="badge badge-gold">soumis</span> <span class="badge badge-blue">en_validation</span> <span class="badge badge-green">approuvé</span> <span class="badge badge-orange">suspendu</span>.</p>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Annuaire public — liste avec filtres type/province/recherche</div>
+    <div class="url">/annuaire</div>
+  </div>
+
+  <div class="two-col" style="margin: 16px 0;">
+    <div>
+      <h3>Filtres disponibles</h3>
+      <ul>
+        <li><strong>Recherche textuelle</strong> : nom, sigle, ville</li>
+        <li><strong>Type</strong> : Association · ONG · Parti politique · Confession religieuse</li>
+        <li><strong>Province</strong> : liste dynamique depuis la base</li>
+      </ul>
+    </div>
+    <div>
+      <h3>Informations affichées</h3>
+      <ul>
+        <li>Nom complet et sigle</li>
+        <li>Numéro de récépissé</li>
+        <li>Province / ville</li>
+        <li>Statut avec code couleur</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>4.2 Fiche détaillée d'une organisation</h2>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Fiche organisation — récépissé, membres bureau, objet social, QR code</div>
+    <div class="url">/annuaire/{id}</div>
+  </div>
+
+  <p>La fiche affiche :</p>
+  <ul>
+    <li>Numéro de récépissé avec bouton de copie</li>
+    <li>Membres du bureau (nom, prénom, fonction — <strong>sans NIP</strong>)</li>
+    <li>Widget "Authentifier ce récépissé" → lien vers la vérification</li>
+    <li>Organisations similaires de la même province</li>
+  </ul>
+
+  <h2>4.3 Vérification d'un récépissé</h2>
+
+  <p>URL : <code>/annuaire/verify/{code}</code> — accessible via scan QR, saisie manuelle ou lien direct.<br>
+  Throttle : 20 requêtes/minute par IP pour prévenir le scraping.</p>
+
+  <p>Trois types de code acceptés :</p>
+  <ul>
+    <li><strong>Code QR</strong> (scanné depuis un document officiel)</li>
+    <li><strong>Numéro de récépissé</strong> (ex : <code>ASS-2026-000042</code>)</li>
+    <li><strong>ID numérique</strong> de l'organisation</li>
+  </ul>
+
+  <div class="two-col" style="margin: 16px 0;">
+    <div class="card" style="border-top: 3px solid #198754;">
+      <h4 style="color:#198754">✅ Récépissé VALIDE</h4>
+      <p style="font-size:9pt">Organisation trouvée, statut actif. Bannière verte avec fiche complète.</p>
+    </div>
+    <div class="card" style="border-top: 3px solid #fd7e14;">
+      <h4 style="color:#fd7e14">⚠️ Organisation SUSPENDUE</h4>
+      <p style="font-size:9pt">Récépissé authentique mais organisation suspendue. Bannière orange.</p>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="card" style="border-top: 3px solid #dc3545;">
+      <h4 style="color:#dc3545">❌ NON RECONNU</h4>
+      <p style="font-size:9pt">Code introuvable. Avertissement fraude potentielle, bouton de signalement.</p>
+    </div>
+    <div class="card" style="border-top: 3px solid #dc3545;">
+      <h4 style="color:#dc3545">🚫 RÉCÉPISSÉ INVALIDE</h4>
+      <p style="font-size:9pt">Organisation radiée ou rejetée. Récépissé existant mais plus en vigueur.</p>
+    </div>
+  </div>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Page de résultat de vérification — récépissé valide (bannière verte)</div>
+    <div class="url">/annuaire/verify/ASS-2026-000001</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAPITRE 5 — API INTEROPÉRABILITÉ
+══════════════════════════════════════════════════════════════ -->
+<div class="chapter-cover">
+  <div class="chapter-num">05</div>
+  <div class="chapter-title">API Interopérabilité V1</div>
+  <div class="chapter-desc">Permettre aux systèmes d'information tiers d'accéder aux données officielles de l'annuaire SGLP de façon sécurisée et tracée.</div>
+</div>
+
+<div class="page">
+  <h2>5.1 Gestion des tokens API</h2>
+
+  <p>Accès : <em>Administration → API / Interopérabilité</em> (icône 🔌 dans la barre latérale)</p>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Liste des tokens API — statut, utilisation, dernière connexion</div>
+    <div class="url">/admin/api/tokens</div>
+  </div>
+
+  <h3>Créer un nouveau token</h3>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Cliquer sur "Nouveau token"</strong>
+      Renseigner le nom du système client et l'organisation demandeuse.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Sélectionner les permissions (scopes)</strong>
+      <span class="badge badge-blue">organisations</span>
+      <span class="badge badge-green">verify</span>
+      <span class="badge badge-gold">stats</span>
+      <span class="badge badge-gray">* (accès complet)</span>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Définir le rate limit</strong>
+      De 10 à 600 requêtes par minute. Recommandé : 60 req/min.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">4</div>
+    <div class="step-content">
+      <strong>Copier immédiatement le token généré</strong>
+      Le token brut n'est affiché qu'une seule fois. Seul le hash SHA-256 est stocké en base.
+    </div>
+  </div>
+
+  <div class="info-box danger">
+    <strong>🔴 Token perdu = token révoqué</strong>
+    Si le token brut est perdu, il faut en créer un nouveau. Il est impossible de récupérer la valeur originale.
+  </div>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Formulaire de création d'un token + affichage unique du token généré</div>
+    <div class="url">/admin/api/tokens/create</div>
+  </div>
+
+  <h2>5.2 Endpoints disponibles</h2>
+
+  <p>Base URL : <code>https://www.sglp.ga/api/v1/public</code></p>
+
+  <table>
+    <thead><tr><th>Méthode</th><th>Endpoint</th><th>Scope</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/organisations</code></td>
+        <td><code>organisations</code></td>
+        <td>Liste paginée avec filtres</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/organisations/{id}</code></td>
+        <td><code>organisations</code></td>
+        <td>Détail + membres bureau</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/organisations/verify/{code}</code></td>
+        <td><code>verify</code></td>
+        <td>Vérification récépissé / QR</td>
+      </tr>
+      <tr>
+        <td><span class="badge badge-green">GET</span></td>
+        <td><code>/stats</code></td>
+        <td><code>stats</code></td>
+        <td>Statistiques agrégées</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Exemple de requête</h3>
+  <pre>GET /api/v1/public/organisations?type=ong&province=Estuaire
+Authorization: Bearer votre_token_ici
+Accept: application/json</pre>
+
+  <h3>Exemple de réponse — vérification récépissé</h3>
+  <pre>{
+  "success": true,
+  "verified": true,
+  "status": "VALID",
+  "message": "Récépissé authentique et valide.",
+  "organisation": {
+    "id": 42,
+    "nom": "Association Citoyens Actifs du Gabon",
+    "numero_recepisse": "ASS-2024-000042",
+    "statut": "approuve",
+    "province": "Estuaire"
+  },
+  "verified_at": "2026-03-10T14:32:00+01:00"
+}</pre>
+
+  <h2>5.3 Documentation et spécification OpenAPI</h2>
+
+  <div class="two-col">
+    <div class="card">
+      <h4>📖 Documentation humaine</h4>
+      <p style="font-size:9pt">Page de documentation complète avec exemples de requêtes (cURL, Python).</p>
+      <code>/api/v1/documentation</code><br>
+      <small style="color:#555">Accessible publiquement, sans authentification</small>
+    </div>
+    <div class="card">
+      <h4>📄 Spécification OpenAPI 3.0</h4>
+      <p style="font-size:9pt">JSON compatible Swagger UI, Postman, Insomnia.</p>
+      <code>/api/v1/openapi.json</code><br>
+      <small style="color:#555">Importer dans Postman : File → Import → Link</small>
+    </div>
+  </div>
+
+  <h2 style="margin-top: 24px;">5.4 Révoquer un token compromis</h2>
+
+  <div class="step">
+    <div class="step-num">1</div>
+    <div class="step-content">
+      <strong>Aller dans Tokens API</strong> : <code>/admin/api/tokens</code>
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">2</div>
+    <div class="step-content">
+      <strong>Cliquer sur "Révoquer"</strong> en face du token concerné. Le token est immédiatement désactivé.
+    </div>
+  </div>
+  <div class="step">
+    <div class="step-num">3</div>
+    <div class="step-content">
+      <strong>Créer un nouveau token</strong> et le transmettre au système client par canal sécurisé.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAPITRE 6 — RÉFÉRENTIELS
+══════════════════════════════════════════════════════════════ -->
+<div class="chapter-cover">
+  <div class="chapter-num">06</div>
+  <div class="chapter-title">Référentiels et paramétrage</div>
+  <div class="chapter-desc">Gestion des données de référence : types d'organisations, fonctions des membres, domaines d'activité, paramètres système.</div>
+</div>
+
+<div class="page">
+  <h2>6.1 Types d'organisations</h2>
+
+  <p>Accès : <em>Référentiels → Types d'organisations</em></p>
+  <p>Définissent les catégories reconnues : Association, ONG, Parti politique, Confession religieuse. Chaque type peut avoir des règles de validation spécifiques (nombre minimal de membres, documents requis).</p>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Gestion des types d'organisations — règles et documents requis</div>
+    <div class="url">/admin/referentiels/types-organisations</div>
+  </div>
+
+  <h2>6.2 Fonctions des membres</h2>
+
+  <p>Accès : <em>Référentiels → Fonctions</em></p>
+  <p>Liste des fonctions pouvant être attribuées aux membres du bureau (Président, Secrétaire Général, Trésorier…). Ces valeurs alimentent les listes déroulantes dans les formulaires opérateur.</p>
+
+  <h2>6.3 Domaines d'activité</h2>
+
+  <p>Accès : <em>Référentiels → Domaines d'activité</em></p>
+  <p>Classification des activités des organisations (Éducation, Santé, Environnement, Culture…). Permet des statistiques sectorielles.</p>
+
+  <h2>6.4 Paramètres système</h2>
+
+  <table>
+    <thead><tr><th>Paramètre</th><th>Description</th><th>Valeur par défaut</th></tr></thead>
+    <tbody>
+      <tr><td><code>QR_VERIFICATION_BASE_URL</code></td><td>URL de base pour les QR codes</td><td><code>https://www.sglp.ga</code></td></tr>
+      <tr><td><code>SESSION_LIFETIME</code></td><td>Durée de session (minutes)</td><td>120</td></tr>
+      <tr><td><code>MAIL_FROM_ADDRESS</code></td><td>Expéditeur des emails</td><td>inscription@sglp.ga</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box">
+    <strong>ℹ️ Modification des paramètres .env</strong>
+    Les paramètres système sont définis dans le fichier <code>.env</code> sur le serveur. Toute modification nécessite un accès SSH et l'exécution de <code>php artisan config:cache</code> pour prendre effet.
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAPITRE 7 — RAPPORTS ET SURVEILLANCE
+══════════════════════════════════════════════════════════════ -->
+<div class="chapter-cover">
+  <div class="chapter-num">07</div>
+  <div class="chapter-title">Rapports, exports<br>et surveillance</div>
+  <div class="chapter-desc">Outils de suivi, d'analyse et d'export des données. Surveillance des QR codes et des logs système.</div>
+</div>
+
+<div class="page">
+  <h2>7.1 Rapports statistiques</h2>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Tableau de bord rapports — graphiques par type, province, période</div>
+    <div class="url">/admin/reports</div>
+  </div>
+
+  <p>Les rapports permettent d'analyser :</p>
+  <ul>
+    <li>Nombre de dossiers soumis / approuvés / rejetés par période</li>
+    <li>Répartition géographique par province</li>
+    <li>Évolution par type d'organisation</li>
+    <li>Statistiques des vérifications de récépissés (tentatives frauduleuses)</li>
+  </ul>
+
+  <h2>7.2 Export des données</h2>
+
+  <p>Accès : <em>Administration → Exports</em></p>
+
+  <table>
+    <thead><tr><th>Export</th><th>Format</th><th>Contenu</th></tr></thead>
+    <tbody>
+      <tr><td>Organisations approuvées</td><td>CSV / Excel</td><td>Toutes les organisations avec récépissé</td></tr>
+      <tr><td>Dossiers par période</td><td>CSV</td><td>Dossiers filtrés par date et statut</td></tr>
+      <tr><td>Membres bureau</td><td>CSV</td><td>Sans NIP — données publiques uniquement</td></tr>
+      <tr><td>Statistiques API</td><td>CSV</td><td>Usage des tokens par période</td></tr>
+    </tbody>
+  </table>
+
+  <div class="info-box warning">
+    <strong>⚠️ Export des NIP</strong>
+    Aucun export incluant les NIP des membres n'est disponible depuis l'interface. Les NIP sont des données sensibles ne devant pas quitter le système.
+  </div>
+
+  <h2>7.3 Surveillance des QR codes</h2>
+
+  <pre># Vérifier l'état de santé de tous les QR codes
+php artisan qr:health-check
+
+# Régénérer les QR codes manquants ou corrompus
+php artisan qr:fix-missing-png
+
+# Régénérer les QR codes pour toutes les organisations approuvées
+php artisan qr:regenerate --type=organisation</pre>
+
+  <h2>7.4 Logs d'activité</h2>
+
+  <div class="screenshot">
+    <div class="icon">🖼️</div>
+    <div class="label">Capture d'écran</div>
+    <div class="desc">Journal d'activité — qui a fait quoi et quand</div>
+    <div class="url">/admin/activity-logs</div>
+  </div>
+
+  <p>Chaque action administrative est tracée :</p>
+  <ul>
+    <li>Approbation / rejet / suspension d'un dossier</li>
+    <li>Génération d'un document officiel</li>
+    <li>Modification d'un référentiel</li>
+    <li>Création / révocation d'un token API</li>
+    <li>Publication d'une actualité ou d'un document</li>
+  </ul>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     CHAPITRE 8 — RÉSOLUTION DES PROBLÈMES
+══════════════════════════════════════════════════════════════ -->
+<div class="chapter-cover">
+  <div class="chapter-num">08</div>
+  <div class="chapter-title">Résolution des<br>problèmes courants</div>
+  <div class="chapter-desc">Diagnostic et résolution des incidents les plus fréquents rencontrés par les administrateurs.</div>
+</div>
+
+<div class="page">
+  <h2>8.1 Tableau de diagnostic rapide</h2>
+
+  <table>
+    <thead><tr><th>Symptôme</th><th>Cause probable</th><th>Action</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Page blanche ou erreur 500</td>
+        <td>Erreur PHP / cache corrompu</td>
+        <td><code>php artisan cache:clear && view:clear</code></td>
+      </tr>
+      <tr>
+        <td>Images portail absentes</td>
+        <td>Lien symbolique storage manquant</td>
+        <td><code>php artisan storage:link</code></td>
+      </tr>
+      <tr>
+        <td>QR codes non lisibles</td>
+        <td>Fichiers PNG manquants</td>
+        <td><code>php artisan qr:fix-missing-png</code></td>
+      </tr>
+      <tr>
+        <td>PDF ne génère pas</td>
+        <td>Permissions storage incorrectes</td>
+        <td><code>chmod -R 775 storage/</code></td>
+      </tr>
+      <tr>
+        <td>API retourne 401</td>
+        <td>Token révoqué ou expiré</td>
+        <td>Créer un nouveau token dans l'admin</td>
+      </tr>
+      <tr>
+        <td>API retourne 429</td>
+        <td>Rate limit dépassé</td>
+        <td>Augmenter le rate_limit du token concerné</td>
+      </tr>
+      <tr>
+        <td>Connexion admin impossible</td>
+        <td>Session expirée ou CSRF</td>
+        <td>Vider le cache navigateur, réessayer</td>
+      </tr>
+      <tr>
+        <td>Emails non reçus</td>
+        <td>Configuration SMTP</td>
+        <td>Vérifier MAIL_HOST et MAIL_PASSWORD dans .env</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>8.2 Commandes de maintenance essentielles</h2>
+
+  <pre># ── Vider tous les caches ──
+php artisan cache:clear
+php artisan config:clear
+php artisan route:clear
+php artisan view:clear
+
+# ── Reconstruire les caches (production) ──
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# ── Mode maintenance ──
+php artisan down --message="Maintenance en cours."
+php artisan up
+
+# ── Vérifier l'état de l'application ──
+php artisan qr:health-check
+tail -50 storage/logs/laravel.log | grep -E "ERROR|CRITICAL"</pre>
+
+  <h2>8.3 Contacts support</h2>
+
+  <table>
+    <thead><tr><th>Besoin</th><th>Contact</th></tr></thead>
+    <tbody>
+      <tr><td>Problème technique critique (production down)</td><td>Équipe technique SGLP — contact@sglp.ga</td></tr>
+      <tr><td>Demande d'accès API (nouveau token)</td><td>Administrateur système — /admin/api/tokens</td></tr>
+      <tr><td>Signalement de récépissé frauduleux</td><td>Formulaire /contact sur le portail</td></tr>
+      <tr><td>Bug ou anomalie fonctionnelle</td><td>Rapport via le système de suivi interne</td></tr>
+    </tbody>
+  </table>
+
+  <div style="margin-top: 60px; padding-top: 24px; border-top: 2px solid #dee2e6; text-align: center; color: #6c757d; font-size: 8.5pt;">
+    <p><strong>SGLP — Guide Administrateur v2.1</strong></p>
+    <p>Ministère de l'Intérieur et de la Sécurité — République Gabonaise</p>
+    <p>Document mis à jour le 10 mars 2026 · Usage interne uniquement</p>
+  </div>
+</div>
+
+</body>
+</html>

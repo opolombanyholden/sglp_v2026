@@ -189,6 +189,110 @@ class DocumentVerificationController extends Controller
     }
 
     /**
+     * API : Vérifier un document par POST
+     * POST /api/verify-document
+     */
+    public function apiVerifyPost(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string|max:255',
+        ]);
+
+        return $this->apiVerify($request->input('token'));
+    }
+
+    /**
+     * API : Statistiques publiques des documents
+     * GET /api/document-stats
+     */
+    public function apiStats()
+    {
+        try {
+            $total = DocumentGeneration::count();
+            $valides = DocumentGeneration::where('is_valid', true)->count();
+            $verificationsToday = DocumentVerification::whereDate('created_at', today())->count();
+
+            return response()->json([
+                'success' => true,
+                'stats' => [
+                    'total_documents' => $total,
+                    'documents_valides' => $valides,
+                    'documents_invalides' => $total - $valides,
+                    'verifications_today' => $verificationsToday,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la récupération des statistiques',
+            ], 500);
+        }
+    }
+
+    /**
+     * API : Vérifier un document via QR Code (mobile)
+     * POST /api/verify-qr
+     */
+    public function apiVerifyQr(Request $request)
+    {
+        $request->validate([
+            'qr_data' => 'required|string|max:500',
+        ]);
+
+        $qrData = $request->input('qr_data');
+
+        // Extraire le token depuis l'URL du QR code
+        if (preg_match('/document-verify\/([a-zA-Z0-9\-]+)/', $qrData, $matches)) {
+            $token = $matches[1];
+            return $this->apiVerify($token);
+        }
+
+        return response()->json([
+            'valid' => false,
+            'error' => 'invalid_qr',
+            'message' => 'QR code invalide ou non reconnu',
+        ], 400);
+    }
+
+    /**
+     * API : Informations d'un document sans log de vérification
+     * GET /api/document-info/{token}
+     */
+    public function apiDocumentInfo(string $token)
+    {
+        try {
+            $generation = DocumentGeneration::where('qr_code_token', $token)
+                ->with(['template', 'organisation'])
+                ->first();
+
+            if (!$generation) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Document introuvable',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'document' => [
+                    'numero' => $generation->numero_document,
+                    'type' => $generation->type_document_label,
+                    'is_valid' => $generation->is_valid,
+                    'organisation' => [
+                        'nom' => $generation->organisation->nom ?? null,
+                    ],
+                    'generated_at' => $generation->generated_at?->format('d/m/Y H:i'),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur système',
+            ], 500);
+        }
+    }
+
+    /**
      * ============================================================================
      * MÉTHODES ADMIN - Interface d'administration des vérifications
      * ============================================================================

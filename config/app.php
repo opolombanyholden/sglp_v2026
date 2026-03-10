@@ -58,6 +58,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | QR Code Verification Base URL
+    |--------------------------------------------------------------------------
+    |
+    | URL de base utilisée pour générer les liens de vérification dans les
+    | QR codes des documents. En production : https://www.sglp.ga
+    |
+    */
+
+    'qr_verification_base_url' => env('QR_VERIFICATION_BASE_URL', 'https://www.sglp.ga'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

@@ -461,7 +461,7 @@ class DocumentGenerationService
         // ========================================
         // IMAGE DE FOND (pour mPDF)
         // ========================================
-        $bgImagePath = public_path('storage/images/bg-pied-page.png');
+        $bgImagePath = storage_path('app/public/images/bg-pied-page.png');
         $variables['bg_pied_page_base64'] = '';
 
         if (file_exists($bgImagePath)) {
@@ -1350,7 +1350,7 @@ class DocumentGenerationService
     protected function getBackgroundImageBase64(): ?string
     {
         try {
-            $imagePath = public_path('storage/images/bg-pied-page.png');
+            $imagePath = storage_path('app/public/images/bg-pied-page.png');
 
             if (!file_exists($imagePath)) {
                 Log::warning('Image bg-pied-page.png introuvable', ['path' => $imagePath]);

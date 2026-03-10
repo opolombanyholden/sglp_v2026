@@ -348,6 +348,12 @@
                 padding-left: 2rem;
             }
 
+            /* Dropdown Services */
+            #servicesMenu {
+                min-width: 200px;
+                z-index: 9999 !important;
+            }
+
             /* User menu */
             .user-menu {
                 display: flex;
@@ -410,12 +416,19 @@
                                 <i class="fas fa-newspaper mr-1"></i>Actualités
                             </a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('annuaire*') ? 'active' : '' }}"
+                                href="{{ route('annuaire.index') }}">
+                                <i class="fas fa-address-book mr-1"></i>Annuaire
+                            </a>
+                        </li>
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['documents.*', 'faq', 'annuaire*', 'guides', 'calendrier']) ? 'active' : '' }}"
-                                href="#" data-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle {{ request()->routeIs(['documents.*', 'faq', 'guides', 'calendrier']) ? 'active' : '' }}"
+                                href="#" id="servicesDropdown" role="button" aria-haspopup="true" aria-expanded="false"
+                                onclick="toggleServicesMenu(event)">
                                 <i class="fas fa-th mr-1"></i>Services
                             </a>
-                            <ul class="dropdown-menu">
+                            <ul class="dropdown-menu" id="servicesMenu" style="display:none; position:absolute; z-index:9999;">
                                 <li>
                                     <a class="dropdown-item {{ request()->routeIs('documents.*') ? 'active' : '' }}"
                                         href="{{ route('documents.index') }}">
@@ -426,12 +439,6 @@
                                     <a class="dropdown-item {{ request()->routeIs('faq') ? 'active' : '' }}"
                                         href="{{ route('faq') }}">
                                         <i class="fas fa-question-circle mr-2"></i>FAQ
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item {{ request()->routeIs('annuaire*') ? 'active' : '' }}"
-                                        href="{{ route('annuaire.index') }}">
-                                        <i class="fas fa-address-book mr-2"></i>Annuaire
                                     </a>
                                 </li>
                                 <li>
@@ -454,12 +461,7 @@
                                 <i class="fas fa-info-circle mr-1"></i>À propos
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('contact') ? 'active' : '' }}"
-                                href="{{ route('contact') }}">
-                                <i class="fas fa-envelope mr-1"></i>Contact
-                            </a>
-                        </li>
+                        
                     </ul>
 
                     <!-- Section user-menu mise à jour -->
@@ -618,6 +620,24 @@
 
             document.querySelectorAll('.fade-in').forEach(el => {
                 observer.observe(el);
+            });
+        </script>
+        <script>
+            function toggleServicesMenu(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var menu = document.getElementById('servicesMenu');
+                var btn  = document.getElementById('servicesDropdown');
+                var open = menu.style.display === 'block';
+                menu.style.display = open ? 'none' : 'block';
+                btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+            }
+            document.addEventListener('click', function () {
+                var menu = document.getElementById('servicesMenu');
+                if (menu) {
+                    menu.style.display = 'none';
+                    document.getElementById('servicesDropdown').setAttribute('aria-expanded', 'false');
+                }
             });
         </script>
         @stack('scripts')

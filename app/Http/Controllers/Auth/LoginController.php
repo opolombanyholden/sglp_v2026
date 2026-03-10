@@ -175,17 +175,12 @@ class LoginController extends Controller
             // Stocker l'ID utilisateur en session pour la vérification 2FA
             session()->put('two_factor_user_id', $user->id);
             
-            // En mode debug, afficher le code (à retirer en production)
-            if (config('app.debug')) {
-                session()->put('two_factor_code_debug', $twoFactorCode->code);
-            }
-            
             // Déconnecter l'utilisateur temporairement
             Auth::logout();
-            
+
             // Rediriger vers la page 2FA
             return redirect()->route('two-factor.index')
-                ->with('info', config('app.debug') ? 'Code de vérification: ' . $twoFactorCode->code : 'Un code de vérification a été envoyé.');
+                ->with('info', 'Un code de vérification a été envoyé.');
         }
 
         // Message de bienvenue personnalisé

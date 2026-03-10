@@ -1456,6 +1456,16 @@
                                     </li>
                                 @endif
 
+                                @if(Route::has('admin.referentiels.domaines-activite.index'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.referentiels.domaines-activite.index') }}"
+                                            class="nav-link-custom {{ request()->routeIs('admin.referentiels.domaines-activite.*') ? 'active' : '' }}">
+                                            <i class="nav-icon fas fa-industry"></i>
+                                            <span class="nav-text">Domaines d'activité</span>
+                                        </a>
+                                    </li>
+                                @endif
+
                                 @if(Route::has('admin.settings.index'))
                                     <li class="nav-item">
                                         <a href="{{ route('admin.settings.index') }}"
@@ -1538,6 +1548,36 @@
                         </div>
                     </div>
 
+
+                    {{-- ========== PORTAIL PUBLIC - CMS ========== --}}
+                    <div class="nav-section">
+                        <ul class="nav-list" style="padding: 0.25rem 0;">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.portail.dashboard') }}"
+                                   class="nav-link-custom {{ request()->routeIs('admin.portail*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-globe"></i>
+                                    <span class="nav-text">Portail Public</span>
+                                    @php $msgNonLus = \App\Models\PortailMessage::where('statut','non_lu')->count(); @endphp
+                                    @if($msgNonLus > 0)
+                                        <span class="nav-badge warning">{{ $msgNonLus }}</span>
+                                    @endif
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    {{-- ========== API - INTEROPÉRABILITÉ ========== --}}
+                    <div class="nav-section">
+                        <ul class="nav-list" style="padding: 0.25rem 0;">
+                            <li class="nav-item">
+                                <a href="{{ route('admin.api.tokens.index') }}"
+                                   class="nav-link-custom {{ request()->routeIs('admin.api.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-plug"></i>
+                                    <span class="nav-text">API / Interopérabilité</span>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
 
                 </nav>
             </aside>
@@ -1676,6 +1716,23 @@
                     if (!$(this).hasClass('active')) {
                         $(this).css('transform', 'translateX(0)');
                     }
+                });
+
+                // ✅ Dropdown menu utilisateur (fix pour div non-interactif)
+                $('.user-menu').on('click', function (e) {
+                    e.stopPropagation();
+                    var $menu = $(this).next('.dropdown-menu');
+                    var isVisible = $menu.hasClass('show');
+                    // Fermer tous les dropdowns ouverts
+                    $('.dropdown-menu.show').removeClass('show');
+                    if (!isVisible) {
+                        $menu.addClass('show');
+                    }
+                });
+
+                // Fermer le dropdown en cliquant ailleurs
+                $(document).on('click', function () {
+                    $('.dropdown-menu.show').removeClass('show');
                 });
             });
 

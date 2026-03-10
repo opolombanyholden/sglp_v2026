@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\PermissionMatrixController;
 use App\Http\Controllers\Admin\ValidationEntityController;
 use App\Http\Controllers\Admin\GeographyController;
 use App\Http\Controllers\Admin\WorkflowStepController;
+use App\Http\Controllers\Admin\DomaineActiviteController;
 use App\Http\Controllers\Admin\OperationController;
 use App\Http\Controllers\Auth\LoginController;
 
@@ -573,6 +574,17 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
             Route::delete('/{documentType}', [DocumentTypeController::class, 'destroy'])->name('destroy');
         });
 
+        // 🏭 DOMAINES D'ACTIVITÉ
+        Route::prefix('domaines-activite')->name('domaines-activite.')->group(function () {
+            Route::get('/', [DomaineActiviteController::class, 'index'])->name('index');
+            Route::get('/create', [DomaineActiviteController::class, 'create'])->name('create');
+            Route::post('/', [DomaineActiviteController::class, 'store'])->name('store');
+            Route::get('/{domaineActivite}/edit', [DomaineActiviteController::class, 'edit'])->name('edit');
+            Route::put('/{domaineActivite}', [DomaineActiviteController::class, 'update'])->name('update');
+            Route::delete('/{domaineActivite}', [DomaineActiviteController::class, 'destroy'])->name('destroy');
+            Route::patch('/{domaineActivite}/toggle-status', [DomaineActiviteController::class, 'toggleStatus'])->name('toggle-status');
+        });
+
         // 👤 FONCTIONS DES MEMBRES (10 routes) - ✅ NOUVEAU MODULE 24/11/2025
         Route::prefix('fonctions')->name('fonctions.')->group(function () {
             Route::get('/', [FonctionController::class, 'index'])->name('index');
@@ -1033,5 +1045,59 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
     |--------------------------------------------------------------------------
     */
     Route::get('/api/fonctions', [FonctionController::class, 'apiList'])->name('api.fonctions');
+
+    /*
+    |--------------------------------------------------------------------------
+    | PORTAIL PUBLIC - CMS ADMINISTRATEUR
+    |--------------------------------------------------------------------------
+    | Gestion du contenu du portail usager (actualités, documents, FAQ, etc.)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('portail')->name('portail.')->group(function () {
+        // Dashboard Portail
+        Route::get('/', [\App\Http\Controllers\Admin\Portail\PortailDashboardController::class, 'index'])->name('dashboard');
+
+        // Actualités
+        Route::resource('actualites', \App\Http\Controllers\Admin\Portail\ActualiteAdminController::class);
+
+        // Documents publics
+        Route::resource('documents', \App\Http\Controllers\Admin\Portail\DocumentAdminController::class);
+
+        // FAQ
+        Route::resource('faqs', \App\Http\Controllers\Admin\Portail\FaqAdminController::class);
+
+        // Guides
+        Route::resource('guides', \App\Http\Controllers\Admin\Portail\GuideAdminController::class);
+
+        // Événements / Calendrier
+        Route::resource('evenements', \App\Http\Controllers\Admin\Portail\EvenementAdminController::class);
+
+        // Paramètres de contenu (hero, about, contact, footer)
+        Route::get('parametres', [\App\Http\Controllers\Admin\Portail\ParametreAdminController::class, 'index'])->name('parametres.index');
+        Route::post('parametres', [\App\Http\Controllers\Admin\Portail\ParametreAdminController::class, 'update'])->name('parametres.update');
+        Route::get('parametres/create', [\App\Http\Controllers\Admin\Portail\ParametreAdminController::class, 'create'])->name('parametres.create');
+        Route::post('parametres/create', [\App\Http\Controllers\Admin\Portail\ParametreAdminController::class, 'store'])->name('parametres.store');
+        Route::delete('parametres/{parametre}', [\App\Http\Controllers\Admin\Portail\ParametreAdminController::class, 'destroy'])->name('parametres.destroy');
+
+        // Messages / Contact
+        Route::get('messages', [\App\Http\Controllers\Admin\Portail\MessageAdminController::class, 'index'])->name('messages.index');
+        Route::get('messages/{message}', [\App\Http\Controllers\Admin\Portail\MessageAdminController::class, 'show'])->name('messages.show');
+        Route::post('messages/{message}/repondre', [\App\Http\Controllers\Admin\Portail\MessageAdminController::class, 'repondre'])->name('messages.repondre');
+        Route::post('messages/{message}/statut', [\App\Http\Controllers\Admin\Portail\MessageAdminController::class, 'updateStatut'])->name('messages.statut');
+        Route::delete('messages/{message}', [\App\Http\Controllers\Admin\Portail\MessageAdminController::class, 'destroy'])->name('messages.destroy');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | API - GESTION DES TOKENS D'ACCÈS INTEROPÉRABILITÉ
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('api')->name('api.')->group(function () {
+        Route::get('tokens', [\App\Http\Controllers\Admin\ApiTokenController::class, 'index'])->name('tokens.index');
+        Route::get('tokens/create', [\App\Http\Controllers\Admin\ApiTokenController::class, 'create'])->name('tokens.create');
+        Route::post('tokens', [\App\Http\Controllers\Admin\ApiTokenController::class, 'store'])->name('tokens.store');
+        Route::delete('tokens/{token}', [\App\Http\Controllers\Admin\ApiTokenController::class, 'destroy'])->name('tokens.destroy');
+        Route::patch('tokens/{token}/activate', [\App\Http\Controllers\Admin\ApiTokenController::class, 'activate'])->name('tokens.activate');
+    });
 
 });

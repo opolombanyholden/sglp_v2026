@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Operator\OrganisationController;
 use App\Http\Controllers\Api\ChunkProcessorController;
+use App\Http\Controllers\Api\V1\OrganisationApiController;
 use App\Http\Controllers\PublicControllers\DocumentVerificationController;
 
 /*
@@ -39,82 +40,19 @@ Route::prefix('api')->name('api.')->middleware(['throttle:120,1'])->group(functi
      *   "timestamp": "2025-10-28T10:30:00.000Z"
      * }
      */
-    Route::get('/verify-document/{token}', [DocumentVerificationController::class, 'verifyApi'])
+    Route::get('/verify-document/{token}', [DocumentVerificationController::class, 'apiVerify'])
         ->name('verify-document-get');
-    
-    /**
-     * Vérifier un document par token (POST)
-     * POST /api/verify-document
-     * 
-     * Body JSON :
-     * {
-     *   "token": "abc123...",
-     *   "numero_document": "DOC-2025-001" (optionnel)
-     * }
-     * 
-     * Réponse JSON :
-     * {
-     *   "success": true,
-     *   "valid": true,
-     *   "document": {...},
-     *   "message": "Document valide"
-     * }
-     */
-    Route::post('/verify-document', [DocumentVerificationController::class, 'verifyApiPost'])
+
+    Route::post('/verify-document', [DocumentVerificationController::class, 'apiVerifyPost'])
         ->name('verify-document-post');
-    
-    /**
-     * Statistiques publiques des documents (JSON)
-     * GET /api/document-stats
-     * 
-     * Réponse JSON :
-     * {
-     *   "success": true,
-     *   "stats": {
-     *     "total_documents": 1250,
-     *     "documents_valides": 1200,
-     *     "documents_invalides": 50,
-     *     "verifications_today": 350
-     *   }
-     * }
-     */
-    Route::get('/document-stats', [DocumentVerificationController::class, 'stats'])
+
+    Route::get('/document-stats', [DocumentVerificationController::class, 'apiStats'])
         ->name('document-stats');
-    
-    /**
-     * Vérifier un document via QR Code (POST - mobile)
-     * POST /api/verify-qr
-     * 
-     * Body JSON :
-     * {
-     *   "qr_data": "https://domaine.ga/document-verify/abc123",
-     *   "device_info": {...} (optionnel)
-     * }
-     * 
-     * Réponse JSON :
-     * {
-     *   "success": true,
-     *   "valid": true,
-     *   "document": {...}
-     * }
-     */
-    Route::post('/verify-qr', [DocumentVerificationController::class, 'verifyQr'])
+
+    Route::post('/verify-qr', [DocumentVerificationController::class, 'apiVerifyQr'])
         ->name('verify-qr-mobile');
-    
-    /**
-     * Obtenir les informations d'un document sans log
-     * GET /api/document-info/{token}
-     * 
-     * Utile pour prévisualisation sans enregistrer une vérification
-     * 
-     * Réponse JSON :
-     * {
-     *   "success": true,
-     *   "document": {...},
-     *   "cached": true
-     * }
-     */
-    Route::get('/document-info/{token}', [DocumentVerificationController::class, 'documentInfo'])
+
+    Route::get('/document-info/{token}', [DocumentVerificationController::class, 'apiDocumentInfo'])
         ->name('document-info');
 });
 
@@ -145,108 +83,6 @@ Route::middleware(['web', 'auth', 'throttle:60,1'])->group(function () {
     Route::get('/chunking/performance', [ChunkProcessorController::class, 'getPerformanceStats'])
         ->name('api.chunking.performance');
     
-});
-
-// ========================================
-// ENDPOINT DE DIAGNOSTIC - SANS MIDDLEWARE AUTH
-// Pour tester l'authentification sans redirection
-// ========================================
-
-Route::middleware(['web'])->group(function () {
-    
-    /**
-     * Endpoint de diagnostic authentification
-     * GET /api/chunking/auth-test
-     * 
-     * Teste l'authentification sans forcer la redirection
-     */
-    Route::get('/chunking/auth-test', function () {
-        return response()->json([
-            'success' => true,
-            'system' => 'chunking_auth_test',
-            'timestamp' => now()->toISOString(),
-            
-            // Tests d'authentification
-            'auth_check' => auth()->check(),
-            'auth_user_id' => auth()->id(),
-            'auth_user_email' => auth()->user()->email ?? 'N/A',
-            'auth_user_role' => auth()->user()->role ?? 'N/A',
-            'auth_guard' => auth()->getDefaultDriver(),
-            
-            // Tests de session
-            'session_id' => session()->getId(),
-            'session_token' => session()->token(),
-            'csrf_token' => csrf_token(),
-            
-            // Tests de cookies
-            'cookies_present' => !empty($_COOKIE),
-            'laravel_session_cookie' => isset($_COOKIE['laravel_session']) ? 'Present' : 'Absent',
-            'xsrf_token_cookie' => isset($_COOKIE['XSRF-TOKEN']) ? 'Present' : 'Absent',
-            
-            // Configuration Laravel
-            'config' => [
-                'auth_guard' => config('auth.defaults.guard'),
-                'session_driver' => config('session.driver'),
-                'session_lifetime' => config('session.lifetime'),
-                'session_cookie' => config('session.cookie'),
-            ],
-            
-            // Headers de la requête
-            'request_headers' => [
-                'user_agent' => request()->header('User-Agent'),
-                'accept' => request()->header('Accept'),
-                'cookie' => request()->header('Cookie') ? 'Present' : 'Absent',
-                'x_requested_with' => request()->header('X-Requested-With'),
-            ],
-            
-            // Debug spécifique
-            'debug' => [
-                'request_is_ajax' => request()->ajax(),
-                'request_wants_json' => request()->wantsJson(),
-                'middleware_applied' => 'web only (no auth)',
-                'can_access_protected' => 'To be tested with chunking/health-protected'
-            ]
-        ]);
-    })->name('api.chunking.auth-test');
-    
-    /**
-     * Endpoint protégé pour test
-     * GET /api/chunking/health-protected
-     */
-    Route::get('/chunking/health-protected', function () {
-        // Vérifier manuellement l'authentification
-        if (!auth()->check()) {
-            return response()->json([
-                'success' => false,
-                'authenticated' => false,
-                'message' => 'Non authentifié',
-                'redirect_to_login' => false,
-                'debug' => [
-                    'session_id' => session()->getId(),
-                    'csrf_token' => csrf_token(),
-                    'cookies' => $_COOKIE,
-                ]
-            ], 401);
-        }
-        
-        return response()->json([
-            'success' => true,
-            'authenticated' => true,
-            'user_id' => auth()->id(),
-            'user_email' => auth()->user()->email,
-            'user_role' => auth()->user()->role,
-            'message' => 'Authentifié avec succès',
-            'system' => 'chunking',
-            'status' => 'operational'
-        ]);
-    })->name('api.chunking.health-protected');
-    
-});
-
-// CSRF refresh public (fallback)
-Route::middleware(['web', 'throttle:10,1'])->group(function () {
-    Route::get('/csrf-refresh-public', [ChunkProcessorController::class, 'refreshCSRF'])
-        ->name('api.csrf-refresh-public');
 });
 
 // ========================================
@@ -297,7 +133,11 @@ Route::prefix('v1')->middleware(['web', 'auth'])->group(function () {
         $file = $request->file('file');
         $documentType = $request->input('document_type');
         
-        $fileName = time() . '_' . $documentType . '.' . $file->getClientOriginalExtension();
+        $allowedTypes = ['piece_identite', 'statut', 'pv', 'reglement', 'photo', 'autre'];
+        if (!in_array($documentType, $allowedTypes)) {
+            return response()->json(['success' => false, 'message' => 'Type de document invalide'], 422);
+        }
+        $fileName = \Illuminate\Support\Str::uuid() . '.' . $file->getClientOriginalExtension();
         $path = $file->storeAs('documents/' . auth()->id(), $fileName, 'public');
         
         return response()->json([
@@ -311,6 +151,51 @@ Route::prefix('v1')->middleware(['web', 'auth'])->group(function () {
     });
     
 });
+
+// ============================================================
+// API V1 — INTEROPÉRABILITÉ (authentification par clé API)
+// ============================================================
+// Authentification : Authorization: Bearer <token>
+// Rate limit : défini par token (défaut 60 req/min)
+// Toutes les réponses : JSON, données publiques uniquement
+// ============================================================
+
+Route::prefix('v1/public')
+    ->name('api.v1.')
+    ->middleware(['throttle:120,1', 'api.key'])
+    ->group(function () {
+
+    // Statistiques agrégées
+    Route::get('stats', [OrganisationApiController::class, 'stats'])
+        ->name('stats')
+        ->middleware('api.key:stats');
+
+    // Vérification récépissé (route avant /{id} pour éviter conflit)
+    Route::get('organisations/verify/{code}', [OrganisationApiController::class, 'verify'])
+        ->name('organisations.verify')
+        ->middleware('api.key:verify')
+        ->where('code', '[a-zA-Z0-9\-\_\/]+');
+
+    // Liste et détail organisations
+    Route::get('organisations', [OrganisationApiController::class, 'index'])
+        ->name('organisations.index')
+        ->middleware('api.key:organisations');
+
+    Route::get('organisations/{id}', [OrganisationApiController::class, 'show'])
+        ->name('organisations.show')
+        ->middleware('api.key:organisations')
+        ->where('id', '[0-9]+');
+});
+
+// Documentation API (publique, sans authentification)
+Route::get('v1/documentation', function () {
+    return view('api.v1.documentation');
+})->name('api.v1.documentation');
+
+// Spécification OpenAPI JSON (publique)
+Route::get('v1/openapi.json', function () {
+    return response()->json(require resource_path('api/openapi.php'));
+})->name('api.v1.openapi');
 
 // ========================================
 // ROUTES PUBLIQUES - VÉRIFICATION QR CODE (EXISTANTE)

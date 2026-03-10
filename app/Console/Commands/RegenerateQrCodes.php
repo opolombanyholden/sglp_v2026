@@ -119,10 +119,11 @@ class RegenerateQrCodes extends Command
         
         // Vérifier et regénérer l'URL si manquante
         if (empty($qrCode->verification_url)) {
+            $baseUrl = rtrim(config('app.qr_verification_base_url', 'https://www.sglp.ga'), '/');
             if ($qrCode->verifiable_type === 'App\\Models\\Organisation') {
-                $qrCode->verification_url = "https://www.sglp.ga/annuaire/verify/{$qrCode->verifiable_id}";
+                $qrCode->verification_url = $baseUrl . "/annuaire/verify/{$qrCode->verifiable_id}";
             } else {
-                $qrCode->verification_url = url('/verify-qr/' . $qrCode->code);
+                $qrCode->verification_url = $baseUrl . "/annuaire/verify/{$qrCode->code}";
             }
             $updated = true;
         }

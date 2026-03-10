@@ -485,11 +485,10 @@
                                             </div>
 
                                             <div class="form-group">
-                                                <label class="form-label-modern">Préfecture <span
-                                                        class="required">*</span></label>
+                                                <label class="form-label-modern">Préfecture</label>
                                                 <input type="text" class="form-input-modern" name="org_prefecture"
-                                                    id="org_prefecture" value="{{ old('org_prefecture') }}" required
-                                                    placeholder="Préfecture">
+                                                    id="org_prefecture" value="{{ old('org_prefecture') }}"
+                                                    placeholder="Préfecture (optionnel)">
                                             </div>
 
                                             <div class="form-group">
@@ -676,19 +675,7 @@
                                                 </div>
                                                 <div class="form-group">
                                                     <select class="form-select-modern" id="membre_fonction">
-                                                        <option value="">Fonction *</option>
-                                                        <option value="Président(e)">Président(e)</option>
-                                                        <option value="Vice-Président(e)">Vice-Président(e)</option>
-                                                        <option value="Secrétaire Général(e)">Secrétaire Général(e)</option>
-                                                        <option value="Secrétaire Général(e) Adjoint(e)">Secrétaire
-                                                            Général(e) Adjoint(e)</option>
-                                                        <option value="Trésorier(ère)">Trésorier(ère)</option>
-                                                        <option value="Trésorier(ère) Adjoint(e)">Trésorier(ère) Adjoint(e)
-                                                        </option>
-                                                        <option value="Commissaire aux Comptes">Commissaire aux Comptes
-                                                        </option>
-                                                        <option value="Conseiller(ère)">Conseiller(ère)</option>
-                                                        <option value="Coordonnateur(trice)">Coordonnateur(trice)</option>
+                                                        <option value="">Chargement des fonctions...</option>
                                                     </select>
                                                 </div>
                                                 <div class="form-group">
@@ -1907,6 +1894,8 @@
             var typeConfig = null;
             var currentStep = 1;
 
+            // Les fonctions seront chargées par loadFonctions() ci-dessous pour les 3 selects
+
             // Fonction pour soumettre le formulaire avec une action spécifique
             window.submitFormWithAction = function (action) {
                 document.getElementById('formAction').value = action;
@@ -2610,12 +2599,13 @@
                 document.getElementById('btnSubmitForm').innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Enregistrement en cours...</span>';
             });
 
-            // Charger fonctions dynamiquement
+            // Charger fonctions dynamiquement pour les 3 selects (fondateur, demandeur, membre bureau)
             function loadFonctions() {
-                // Essayer d'abord la route nommée, sinon URL directe
                 var apiUrl = '{{ route("admin.api.fonctions", [], false) }}?grouped=1';
 
-                fetch(apiUrl)
+                fetch(apiUrl, {
+                    headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                })
                     .then(function (r) {
                         if (!r.ok) throw new Error('HTTP ' + r.status);
                         return r.json();
@@ -2623,14 +2613,11 @@
                     .then(function (response) {
                         var selectF = document.getElementById('fondateur_fonction');
                         var selectR = document.getElementById('demandeur_role');
-
-                        if (!selectF || !selectR) {
-                            console.error('Selects non trouvés');
-                            return;
-                        }
+                        var selectM = document.getElementById('membre_fonction');
 
                         var htmlF = '<option value="">Sélectionner une fonction...</option>';
                         var htmlR = '<option value="Déclarant" selected>Déclarant</option>';
+                        var htmlM = '<option value="">Fonction *</option>';
 
                         if (response.success && response.data) {
                             var categories = [
@@ -2644,29 +2631,33 @@
                                 if (items && items.length > 0) {
                                     htmlF += '<optgroup label="' + cat.label + '">';
                                     htmlR += '<optgroup label="' + cat.label + '">';
+                                    htmlM += '<optgroup label="' + cat.label + '">';
                                     items.forEach(function (f) {
                                         var nom = f.nom || f.name || f;
                                         htmlF += '<option value="' + nom + '">' + nom + '</option>';
                                         htmlR += '<option value="' + nom + '">' + nom + '</option>';
+                                        htmlM += '<option value="' + nom + '">' + nom + '</option>';
                                     });
                                     htmlF += '</optgroup>';
                                     htmlR += '</optgroup>';
+                                    htmlM += '</optgroup>';
                                 }
                             });
 
-                            console.log('✅ Fonctions chargées dynamiquement');
+                            console.log('✅ Fonctions chargées dynamiquement depuis la BDD');
                         } else if (response.data && Array.isArray(response.data)) {
-                            // Réponse non groupée
                             response.data.forEach(function (f) {
                                 var nom = f.nom || f.name || f;
                                 htmlF += '<option value="' + nom + '">' + nom + '</option>';
                                 htmlR += '<option value="' + nom + '">' + nom + '</option>';
+                                htmlM += '<option value="' + nom + '">' + nom + '</option>';
                             });
                             console.log('✅ Fonctions chargées (liste simple)');
                         }
 
-                        selectF.innerHTML = htmlF;
-                        selectR.innerHTML = htmlR;
+                        if (selectF) selectF.innerHTML = htmlF;
+                        if (selectR) selectR.innerHTML = htmlR;
+                        if (selectM) selectM.innerHTML = htmlM;
                     })
                     .catch(function (err) {
                         console.warn('⚠️ API fonctions indisponible, utilisation du fallback:', err.message);
@@ -2696,12 +2687,15 @@
                 htmlF += '</optgroup>';
 
                 var htmlR = '<option value="Déclarant" selected>Déclarant</option>' + htmlF.replace('<option value="">Sélectionner une fonction...</option>', '');
+                var htmlM = '<option value="">Fonction *</option>' + htmlF.replace('<option value="">Sélectionner une fonction...</option>', '');
 
                 var selectF = document.getElementById('fondateur_fonction');
                 var selectR = document.getElementById('demandeur_role');
+                var selectM = document.getElementById('membre_fonction');
 
                 if (selectF) selectF.innerHTML = htmlF;
                 if (selectR) selectR.innerHTML = htmlR;
+                if (selectM) selectM.innerHTML = htmlM;
             }
 
             // Charger les fonctions au démarrage

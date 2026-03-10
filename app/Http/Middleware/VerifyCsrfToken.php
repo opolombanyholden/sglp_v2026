@@ -40,8 +40,7 @@ class VerifyCsrfToken extends Middleware
             // au lieu d'une redirection (qui cause un 405 Method Not Allowed)
             if ($request->ajax() || $request->expectsJson()) {
                 return response()->json([
-                    'message' => 'CSRF token mismatch. Veuillez réessayer.',
-                    'new_token' => csrf_token(),
+                    'message' => 'CSRF token mismatch. Veuillez rafraîchir la page et réessayer.',
                 ], 419);
             }
 
