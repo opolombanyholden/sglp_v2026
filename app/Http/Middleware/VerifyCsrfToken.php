@@ -4,9 +4,34 @@ namespace App\Http\Middleware;
 
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken as Middleware;
 use Illuminate\Session\TokenMismatchException;
+use Symfony\Component\HttpFoundation\Cookie;
 
 class VerifyCsrfToken extends Middleware
 {
+    /**
+     * V03 — Rapport ANINF : cookie XSRF-TOKEN avec Secure + SameSite=Strict (CVSS 8.2)
+     */
+    protected function newCookie($request, $config)
+    {
+        return new Cookie(
+            'XSRF-TOKEN',
+            $request->session()->token(),
+            $this->availableAt(60 * $config['lifetime']),
+            $config['path'],
+            $config['domain'],
+            $this->shouldForceSecure() ? true : $config['secure'],
+            false, // httpOnly must be false for XSRF-TOKEN (JS needs to read it)
+            false,
+            'Strict'
+        );
+    }
+
+    protected function shouldForceSecure(): bool
+    {
+        return app()->environment('production')
+            || str_starts_with(config('app.url'), 'https');
+    }
+
     /**
      * The URIs that should be excluded from CSRF verification.
      *

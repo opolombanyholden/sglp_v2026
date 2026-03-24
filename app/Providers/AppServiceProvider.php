@@ -25,8 +25,10 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // V02 — Rapport ANINF : toutes les URLs générées doivent être HTTPS en production
         if (config('app.env') === 'production' || str_starts_with(config('app.url'), 'https')) {
             URL::forceScheme('https');
+            $this->app['request']->server->set('HTTPS', 'on');
         }
     }
 }
