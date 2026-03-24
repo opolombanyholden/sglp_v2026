@@ -2489,7 +2489,7 @@
 @endsection
 
         @push('scripts')
-                <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js" integrity="sha384-EtqfExzDvAOmLLdnOsa5Dy174/rTmPzv9OnQXw8NQOXnTypob284TIsp6Gt3yEyL" crossorigin="anonymous"></script>
 
                 <!-- Configuration JavaScript pour 8 étapes -->
                 <script>

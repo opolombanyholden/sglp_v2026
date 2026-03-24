@@ -8,14 +8,14 @@
         <title>@yield('title', 'Administration') - SGLP</title>
 
         <!-- Bootstrap 4 -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
 
         <!-- Font Awesome -->
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" integrity="sha384-DyZ88mC6Up2uqS4h/KRgHuoeGwBcD4Ng9SiP4dIRy0EXTlnuz47vAwmeGwVChigm" crossorigin="anonymous">
 
-        <!-- Google Fonts -->
+        <!-- Google Fonts (SRI non applicable — contenu dynamique) -->
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
-            rel="stylesheet">
+            rel="stylesheet" crossorigin="anonymous">
 
         <style>
             /* Variables CSS - Couleurs Gabonaises */
@@ -730,7 +730,7 @@
             }
         </style>
         {{-- CKEditor for WYSIWYG fields --}}
-        <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+        <script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js" integrity="sha384-IBDNY5TVKWr+u1841ldzW99oyOoUBpoGeouNuoXVwF0PBFR3v10dzwm09xNIEeiG" crossorigin="anonymous"></script>
 
     </head>
 
@@ -1687,8 +1687,8 @@
         </div>
 
         <!-- Scripts -->
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
 
         <script>
             $(document).ready(function () {
