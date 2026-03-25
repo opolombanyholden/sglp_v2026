@@ -275,7 +275,7 @@
                                 {{-- ✅ FALLBACK: SVG si base64 échoue --}}
                             @elseif(!empty($qr_code->svg_content))
                                 <div style="width: 100px; height: 100px; margin: 0 auto 10px auto; overflow: hidden;">
-                                    {!! str_replace(['width="150"', 'height="150"'], ['width="100"', 'height="100"'], $qr_code->svg_content) !!}
+                                    {!! \App\Helpers\HtmlSanitizer::cleanSvg(str_replace(['width="150"', 'height="150"'], ['width="100"', 'height="100"'], $qr_code->svg_content ?? '')) !!}
                                 </div>
                                 <div class="qr-text">Vérification en ligne</div>
                                 <div class="qr-code-id">{{ $qr_code->code }}</div>

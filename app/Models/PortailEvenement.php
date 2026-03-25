@@ -10,7 +10,7 @@ class PortailEvenement extends Model
     use HasFactory;
 
     protected $table = 'portail_evenements';
-    protected $guarded = ['id'];
+    protected $fillable = ['titre', 'description', 'type', 'date_debut', 'date_fin', 'lieu', 'url', 'est_important', 'est_actif'];
 
     protected $casts = [
         'est_actif'    => 'boolean',

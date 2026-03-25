@@ -57,7 +57,7 @@ class OrganisationApiController extends Controller
             ->with('organisationType');
 
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], substr($request->search, 0, 255));
             $query->where(function ($q) use ($search) {
                 $q->where('nom', 'like', "%{$search}%")
                   ->orWhere('sigle', 'like', "%{$search}%")

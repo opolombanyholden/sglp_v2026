@@ -170,7 +170,7 @@ class QrCodeDebugController extends Controller
         try {
             // Vérifier que c'est du XML valide
             $doc = new \DOMDocument();
-            $xmlValid = $doc->loadXML($svgContent);
+            $xmlValid = $doc->loadXML($svgContent, LIBXML_NONET);
 
             // Vérifier les éléments SVG de base
             $hasSvgTag = strpos($svgContent, '<svg') !== false;

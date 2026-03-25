@@ -89,13 +89,14 @@ class DocumentController extends Controller
             ]);
             
         } catch (\Exception $e) {
+            \Log::error('Document upload error', ['error' => $e->getMessage(), 'document_id' => $document->id ?? null]);
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors du téléchargement : ' . $e->getMessage()
+                'message' => 'Erreur lors du téléchargement du fichier.'
             ], 500);
         }
     }
-    
+
     /**
      * Télécharger un document
      */
@@ -240,9 +241,10 @@ class DocumentController extends Controller
             ]);
             
         } catch (\Exception $e) {
+            \Log::error('Document replace error', ['error' => $e->getMessage(), 'document_id' => $document->id ?? null]);
             return response()->json([
                 'success' => false,
-                'message' => 'Erreur lors du remplacement : ' . $e->getMessage()
+                'message' => 'Erreur lors du remplacement du fichier.'
             ], 500);
         }
     }
@@ -312,9 +314,8 @@ class DocumentController extends Controller
      */
     protected function previewImage(Document $document)
     {
-        $path = Storage::disk('public')->path($document->chemin_fichier);
-        $file = file_get_contents($path);
-        
+        $file = Storage::disk('public')->get($document->chemin_fichier);
+
         return Response::make($file, 200, [
             'Content-Type' => $document->mime_type,
             'Content-Disposition' => 'inline; filename="' . $document->nom_original . '"'
@@ -326,9 +327,8 @@ class DocumentController extends Controller
      */
     protected function previewPdf(Document $document)
     {
-        $path = Storage::disk('public')->path($document->chemin_fichier);
-        $file = file_get_contents($path);
-        
+        $file = Storage::disk('public')->get($document->chemin_fichier);
+
         return Response::make($file, 200, [
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="' . $document->nom_original . '"'

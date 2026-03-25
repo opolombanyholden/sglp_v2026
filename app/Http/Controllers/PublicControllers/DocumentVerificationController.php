@@ -314,7 +314,7 @@ class DocumentVerificationController extends Controller
 
         // Filtres
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], substr($request->search, 0, 100));
             $query->whereHas('documentGeneration', function($q) use ($search) {
                 $q->where('numero_document', 'like', "%{$search}%");
             });

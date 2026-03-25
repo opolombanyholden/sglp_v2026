@@ -10,7 +10,7 @@ class PortailMessage extends Model
     use HasFactory;
 
     protected $table = 'portail_messages';
-    protected $guarded = ['id'];
+    protected $fillable = ['nom', 'email', 'sujet', 'message', 'statut', 'reponse', 'date_reponse', 'ip_address', 'user_agent'];
 
     protected $casts = [
         'date_reponse' => 'datetime',

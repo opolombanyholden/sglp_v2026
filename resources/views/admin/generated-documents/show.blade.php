@@ -201,7 +201,7 @@
                     <h6 class="mb-3" style="color: #003f7f;">Code QR de vérification</h6>
                     @if($generation->qr_code_svg)
                         <div class="mb-3">
-                            {!! $generation->qr_code_svg !!}
+                            {!! \App\Helpers\HtmlSanitizer::cleanSvg($generation->qr_code_svg ?? '') !!}
                         </div>
                     @else
                         <div class="mb-3">

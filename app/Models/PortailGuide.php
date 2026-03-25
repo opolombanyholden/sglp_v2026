@@ -10,7 +10,7 @@ class PortailGuide extends Model
     use HasFactory;
 
     protected $table = 'portail_guides';
-    protected $guarded = ['id'];
+    protected $fillable = ['titre', 'description', 'categorie', 'chemin_fichier', 'url_externe', 'nombre_pages', 'nombre_telechargements', 'est_actif', 'ordre'];
 
     protected $casts = [
         'est_actif'             => 'boolean',

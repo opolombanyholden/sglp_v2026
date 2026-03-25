@@ -422,7 +422,7 @@ Version: 5.0 - Correction variable $dossier undefined
                     <div class="qr-code-container mb-3">
                         @if(isset($qr_code->svg_content))
                             <div class="qr-display">
-                                {!! $qr_code->svg_content !!}
+                                {!! \App\Helpers\HtmlSanitizer::cleanSvg($qr_code->svg_content ?? '') !!}
                             </div>
                         @else
                             <div class="placeholder-qr">

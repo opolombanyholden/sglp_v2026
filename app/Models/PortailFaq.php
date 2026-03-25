@@ -10,7 +10,7 @@ class PortailFaq extends Model
     use HasFactory;
 
     protected $table = 'portail_faqs';
-    protected $guarded = ['id'];
+    protected $fillable = ['question', 'reponse', 'categorie', 'ordre', 'est_actif'];
 
     protected $casts = [
         'est_actif' => 'boolean',

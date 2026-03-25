@@ -36,12 +36,12 @@ class AnnuaireController extends Controller
             ->with('organisationType');
 
         if ($request->filled('search')) {
-            $search = substr($request->search, 0, 255);
+            $search = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], substr($request->search, 0, 255));
             $query->where(function ($q) use ($search) {
-                $q->where('nom', 'like', "%$search%")
-                  ->orWhere('sigle', 'like', "%$search%")
-                  ->orWhere('objet', 'like', "%$search%")
-                  ->orWhere('ville_commune', 'like', "%$search%");
+                $q->where('nom', 'like', "%{$search}%")
+                  ->orWhere('sigle', 'like', "%{$search}%")
+                  ->orWhere('objet', 'like', "%{$search}%")
+                  ->orWhere('ville_commune', 'like', "%{$search}%");
             });
         }
 

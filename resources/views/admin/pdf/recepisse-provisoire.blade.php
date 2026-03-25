@@ -301,7 +301,7 @@
                         <img src="{{ $qrBase64 }}" alt="QR Code" width="80" height="80" class="qr-image">
                     @elseif(!empty($qr_code->svg_content))
                         <div style="width:80px;height:80px;margin:0 auto;overflow:hidden;">
-                            {!! str_replace(['width="150"', 'height="150"'], ['width="80"', 'height="80"'], $qr_code->svg_content) !!}
+                            {!! \App\Helpers\HtmlSanitizer::cleanSvg(str_replace(['width="150"', 'height="150"'], ['width="80"', 'height="80"'], $qr_code->svg_content ?? '')) !!}
                         </div>
                     @endif
                 @endif

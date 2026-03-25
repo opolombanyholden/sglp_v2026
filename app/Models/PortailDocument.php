@@ -10,7 +10,7 @@ class PortailDocument extends Model
     use HasFactory;
 
     protected $table = 'portail_documents';
-    protected $guarded = ['id'];
+    protected $fillable = ['titre', 'description', 'categorie', 'type_organisation', 'format', 'taille', 'chemin_fichier', 'url_externe', 'nombre_telechargements', 'est_actif', 'ordre'];
 
     protected $casts = [
         'est_actif' => 'boolean',

@@ -10,7 +10,7 @@ class PortailParametre extends Model
     use HasFactory;
 
     protected $table = 'portail_parametres';
-    protected $guarded = ['id'];
+    protected $fillable = ['cle', 'valeur', 'type', 'description', 'groupe'];
 
     /**
      * Retrieve a parameter value by key, with optional default.

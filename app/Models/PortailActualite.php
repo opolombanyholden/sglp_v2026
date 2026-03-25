@@ -11,7 +11,7 @@ class PortailActualite extends Model
     use HasFactory;
 
     protected $table = 'portail_actualites';
-    protected $guarded = ['id'];
+    protected $fillable = ['titre', 'slug', 'contenu', 'extrait', 'categorie', 'image', 'auteur', 'statut', 'en_une', 'date_publication'];
 
     protected $casts = [
         'en_une' => 'boolean',

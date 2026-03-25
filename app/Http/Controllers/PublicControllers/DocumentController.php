@@ -24,10 +24,10 @@ class DocumentController extends Controller
         }
 
         if ($request->filled('search')) {
-            $search = substr($request->search, 0, 255);
+            $search = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], substr($request->search, 0, 255));
             $query->where(function ($q) use ($search) {
-                $q->where('titre', 'like', "%$search%")
-                  ->orWhere('description', 'like', "%$search%");
+                $q->where('titre', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
             });
         }
 

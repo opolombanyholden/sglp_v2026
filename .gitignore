@@ -11,3 +11,4 @@
 /.idea/
 /.vscode/
 *.sql
+.DS_Store
