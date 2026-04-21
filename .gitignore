@@ -13,3 +13,4 @@
 *.sql
 !conception/sglp_sync_reference_data.sql
 .DS_Store
+conception/BD_NIP_FINALE.csv
