@@ -399,7 +399,7 @@
 </style>
 
 <script>
-console.log('Module Détail Rôle SGLP chargé');
+console.log('Module Détail Rôle DGELP chargé');
 
 /**
  * Confirmer suppression du rôle

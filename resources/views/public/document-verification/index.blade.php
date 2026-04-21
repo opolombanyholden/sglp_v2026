@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vérification de Documents Officiels - SGLP</title>
+    <title>Vérification de Documents Officiels - DGELP</title>
     
     {{-- ✅ Bootstrap 4.6.2 CSS --}}
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
@@ -291,7 +291,7 @@
         {{-- Footer --}}
         <div class="footer-public">
             <p class="mb-1">
-                <strong>Système de Gestion des Libertés Publiques (SGLP)</strong>
+                <strong>Système de Gestion des Libertés Publiques (DGELP)</strong>
             </p>
             <p class="mb-0">
                 <small>

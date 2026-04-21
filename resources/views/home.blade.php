@@ -3,37 +3,144 @@
 @section('title', 'Accueil')
 
 @section('content')
-<!-- Hero Section -->
-<section class="hero" id="accueil">
-    <div class="container position-relative">
-        <div class="row align-items-center min-vh-75">
-            <div class="col-lg-6">
-                <h1>Simplifiez vos démarches administratives</h1>
-                <p class="hero-subtitle">Système de Gestion des Libertés Publiques</p>
-                <p class="text-white fs-5 mb-4">
-                    Créez, gérez et formalisez vos organisations associatives, religieuses et politiques 
-                    en toute simplicité grâce à notre plateforme numérique moderne et sécurisée.
-                </p>
-                <div class="d-flex gap-3 flex-wrap">
-                    <a href="{{ route('register') }}" class="btn btn-warning btn-lg px-4">
-                        <i class="fas fa-rocket me-2"></i>Commencer maintenant
-                    </a>
-                    <a href="#services" class="btn btn-outline-light btn-lg px-4">
-                        <i class="fas fa-info-circle me-2"></i>En savoir plus
-                    </a>
+<!-- Hero Slider -->
+<section id="accueil">
+    <div id="heroSlider" class="carousel slide" data-ride="carousel" data-interval="5000">
+        <ol class="carousel-indicators">
+            <li data-target="#heroSlider" data-slide-to="0" class="active"></li>
+            <li data-target="#heroSlider" data-slide-to="1"></li>
+            <li data-target="#heroSlider" data-slide-to="2"></li>
+            <li data-target="#heroSlider" data-slide-to="3"></li>
+            <li data-target="#heroSlider" data-slide-to="4"></li>
+            <li data-target="#heroSlider" data-slide-to="5"></li>
+        </ol>
+        <div class="carousel-inner">
+            <!-- Slide 1 -->
+            <div class="carousel-item active">
+                <div class="hero-slide-bg" style="background-image: url('{{ asset('images/slides/000.png') }}');">
+                    <div class="hero-slide-overlay"></div>
+                    <div class="position-relative px-0" style="z-index:2;">
+                        <div class="hero-slide-content" style="">
+                            <h1>BATIR L'ADMINISTRATION DU FUTUR</h1>
+                            <p class="hero-subtitle">S.E Brice Clotaire OLIGUI NGUEMA, Pr&eacute;sident de la R&eacute;publique, Chef de l'Etat, Chef du Gouvernement</p>
+                            <p class="hero-description">
+                               À l’image de nos édifices institutionnels, la Restauration des Institutions exige des fondations solides et une vision moderne. Ma priorité est de bâtir une administration digitale, performante et transparente, capable de répondre aux défis de notre temps. La modernisation de nos services publics est le socle de notre renouveau national, pour un État plus proche de chaque citoyen.
+                            </p>
+                            <a href="{{ route('register') }}" class="btn btn-warning btn-lg px-4">
+                                <i class="fas fa-rocket mr-2"></i>Commencer maintenant
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-6">
-                <div class="position-relative">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 500 500'%3E%3Cg fill='none' stroke='%23FFD700' stroke-width='2' opacity='0.3'%3E%3Ccircle cx='250' cy='250' r='100'/%3E%3Ccircle cx='250' cy='250' r='150'/%3E%3Ccircle cx='250' cy='250' r='200'/%3E%3C/g%3E%3C/svg%3E" 
-                         class="img-fluid" alt="Illustration">
+            <!-- Slide 2 -->
+            <div class="carousel-item">
+                <div class="hero-slide-bg" style="background-image: url('{{ asset('images/slides/003.png') }}');">
+                    <div class="hero-slide-overlay"></div>
+                    <div class="position-relative px-0" style="z-index:2;">
+                        <div class="hero-slide-content">
+                            <h1>LE NUMERIQUE AU COEUR DE LA TRANSFORMATION DE L'ADMINISTRATION</h1>
+                            <p class="hero-subtitle">Hermann IMMONGAULT, Le Vice-Président du Gouvernement</p>
+                            <p class="hero-description">
+                                La transformation numérique de notre administration est une priorité au cœur de la vision 
+                                de Monsieur le Président de la République, Chef de l’Etat, Chef du Gouvernement S.E.  Brice 
+                                Clotaire OLIGUI NGUEMA. Elle constitue un levier stratégique pour bâtir un État plus moderne, 
+                                plus proche de ses citoyens. En simplifiant l'accès au service public, nous renforçons la cohésion 
+                                sociale et l'équité. 
+                            </p>
+                            <a href="{{ route('register') }}" class="btn btn-warning btn-lg px-4">
+                                <i class="fas fa-rocket mr-2"></i>Commencer maintenant
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 3 -->
+            <div class="carousel-item">
+                <div class="hero-slide-bg" style="background-image: url('{{ asset('images/slides/001.png') }}');">
+                    <div class="hero-slide-overlay"></div>
+                    <div class="position-relative px-0" style="z-index:2;">
+                        <div class="hero-slide-content">
+                            <h1>MOT DU MINISTRE</h1>
+                            <p class="hero-subtitle">Adrien NGUEMA MBA, Ministre de l'Intérieur, de la Sécurité et de la Décentralisation.</p>
+                            <p class="hero-description">
+                                La plateforme DGELP-Services en ligne est une initiative majeure du Ministère de l’Intérieur, de la Sécurité et de la Décentralisation. Porté par la Direction Générale des Élections et des Libertés Publiques (DGELP), ce projet s’inscrit dans la vision de Restauration des Institutions prônée par le Président de la République, Chef de l’État, Chef du Gouvernement S.E Brice Clotaire OLIGUI NGUEMA.
+Cet outil marque une étape décisive dans la digitalisation de nos procédures administratives et, in fine, la modernisation globale de notre administration publique, pour un service plus efficace et transparent.
+                            </p>
+                            <a href="#services" class="btn btn-warning btn-lg px-4">
+                                <i class="fas fa-info-circle mr-2"></i>Découvrir nos services
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 4 -->
+            <div class="carousel-item">
+                <div class="hero-slide-bg" style="background-image: url('{{ asset('images/slides/002.png') }}');">
+                    <div class="hero-slide-overlay"></div>
+                    <div class="position-relative px-0" style="z-index:2;">
+                        <div class="hero-slide-content">
+                            <h1>MOT DU SECRETAIRE GENERAL</h1>
+                            <p class="hero-subtitle">Malcolm Emery DJENNO NGOMANDA, Secrétaire Général du Ministère de l'Intérieur, de la Sécurité et de la Décentralisation.</p>
+                            <p class="hero-description">
+                                La digitalisation du traitement des dossiers des organisations politiques, associatives, syndicales et religieuses constitue un saut qualitatif majeur. Ce dispositif simplifie nos procédures et garantit une gestion dématérialisée, au service d'une administration moderne, performante et transparente.
+                            </p>
+                            <a href="{{ route('register') }}" class="btn btn-warning btn-lg px-4">
+                                <i class="fas fa-user-plus mr-2"></i>Créer un compte
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 5 -->
+            <div class="carousel-item">
+                <div class="hero-slide-bg" style="background-image: url('{{ asset('images/slides/004.png') }}');">
+                    <div class="hero-slide-overlay"></div>
+                    <div class="position-relative px-0" style="z-index:2;">
+                        <div class="hero-slide-content">
+                            <h1>MODERNISONS LA VIE ASSOCIATIVE</h1>
+                            <p class="hero-subtitle">Dieudonné YAYA, Directeur Général des Elections et des Libertés Publiques.</p>
+                            <p class="hero-description">
+                                La modernisation de la vie associative est essentielle pour renforcer son impact et sa crédibilité. En intégrant des outils numériques et des méthodes de gestion innovantes, les associations gagnent en efficacité, en transparence et en visibilité. La plateforme DGELP est le partenaire de cette transformation, pour une administration plus réactive et au service de vos projets.
+                            </p>
+                            <a href="{{ route('annuaire.index') }}" class="btn btn-warning btn-lg px-4">
+                                <i class="fas fa-search mr-2"></i>Explorer l'annuaire
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Slide 6 -->
+            <div class="carousel-item">
+                <div class="hero-slide-bg" style="background-image: url('{{ asset('images/slides/005.png') }}');">
+                    <div class="hero-slide-overlay"></div>
+                    <div class="position-relative px-0" style="z-index:2;">
+                        <div class="hero-slide-content">
+                            <h1>DES PROCÉDURES SIMPLIFIÉES ET TRANSPARENTES</h1>
+                            <p class="hero-subtitle">Modernisation de la gestion des organisations associatives</p>
+                            <p class="hero-description">
+                                Le Ministère de l'Intérieur, via la Direction Générale des Elections et des Libertés Publiques, dématérialise la gestion des dossiers des organisations politiques, associatives, syndicales et religieuses pour moderniser le service, renforcer la transparence et soutenir la démocratie.
+                            </p>
+                            <a href="{{ route('contact') }}" class="btn btn-warning btn-lg px-4">
+                                <i class="fas fa-envelope mr-2"></i>Nous contacter
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
+        <a class="carousel-control-prev" href="#heroSlider" role="button" data-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="sr-only">Précédent</span>
+        </a>
+        <a class="carousel-control-next" href="#heroSlider" role="button" data-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="sr-only">Suivant</span>
+        </a>
     </div>
 </section>
 
-<!-- Stats Section Améliorée -->
+<!-- Stats Section masquée
 <section class="stats-section py-5">
     <div class="container">
         <div class="stats-wrapper">
@@ -99,6 +206,8 @@
     </div>
 </section>
 
+Stats Section masquée -->
+
 <!-- Services Section Améliorée -->
 <section class="services-section py-5" id="services">
     <div class="container">
@@ -129,7 +238,7 @@
     </div>
 </section>
 
-<!-- Actualités Section Améliorée -->
+<!-- Actualités Section masquée
 <section class="news-section py-5">
     <div class="container">
         <div class="text-center mb-5">
@@ -177,6 +286,8 @@
         </div>
     </div>
 </section>
+
+Actualités Section masquée -->
 
 <!-- Section Carte Géographique -->
 <section class="map-section py-5 bg-primary text-white">
@@ -354,7 +465,7 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6 mb-5 mb-lg-0">
-                <h2 class="display-5 fw-bold text-primary mb-4 fade-in">Pourquoi choisir SGLP ?</h2>
+                <h2 class="display-5 fw-bold text-primary mb-4 fade-in">Pourquoi choisir DGELP-Services en ligne ?</h2>
                 <div class="d-flex mb-4 fade-in">
                     <div class="flex-shrink-0">
                         <div class="bg-primary text-white rounded-circle p-3">
@@ -427,6 +538,156 @@
 
 @push('styles')
 <style>
+    /* Hero Slider */
+    .hero-slide-fullimg {
+        min-height: auto;
+        padding: 0;
+        background: #001A4D;
+    }
+
+    .hero-slide-img-full {
+        width: 100%;
+        display: block;
+        object-fit: cover;
+    }
+
+    .hero-slide {
+        min-height: 90vh;
+        background: linear-gradient(135deg, #002B7F 0%, #001A4D 100%);
+        display: flex;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-slide-bg {
+        min-height: 90vh;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        display: flex;
+        align-items: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .hero-slide-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 43, 127, 0.25);
+        z-index: 1;
+    }
+
+    .hero-slide-img {
+        width: 100%;
+        max-height: 75vh;
+        object-fit: contain;
+        border-radius: 10px;
+        filter: drop-shadow(0 10px 30px rgba(0, 0, 0, 0.3));
+    }
+
+    .hero-slide-content {
+        position: relative;
+        z-index: 2;
+        padding: 2rem;
+        max-width: 45%;
+        background: rgba(0, 26, 77, 0.75);
+        border-radius: 10px;
+        margin-left: 5vw;
+    }
+
+    @media (max-width: 768px) {
+        .hero-slide-content {
+            max-width: 100%;
+            margin-left: 0;
+        }
+    }
+
+    .hero-slide-content h1 {
+        font-size: 3rem;
+        color: #fff;
+        font-weight: bold;
+        margin-bottom: 1rem;
+        animation: slideInLeft 0.8s ease;
+    }
+
+    .hero-slide-content .hero-subtitle {
+        font-size: 1.4rem;
+        color: #FFD700;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-slide-content .hero-description {
+        font-size: 1.1rem;
+        color: rgba(255, 255, 255, 0.9);
+        margin-bottom: 2rem;
+        line-height: 1.7;
+    }
+
+    #heroSlider .carousel-indicators li {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin: 0 6px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border: none;
+    }
+
+    #heroSlider .carousel-indicators li.active {
+        background-color: #FFD700;
+    }
+
+    #heroSlider .carousel-control-prev,
+    #heroSlider .carousel-control-next {
+        width: 50px;
+        height: 50px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 50%;
+        opacity: 0.8;
+    }
+
+    #heroSlider .carousel-control-prev {
+        left: 20px;
+    }
+
+    #heroSlider .carousel-control-next {
+        right: 20px;
+    }
+
+    #heroSlider .carousel-control-prev:hover,
+    #heroSlider .carousel-control-next:hover {
+        background: rgba(255, 215, 0, 0.3);
+        opacity: 1;
+    }
+
+    @media (max-width: 768px) {
+        .hero-slide,
+        .hero-slide-bg {
+            min-height: 70vh;
+        }
+
+        .hero-slide-content h1 {
+            font-size: 2rem;
+        }
+
+        .hero-slide-content .hero-subtitle {
+            font-size: 1.1rem;
+        }
+
+        .hero-slide-content .hero-description {
+            font-size: 0.95rem;
+        }
+
+        .hero-slide-overlay {
+            background: rgba(0, 43, 127, 0.35);
+        }
+    }
+
     /* Stats Section Moderne */
     .stats-section {
         background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);

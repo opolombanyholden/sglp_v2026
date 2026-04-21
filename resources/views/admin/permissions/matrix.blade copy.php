@@ -16,7 +16,7 @@
                                 <i class="fas fa-table me-2"></i>
                                 Matrice des Permissions
                             </h2>
-                            <p class="mb-0 opacity-90">Analyse globale des droits d'accès et vue d'ensemble du système de permissions SGLP</p>
+                            <p class="mb-0 opacity-90">Analyse globale des droits d'accès et vue d'ensemble du système de permissions DGELP</p>
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="d-flex gap-2 justify-content-end flex-wrap">
@@ -634,7 +634,7 @@ let filters = {
 
 // Initialisation
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔐 Matrice Permission SGLP - Chargement...');
+    console.log('🔐 Matrice Permission DGELP - Chargement...');
     
     initEventListeners();
     loadMatrixData();
@@ -1187,6 +1187,6 @@ function showError(message) {
     console.log('Error:', message);
 }
 
-console.log('🔐 Matrice Permission SGLP - Initialisé');
+console.log('🔐 Matrice Permission DGELP - Initialisé');
 </script>
 @endsection

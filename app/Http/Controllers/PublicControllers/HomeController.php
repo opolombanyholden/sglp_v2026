@@ -26,10 +26,10 @@ class HomeController extends Controller
         $actualites = PortailActualite::publie()->limit(3)->get();
 
         $services = [
-            ['icon' => 'fas fa-file-alt', 'titre' => 'Formalisation en ligne',  'description' => 'Créez et soumettez vos dossiers de formalisation directement en ligne, 24h/24 et 7j/7.'],
-            ['icon' => 'fas fa-search',   'titre' => 'Suivi en temps réel',      'description' => 'Suivez l\'état d\'avancement de vos dossiers en temps réel depuis votre espace personnel.'],
-            ['icon' => 'fas fa-comments', 'titre' => 'Communication directe',    'description' => 'Échangez directement avec l\'administration via notre messagerie sécurisée intégrée.'],
-            ['icon' => 'fas fa-download', 'titre' => 'Documents et guides',      'description' => 'Accédez à tous les documents types, guides et ressources nécessaires à vos démarches.'],
+            ['icon' => 'fas fa-file-alt', 'titre' => 'Formalisation',  'description' => 'Créez et soumettez vos dossiers de formalisation directement en ligne, 24h/24 et 7j/7.'],
+            ['icon' => 'fas fa-search',   'titre' => 'Mon Dossier',      'description' => 'Suivez l\'état d\'avancement de vos dossiers en temps réel depuis votre espace personnel.'],
+            ['icon' => 'fas fa-comments', 'titre' => 'Interactions',    'description' => 'Échangez directement avec l\'administration via notre messagerie sécurisée intégrée.'],
+            ['icon' => 'fas fa-download', 'titre' => 'Documents',      'description' => 'Accédez à tous les documents types, guides et ressources nécessaires à vos démarches.'],
         ];
 
         return view('home', compact('stats', 'actualites', 'services'));

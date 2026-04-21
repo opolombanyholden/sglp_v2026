@@ -146,6 +146,19 @@ class OrganisationController extends Controller
      * Lister les brouillons de l'utilisateur connecté
      * GET /operator/organisations/drafts
      */
+    /**
+     * Page HTML listant les brouillons de l'utilisateur
+     */
+    public function draftsPage()
+    {
+        $drafts = OrganizationDraft::where('user_id', auth()->id())
+            ->where('expires_at', '>', now())
+            ->orderBy('last_saved_at', 'desc')
+            ->get();
+
+        return view('operator.organisations.drafts', compact('drafts'));
+    }
+
     public function listDrafts(Request $request)
     {
         try {
@@ -335,7 +348,7 @@ class OrganisationController extends Controller
             $draft->extendExpiration(7);
 
             // Rediriger vers la page de création avec le brouillon
-            return redirect()->route('operator.organisations.create')
+            return redirect()->route('operator.dossiers.create')
                 ->with('resume_draft_id', $draft->id)
                 ->with('success', 'Brouillon restauré avec succès');
 
@@ -2431,6 +2444,8 @@ class OrganisationController extends Controller
 
             case 'association':
             case 'ong':
+            case null:
+            case '':
                 break;
 
             default:

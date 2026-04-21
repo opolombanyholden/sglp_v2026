@@ -35,6 +35,11 @@
                                 <i class="fas fa-folder-open me-2"></i>Voir le dossier
                             </a>
                         @endif
+                        @if($dernierDossier && $dernierDossier->canBeCorrected())
+                            <a href="{{ route('admin.corrections.create', $organisation) }}" class="btn btn-warning">
+                                <i class="fas fa-pen-fancy me-2"></i>Corriger ce dossier
+                            </a>
+                        @endif
                     </div>
                 </div>
             </div>

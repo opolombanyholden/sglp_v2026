@@ -57,7 +57,7 @@
                     <p class="verify-message">
                         Aucun récépissé correspondant au code
                         <strong>« {{ e($code) }} »</strong>
-                        n'a été trouvé dans la base officielle du PNGDI.
+                        n'a été trouvé dans la base officielle du DGELP.
                     </p>
 
                     <div class="alert alert-danger mt-3">
@@ -76,7 +76,7 @@
                         <ul class="mt-2 mb-0">
                             <li>Ne lui remettez aucun fonds ou document officiel sans vérification complémentaire.</li>
                             <li>Signalez immédiatement la situation aux autorités compétentes.</li>
-                            <li>Contactez le PNGDI pour un signalement officiel.</li>
+                            <li>Contactez le DGELP pour un signalement officiel.</li>
                         </ul>
                     </div>
 
@@ -98,7 +98,7 @@
                     </div>
                     <h2 class="verify-title text-danger">Récépissé non valide</h2>
                     <p class="verify-message">
-                        Le récépissé <strong>« {{ e($code) }} »</strong> a bien été émis par le PNGDI
+                        Le récépissé <strong>« {{ e($code) }} »</strong> a bien été émis par le DGELP
                         @if(isset($organisation))
                             pour l'organisation <strong>« {{ $organisation->nom }} »</strong>,
                         @endif
@@ -153,11 +153,11 @@
                     </form>
                 </div>
 
-                {{-- Informations de contact PNGDI --}}
+                {{-- Informations de contact DGELP --}}
                 <div class="contact-pngdi mt-4">
                     <i class="fas fa-phone-alt me-2 text-primary"></i>
                     <strong>Besoin d'aide ?</strong>
-                    Contactez le PNGDI :
+                    Contactez le DGELP :
                     <a href="{{ route('contact') }}">via notre formulaire de contact</a>
                     ou appelez le <strong>+241 01 23 45 67</strong>.
                 </div>

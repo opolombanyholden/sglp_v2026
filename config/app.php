@@ -66,7 +66,7 @@ return [
     |
     */
 
-    'qr_verification_base_url' => env('QR_VERIFICATION_BASE_URL', 'https://www.sglp.ga'),
+    'qr_verification_base_url' => env('QR_VERIFICATION_BASE_URL', 'https://sglp.ga'),
 
     /*
     |--------------------------------------------------------------------------

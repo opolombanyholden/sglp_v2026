@@ -320,7 +320,7 @@ let originalPermissions = new Set(@json($rolePermissionIds)); // Pour le reset
 
 // Initialiser les permissions
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Module Gestion Permissions SGLP chargé');
+    console.log('Module Gestion Permissions DGELP chargé');
     initializeSearch();
     initializeFilters();
     updateSelectionSummary();

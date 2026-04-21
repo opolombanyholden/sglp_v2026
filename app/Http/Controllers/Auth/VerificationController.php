@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Support\Facades\Auth;
 
 class VerificationController extends Controller
 {
@@ -33,7 +34,11 @@ class VerificationController extends Controller
             event(new Verified($request->user()));
         }
 
-        return redirect()->route('email.verified')->with('verified', 'Email vérifié avec succès!');
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('email.verified', ['activated' => 1]);
     }
 
     /**

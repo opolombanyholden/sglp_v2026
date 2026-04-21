@@ -10,7 +10,7 @@
             <div class="col-lg-8">
                 <h1 class="page-title">Foire aux questions</h1>
                 <p class="page-subtitle">
-                    Trouvez rapidement des réponses à vos questions sur l'utilisation du portail SGLP 
+                    Trouvez rapidement des réponses à vos questions sur l'utilisation du portail DGELP 
                     et les procédures de formalisation des organisations.
                 </p>
             </div>

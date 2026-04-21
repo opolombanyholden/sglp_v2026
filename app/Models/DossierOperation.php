@@ -41,6 +41,7 @@ class DossierOperation extends Model
     const TYPE_DEVERROUILLAGE = 'deverrouillage';
     const TYPE_ASSIGNATION = 'assignation';
     const TYPE_COMMENTAIRE = 'commentaire';
+    const TYPE_CORRECTION = 'correction';
 
     /**
      * Boot method
@@ -114,7 +115,8 @@ class DossierOperation extends Model
             self::TYPE_VERROUILLAGE => 'Verrouillage',
             self::TYPE_DEVERROUILLAGE => 'Déverrouillage',
             self::TYPE_ASSIGNATION => 'Assignation',
-            self::TYPE_COMMENTAIRE => 'Commentaire'
+            self::TYPE_COMMENTAIRE => 'Commentaire',
+            self::TYPE_CORRECTION => 'Correction administrative'
         ];
 
         return $labels[$this->type_operation] ?? $this->type_operation;

@@ -6,7 +6,7 @@
 <div class="container-fluid px-4 py-3">
     <h1>
         <i class="fas fa-tachometer-alt mr-3 text-success"></i>
-        Tableau de Bord Administration PNGDI
+        Tableau de Bord Administration DGELP
     </h1>
     <p class="text-muted mb-4">Supervision et gestion des organisations</p>
 

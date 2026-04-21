@@ -17,7 +17,7 @@
                         <i class="fas fa-cogs text-primary"></i>
                         Paramètres Système
                     </h1>
-                    <p class="text-muted mb-0">Configuration générale et préférences du système SGLP</p>
+                    <p class="text-muted mb-0">Configuration générale et préférences du système DGELP</p>
                 </div>
                 <div class="btn-group">
                     <button type="button" class="btn btn-outline-warning" id="clearCachesBtn">
@@ -86,7 +86,7 @@
                                                 <div class="mb-3">
                                                     <label for="app_name" class="form-label">Nom de l'application</label>
                                                     <input type="text" class="form-control" id="app_name" name="app_name" 
-                                                           value="{{ $systemSettings['app_name'] ?? 'SGLP' }}">
+                                                           value="{{ $systemSettings['app_name'] ?? 'DGELP' }}">
                                                 </div>
                                                 
                                                 <div class="mb-3">
@@ -110,13 +110,13 @@
                                         </div>
                                     </div>
 
-                                    <!-- Configuration SGLP -->
+                                    <!-- Configuration DGELP -->
                                     <div class="col-lg-6">
                                         <div class="card h-100">
                                             <div class="card-header">
                                                 <h5 class="card-title mb-0">
                                                     <i class="fas fa-building text-success"></i>
-                                                    Configuration SGLP
+                                                    Configuration DGELP
                                                 </h5>
                                             </div>
                                             <div class="card-body">

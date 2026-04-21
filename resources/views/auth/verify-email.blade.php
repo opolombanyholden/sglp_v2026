@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Vérification Email - PNGDI')
+@section('title', 'Vérification Email - DGELP')
 
 @section('content')
 <div class="container my-5">

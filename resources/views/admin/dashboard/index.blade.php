@@ -729,7 +729,7 @@ document.addEventListener('click', function(event) {
 
 // Animation des cartes au chargement
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Dashboard Admin PNGDI - Chargé avec succès');
+    console.log('Dashboard Admin DGELP - Chargé avec succès');
     
     // Animation des nombres
     const numbers = document.querySelectorAll('.stats-card h3');

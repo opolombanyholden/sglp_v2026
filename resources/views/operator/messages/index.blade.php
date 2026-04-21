@@ -262,7 +262,7 @@
                         <label class="form-label">Destinataire <span class="text-danger">*</span></label>
                         <select class="form-select" name="recipient" required>
                             <option value="">Sélectionner un destinataire</option>
-                            <option value="admin">Administration PNGDI</option>
+                            <option value="admin">Administration DGELP</option>
                             <option value="subventions">Service des Subventions</option>
                             <option value="validation">Service de Validation</option>
                             <option value="technique">Support Technique</option>
@@ -584,7 +584,7 @@ function loadMessageContent(messageId) {
             attachments: []
         },
         3: {
-            sender: 'Administration PNGDI',
+            sender: 'Administration DGELP',
             email: 'admin@pngdi.ga',
             subject: 'Rappel - Déclaration annuelle',
             date: 'Aujourd\'hui à 10:45',
@@ -593,7 +593,7 @@ function loadMessageContent(messageId) {
                 <p>Nous vous rappelons que la date limite pour soumettre votre déclaration annuelle d'activités approche.</p>
                 <p><strong>Date limite : 31 mars 2025</strong></p>
                 <p>Pour éviter toute pénalité, merci de compléter votre déclaration depuis votre espace personnel.</p>
-                <p>Cordialement,<br>L'Administration PNGDI</p>
+                <p>Cordialement,<br>L'Administration DGELP</p>
             `,
             attachments: ['Guide_Declaration_Annuelle.pdf']
         }

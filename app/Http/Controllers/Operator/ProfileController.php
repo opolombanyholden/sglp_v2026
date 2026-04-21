@@ -28,7 +28,13 @@ class ProfileController extends Controller
      */
     public function dashboard()
     {
-        return view('operator.dashboard');
+        $drafts = \App\Models\OrganizationDraft::where('user_id', auth()->id())
+            ->where('expires_at', '>', now())
+            ->orderBy('last_saved_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return view('operator.dashboard', compact('drafts'));
     }
 
     /**

@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Authentification à deux facteurs - PNGDI')
+@section('title', 'Authentification à deux facteurs - DGELP')
 
 @section('content')
 <div class="container my-5">

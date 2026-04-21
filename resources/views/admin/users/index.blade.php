@@ -15,7 +15,7 @@
                                     <i class="fas fa-users me-2"></i>
                                     Gestion des Utilisateurs
                                 </h2>
-                                <p class="mb-0 opacity-90">Supervision complète de tous les comptes utilisateurs SGLP</p>
+                                <p class="mb-0 opacity-90">Supervision complète de tous les comptes utilisateurs DGELP</p>
                             </div>
                             <div class="col-md-4 text-end">
                                 <div class="btn-group" role="group">
@@ -636,7 +636,7 @@
     <script>
         // JavaScript Bootstrap 5 compatible
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('Module Gestion Utilisateurs SGLP chargé');
+            console.log('Module Gestion Utilisateurs DGELP chargé');
         });
 
         let currentUserId = null;

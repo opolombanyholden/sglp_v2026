@@ -15,7 +15,7 @@
                                 <i class="fas fa-user-plus me-2"></i>
                                 Créer un nouvel utilisateur
                             </h2>
-                            <p class="mb-0 opacity-90">Création d'un compte opérateur ou agent pour le système SGLP</p>
+                            <p class="mb-0 opacity-90">Création d'un compte opérateur ou agent pour le système DGELP</p>
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="btn-group" role="group">

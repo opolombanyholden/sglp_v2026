@@ -431,7 +431,7 @@
 </style>
 
 <script>
-console.log('Module Détail Province SGLP chargé');
+console.log('Module Détail Province DGELP chargé');
 
 /**
  * FAB toggle

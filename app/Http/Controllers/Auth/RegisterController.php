@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Auth\Events\Registered;
+use Illuminate\Support\Facades\Log;
 
 class RegisterController extends Controller
 {
@@ -55,9 +56,16 @@ class RegisterController extends Controller
             'country' => 'Gabon',
         ]);
 
-        event(new Registered($user));
+        $emailSent = false;
+        try {
+            event(new Registered($user));
+            $emailSent = true;
+        } catch (\Exception $e) {
+            Log::error('Échec envoi email de vérification pour ' . $user->email . ' : ' . $e->getMessage());
+        }
 
-        return redirect()->route('login')
-            ->with('success', 'Votre compte a été créé avec succès. Un email de vérification vous a été envoyé.');
+        return redirect()->route('register.success')
+            ->with('user_email', $user->email)
+            ->with($emailSent ? 'email_sent' : 'email_failed', true);
     }
 }

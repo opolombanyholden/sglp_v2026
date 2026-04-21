@@ -784,7 +784,7 @@ Version: 5.0 - Correction variable $dossier undefined
 {{-- JAVASCRIPT SIMPLIFIÉ --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🇬🇦 Initialisation Page Confirmation SGLP - Version Corrigée');
+    console.log('🇬🇦 Initialisation Page Confirmation DGELP - Version Corrigée');
 
     // Gestion de l'impression
     const printPageBtn = document.getElementById('printPageBtn');

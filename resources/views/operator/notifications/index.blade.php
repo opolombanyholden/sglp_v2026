@@ -411,7 +411,7 @@
                                         </div>
                                     </div>
                                     <div class="timeline-body">
-                                        <p class="mb-2">Le système PNGDI a été mis à jour avec de nouvelles fonctionnalités et améliorations.</p>
+                                        <p class="mb-2">Le système DGELP a été mis à jour avec de nouvelles fonctionnalités et améliorations.</p>
                                         <div class="timeline-meta mt-2">
                                             <span class="badge bg-secondary">Système</span>
                                             <span class="badge bg-info ms-1">Mise à jour</span>

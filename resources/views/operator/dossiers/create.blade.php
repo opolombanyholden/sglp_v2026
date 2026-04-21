@@ -437,6 +437,48 @@
             display: none;
         }
 
+        /* Cartes radio de soumission */
+        .submission-radio-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-color: #dee2e6 !important;
+        }
+
+        .submission-radio-card:hover {
+            border-color: #007bff !important;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .submission-radio-card.selected-green {
+            border-color: #28a745 !important;
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.05), rgba(32, 201, 151, 0.08));
+            box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+        }
+
+        .submission-radio-card.selected-blue {
+            border-color: #007bff !important;
+            background: linear-gradient(135deg, rgba(0, 123, 255, 0.05), rgba(102, 16, 242, 0.08));
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        .cursor-pointer { cursor: pointer; }
+
+        /* Recap table */
+        .recap-table th {
+            background: #f8f9fa;
+            width: 35%;
+            font-weight: 600;
+            color: #002B7F;
+        }
+
+        .recap-section-title {
+            background: #002B7F;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
         .choice-icon {
             width: 60px;
             height: 60px;
@@ -717,11 +759,13 @@
                                                                     </div>
                                                                 </div>
                                                             </div>
-                                                            <div class="form-check">
-                                                                <input class="form-check-input" type="radio"
+                                                            <div class="d-flex align-items-center justify-content-center mt-2 p-2 rounded" style="background: #f8f9fa;">
+                                                                <input type="radio"
                                                                     name="type_organisation" value="{{ $orgType->code }}"
-                                                                    id="type{{ Str::studly($orgType->code) }}">
-                                                                <label class="form-check-label fw-bold"
+                                                                    id="type{{ Str::studly($orgType->code) }}"
+                                                                    style="width: 22px; height: 22px; accent-color: {{ $orgType->couleur ?? '#009e3f' }}; cursor: pointer;"
+                                                                    class="me-2">
+                                                                <label class="fw-bold mb-0" style="cursor: pointer; color: {{ $orgType->couleur ?? '#009e3f' }};"
                                                                     for="type{{ Str::studly($orgType->code) }}">
                                                                     Choisir {{ $orgType->nom }}
                                                                 </label>
@@ -1873,18 +1917,11 @@
 
                                 <div class="row justify-content-center">
                                     <div class="col-md-10">
-                                        <div class="alert alert-info border-0 mb-4">
-                                            <h6 class="alert-heading">
-                                                <i class="fas fa-info-circle me-2"></i>
-                                                Documents requis
-                                            </h6>
-                                            <p class="mb-0">Les documents varient selon le type d'organisation sélectionné.
-                                            </p>
-                                        </div>
-
-                                        <!-- Documents requis -->
+                                        <!-- Documents requis (contenu généré dynamiquement) -->
                                         <div id="documents_container">
-                                            <!-- Documents dynamiques selon le type -->
+                                            <div class="alert alert-info border-0 mb-4">
+                                                <p class="mb-0"><i class="fas fa-info-circle me-2"></i>Les documents requis seront affichés après la sélection du type d'organisation.</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1904,293 +1941,113 @@
 
                                 <div class="row justify-content-center">
                                     <div class="col-md-10">
-                                        <!-- Bannière workflow 2 phases -->
-                                        <div class="phase-banner">
-                                            <div class="phase-content">
-                                                <div class="workflow-progress-mini">
-                                                    <i class="fas fa-rocket me-2"></i>
-                                                    Système de soumission intelligent SGLP
-                                                </div>
-                                                <h5 class="mb-2">Workflow 2 Phases Activé</h5>
-                                                <p class="mb-0 opacity-90">
-                                                    Pour optimiser le traitement de votre dossier, nous utilisons un système
-                                                    en 2 phases
-                                                    qui évite les timeouts et garantit la sécurité de vos données.
-                                                </p>
-                                            </div>
-                                        </div>
 
-                                        <!-- Indicateur de progression workflow -->
-                                        <div class="card border-0 shadow-sm mb-4">
-                                            <div class="card-body">
-                                                <div class="row align-items-center">
-                                                    <div class="col-md-8">
-                                                        <h6 class="text-primary mb-3">
-                                                            <i class="fas fa-route me-2"></i>
-                                                            Progression du Workflow
-                                                        </h6>
-                                                        <div class="workflow-steps">
-                                                            <div class="phase-step-mini completed">1</div>
-                                                            <div class="step-connector active"></div>
-                                                            <div class="phase-step-mini current">2</div>
-                                                            <div class="step-connector"></div>
-                                                            <div class="phase-step-mini pending">✓</div>
-                                                        </div>
-                                                        <div class="row text-center">
-                                                            <div class="col-4">
-                                                                <small class="text-success fw-bold">Phase 1</small>
-                                                                <br><small class="text-muted">Organisation créée</small>
-                                                            </div>
-                                                            <div class="col-4">
-                                                                <small class="text-warning fw-bold">Phase 2</small>
-                                                                <br><small class="text-muted">Import adhérents</small>
-                                                            </div>
-                                                            <div class="col-4">
-                                                                <small class="text-muted fw-bold">Terminé</small>
-                                                                <br><small class="text-muted">Soumission finale</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4 text-center">
-                                                        <div class="phase-indicator-mini">
-                                                            <i class="fas fa-clock text-warning fa-2x"></i>
-                                                            <div>
-                                                                <div class="fw-bold">Phase 1</div>
-                                                                <small class="text-muted">En cours</small>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Récapitulatif -->
-                                        <div class="card border-0 shadow-sm mb-4">
-                                            <div class="card-header bg-success text-white">
-                                                <h6 class="mb-0">
-                                                    <i class="fas fa-clipboard-check me-2"></i>
-                                                    Récapitulatif de votre dossier
-                                                </h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <div id="recap_content">
-                                                    <!-- Contenu généré dynamiquement par JavaScript -->
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Information sur les adhérents -->
-                                        <div class="next-phase-info">
-                                            <div class="d-flex align-items-center">
-                                                <i class="fas fa-users fa-2x text-warning me-3"></i>
-                                                <div class="flex-grow-1">
-                                                    <h6 class="text-warning mb-1">
-                                                        <i class="fas fa-info-circle me-1"></i>
-                                                        Information importante sur les adhérents
-                                                    </h6>
-                                                    <p class="mb-2">
-                                                        L'ajout des adhérents se fera en <strong>Phase 2</strong> après la
-                                                        création de votre organisation.
-                                                        Cette approche garantit :
-                                                    </p>
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <small class="d-block">
-                                                                <i class="fas fa-check text-success me-1"></i>
-                                                                Aucun risque de timeout serveur
-                                                            </small>
-                                                            <small class="d-block">
-                                                                <i class="fas fa-check text-success me-1"></i>
-                                                                Traitement par lots optimisé
-                                                            </small>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <small class="d-block">
-                                                                <i class="fas fa-check text-success me-1"></i>
-                                                                Sécurité maximale des données
-                                                            </small>
-                                                            <small class="d-block">
-                                                                <i class="fas fa-check text-success me-1"></i>
-                                                                Possibilité de reprise en cas d'interruption
-                                                            </small>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Aperçu des adhérents (si présents en session) -->
-                                        <div class="adherents-preview" id="adherents-preview-section"
-                                            style="display: none;">
-                                            <div class="d-flex align-items-center justify-content-between">
-                                                <div>
-                                                    <h6 class="text-primary mb-1">
-                                                        <i class="fas fa-eye me-2"></i>
-                                                        Adhérents détectés en session
-                                                    </h6>
-                                                    <p class="mb-0 text-muted">
-                                                        <span id="session-adherents-count">0</span> adhérents prêts pour
-                                                        l'import en Phase 2
-                                                    </p>
-                                                </div>
-                                                <div class="text-end">
-                                                    <span class="badge bg-info" id="session-status-badge">En attente</span>
-                                                    <br><small class="text-muted" id="session-expiry">Expire dans 2h</small>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Choix du mode de soumission -->
+                                        <!-- RÉCAPITULATIF COMPLET -->
                                         <div class="card border-0 shadow-sm mb-4">
                                             <div class="card-header bg-primary text-white">
                                                 <h6 class="mb-0">
-                                                    <i class="fas fa-route me-2"></i>
-                                                    Mode de soumission
+                                                    <i class="fas fa-clipboard-list me-2"></i>
+                                                    Récapitulatif complet de votre organisation
+                                                </h6>
+                                            </div>
+                                            <div class="card-body p-0">
+                                                <div id="recap_content">
+                                                    <!-- Généré dynamiquement par generateFullRecap() -->
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- CHOIX DU MODE DE SOUMISSION -->
+                                        <div class="card border-0 shadow-sm mb-4">
+                                            <div class="card-header bg-success text-white">
+                                                <h6 class="mb-0">
+                                                    <i class="fas fa-paper-plane me-2"></i>
+                                                    Choisissez votre mode de soumission
                                                 </h6>
                                             </div>
                                             <div class="card-body">
-                                                <div class="row">
-                                                    <div class="col-md-6 mb-3">
-                                                        <div class="submission-choice" data-choice="phase1-only">
+                                                <!-- Option 1 : Soumission Directe -->
+                                                <label for="submissionPhase1Only" class="d-block mb-3 cursor-pointer">
+                                                    <div class="border rounded p-3 submission-radio-card" id="card_phase1">
+                                                        <div class="d-flex align-items-start">
                                                             <input type="radio" name="submission_mode" value="phase1_only"
-                                                                id="submissionPhase1Only">
-                                                            <label for="submissionPhase1Only" class="w-100">
-                                                                <div class="choice-icon"
-                                                                    style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                                                                    <i class="fas fa-rocket text-white"></i>
-                                                                </div>
-                                                                <h6 class="text-primary">Soumission Directe (Phase 1)</h6>
-                                                                <p class="text-muted small mb-3">
-                                                                    Créer l'organisation maintenant et ajouter les adhérents
-                                                                    en Phase 2
+                                                                   id="submissionPhase1Only" class="mt-1 me-3"
+                                                                   style="width: 20px; height: 20px; accent-color: #28a745;"
+                                                                   onchange="toggleSubmissionMode()">
+                                                            <div class="flex-grow-1">
+                                                                <h5 class="mb-1 text-success">
+                                                                    <i class="fas fa-rocket me-2"></i>
+                                                                    Soumission Directe (Recommandé)
+                                                                </h5>
+                                                                <p class="text-muted mb-2">
+                                                                    Créer l'organisation maintenant et ajouter les adhérents en Phase 2
                                                                 </p>
-                                                                <div class="text-start">
-                                                                    <small class="text-success d-block">
-                                                                        <i class="fas fa-check me-1"></i> Organisation créée
-                                                                        immédiatement
-                                                                    </small>
-                                                                    <small class="text-success d-block">
-                                                                        <i class="fas fa-check me-1"></i> Numéro de
-                                                                        récépissé généré
-                                                                    </small>
-                                                                    <small class="text-info d-block">
-                                                                        <i class="fas fa-arrow-right me-1"></i> Phase 2 :
-                                                                        Import adhérents ensuite
-                                                                    </small>
+                                                                <div class="row">
+                                                                    <div class="col-md-6">
+                                                                        <small class="text-success d-block"><i class="fas fa-check me-1"></i> Organisation créée immédiatement</small>
+                                                                        <small class="text-success d-block"><i class="fas fa-check me-1"></i> Numéro de récépissé généré</small>
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <small class="text-success d-block"><i class="fas fa-check me-1"></i> Aucun risque de timeout</small>
+                                                                        <small class="text-info d-block"><i class="fas fa-arrow-right me-1"></i> Import adhérents ensuite</small>
+                                                                    </div>
                                                                 </div>
-                                                            </label>
+                                                            </div>
                                                         </div>
                                                     </div>
+                                                </label>
 
-                                                    <div class="col-md-6 mb-3">
-                                                        <div class="submission-choice" data-choice="traditional">
+                                                <!-- Option 2 : Soumission Traditionnelle -->
+                                                <label for="submissionTraditional" class="d-block mb-3 cursor-pointer">
+                                                    <div class="border rounded p-3 submission-radio-card" id="card_traditional">
+                                                        <div class="d-flex align-items-start">
                                                             <input type="radio" name="submission_mode" value="traditional"
-                                                                id="submissionTraditional">
-                                                            <label for="submissionTraditional" class="w-100">
-                                                                <div class="choice-icon"
-                                                                    style="background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);">
-                                                                    <i class="fas fa-file-upload text-white"></i>
-                                                                </div>
-                                                                <h6 class="text-primary">Soumission Traditionnelle</h6>
-                                                                <p class="text-muted small mb-3">
-                                                                    Ajouter manuellement quelques adhérents maintenant (≤
-                                                                    50)
+                                                                   id="submissionTraditional" class="mt-1 me-3"
+                                                                   style="width: 20px; height: 20px; accent-color: #007bff;"
+                                                                   onchange="toggleSubmissionMode()">
+                                                            <div class="flex-grow-1">
+                                                                <h5 class="mb-1 text-primary">
+                                                                    <i class="fas fa-file-upload me-2"></i>
+                                                                    Soumission Traditionnelle
+                                                                </h5>
+                                                                <p class="text-muted mb-2">
+                                                                    Ajouter manuellement quelques adhérents maintenant (max 50)
                                                                 </p>
-                                                                <div class="text-start">
-                                                                    <small class="text-warning d-block">
-                                                                        <i class="fas fa-exclamation-triangle me-1"></i>
-                                                                        Limité à 50 adhérents
-                                                                    </small>
-                                                                    <small class="text-warning d-block">
-                                                                        <i class="fas fa-clock me-1"></i> Risque de timeout
-                                                                        si nombreux
-                                                                    </small>
-                                                                    <small class="text-success d-block">
-                                                                        <i class="fas fa-check me-1"></i> Tout en une seule
-                                                                        fois
-                                                                    </small>
-                                                                </div>
-                                                            </label>
+                                                                <small class="text-warning d-block"><i class="fas fa-exclamation-triangle me-1"></i> Limité à 50 adhérents</small>
+                                                                <small class="text-warning d-block"><i class="fas fa-clock me-1"></i> Risque de timeout si nombreux</small>
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
-
-                                                <!-- Message d'aide conditionnel -->
-                                                <div class="alert alert-info border-0 mt-3" id="submission-help">
-                                                    <div class="d-flex align-items-center">
-                                                        <i class="fas fa-lightbulb fa-2x me-3 text-info"></i>
-                                                        <div>
-                                                            <h6 class="alert-heading mb-1">Recommandation</h6>
-                                                            <p class="mb-0">
-                                                                Pour une expérience optimale, nous recommandons la
-                                                                <strong>Soumission Directe (Phase 1)</strong>
-                                                                qui permet de créer votre organisation immédiatement et
-                                                                d'ajouter les adhérents en toute sécurité ensuite.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                </label>
                                             </div>
                                         </div>
 
                                         <!-- Section adhérents traditionnels (masquée par défaut) -->
                                         <div class="card border-0 shadow-sm mb-4 d-none" id="traditional-adherents-section">
                                             <div class="card-header bg-warning text-dark">
-                                                <h6 class="mb-0">
-                                                    <i class="fas fa-users me-2"></i>
-                                                    Ajout d'adhérents (Mode Traditionnel)
-                                                </h6>
+                                                <h6 class="mb-0"><i class="fas fa-users me-2"></i>Ajout d'adhérents (Mode Traditionnel)</h6>
                                             </div>
                                             <div class="card-body">
-                                                <div class="alert alert-warning border-0">
-                                                    <h6 class="alert-heading">
-                                                        <i class="fas fa-exclamation-triangle me-2"></i>
-                                                        Mode traditionnel sélectionné
-                                                    </h6>
-                                                    <p class="mb-0">
-                                                        Vous pouvez ajouter jusqu'à 50 adhérents maintenant. Pour des
-                                                        volumes plus importants,
-                                                        il est recommandé d'utiliser la Phase 2.
-                                                    </p>
-                                                </div>
-
-                                                <!-- Interface simplifiée d'ajout d'adhérents -->
                                                 <div class="row">
-                                                    <div class="col-md-4 mb-3">
+                                                    <div class="col-md-3 mb-3">
                                                         <label class="form-label">Nom *</label>
-                                                        <input type="text" class="form-control" id="adherent-nom"
-                                                            placeholder="Nom de famille">
+                                                        <input type="text" class="form-control" id="adherent-nom" placeholder="Nom de famille">
                                                     </div>
-                                                    <div class="col-md-4 mb-3">
+                                                    <div class="col-md-3 mb-3">
                                                         <label class="form-label">Prénom *</label>
-                                                        <input type="text" class="form-control" id="adherent-prenom"
-                                                            placeholder="Prénom(s)">
+                                                        <input type="text" class="form-control" id="adherent-prenom" placeholder="Prénom(s)">
                                                     </div>
-                                                    <div class="col-md-4 mb-3">
+                                                    <div class="col-md-3 mb-3">
                                                         <label class="form-label">NIP *</label>
-                                                        <input type="text" class="form-control" id="adherent-nip"
-                                                            placeholder="A1-2345-19901225">
+                                                        <input type="text" class="form-control" id="adherent-nip" placeholder="A1-2345-19901225">
                                                     </div>
-                                                </div>
-                                                <div class="row">
-                                                    <div class="col-md-8 mb-3">
-                                                        <label class="form-label">Téléphone</label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">+241</span>
-                                                            <input type="tel" class="form-control" id="adherent-telephone"
-                                                                placeholder="01234567">
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4 mb-3">
+                                                    <div class="col-md-3 mb-3">
                                                         <label class="form-label">&nbsp;</label>
-                                                        <button type="button" class="btn btn-warning w-100"
-                                                            onclick="addAdherentTraditional()">
+                                                        <button type="button" class="btn btn-warning w-100" onclick="addAdherentTraditional()">
                                                             <i class="fas fa-plus me-2"></i>Ajouter
                                                         </button>
                                                     </div>
                                                 </div>
-
-                                                <!-- Liste des adhérents ajoutés -->
                                                 <div id="traditional-adherents-list">
                                                     <div class="text-center text-muted py-3">
                                                         <i class="fas fa-users fa-2x mb-2"></i>
@@ -2278,6 +2135,8 @@
                                 style="display: none;">
                                 <i class="fas fa-arrow-left me-2"></i>Précédent
                             </button>
+
+                            <span id="save-indicator" class="align-self-center mr-3 small text-muted"></span>
 
                             <div class="ms-auto d-flex gap-2">
                                 <!-- Bouton suivant (étapes 1-7) -->
@@ -2409,7 +2268,7 @@
                                     <div>
                                         <h6 class="alert-heading mb-2">Prêt pour la soumission Phase 1</h6>
                                         <p class="mb-2">
-                                            Votre organisation va être créée et enregistrée dans la base de données SGLP.
+                                            Votre organisation va être créée et enregistrée dans la base de données DGELP.
                                             Vous recevrez immédiatement un numéro de récépissé.
                                         </p>
                                         <p class="mb-0">
@@ -2507,6 +2366,21 @@
                         membresBureau: [],
                         validationErrors: {},
                         uploadedDocuments: {},
+
+                        // Sauvegarde par étape (brouillon serveur)
+                        draftId: null,
+                        isSavingStep: false,
+                        stepSaveErrors: {},
+                        frontendToBackendStep: {
+                            1: 1,  // Type d'organisation
+                            2: 2,  // Guide et exigences
+                            3: 3,  // Informations demandeur
+                            4: 4,  // Informations organisation
+                            5: 5,  // Coordonnées et localisation
+                            6: 6,  // Fondateurs
+                            7: 8,  // Documents (backend step 8, step 7 = adhérents Phase 2)
+                            8: 9   // Validation finale
+                        },
 
                         // Configuration cache/localStorage
                         cacheConfig: {
@@ -2823,186 +2697,198 @@
                      * Confirmation finale de la soumission Phase 1
                      */
                     async function handleConfirmSubmitPhase1() {
-                        console.log('✅ Confirmation soumission Phase 1');
+                        console.log('Confirmation soumission Phase 1');
 
-                        // Masquer le modal (Bootstrap 4 + jQuery)
+                        // Masquer le modal
                         $('#workflowConfirmModal').modal('hide');
-
-                        // Afficher le loader
-                        showGlobalLoader('Création de votre organisation en cours...');
+                        showGlobalLoader('Creation de votre organisation en cours...');
 
                         try {
-                            // ══════ 1. Rafraîchir le token CSRF AVANT soumission ══════
+                            // Sauvegarder la derniere etape (declarations) au serveur
+                            await saveStepToServer(8);
+
+                            // Verifier qu'un brouillon existe
+                            if (!OrganisationApp.draftId) {
+                                throw new Error('Aucun brouillon en cours. Veuillez recommencer le formulaire.');
+                            }
+
+                            // Token CSRF
                             let csrfToken;
                             try {
                                 csrfToken = await window.UnifiedCSRFManager.getCurrentToken();
-                                console.log('🔑 Token CSRF obtenu:', csrfToken ? csrfToken.substring(0, 15) + '...' : 'ABSENT');
                             } catch (e) {
-                                // Fallback : token du meta tag
                                 csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-                                console.warn('⚠️ Fallback CSRF meta tag:', csrfToken ? csrfToken.substring(0, 15) + '...' : 'ABSENT');
                             }
 
                             if (!csrfToken) {
-                                throw new Error('Token CSRF introuvable. Veuillez rafraîchir la page.');
+                                throw new Error('Token CSRF introuvable. Veuillez rafraichir la page.');
                             }
 
-                            // ══════ 2. Collecter toutes les données du formulaire ══════
-                            collectAllFormData();
-
-                            // ══════ 3. Construire le FormData ══════
-                            const formData = new FormData();
-
-                            // Token CSRF dans le body
-                            formData.append('_token', csrfToken);
-
-                            // Données du formulaire
-                            Object.keys(OrganisationApp.formData).forEach(key => {
-                                if (key === '_token') return; // déjà ajouté
-                                const val = OrganisationApp.formData[key];
-                                if (val === null || val === undefined) return;
-
-                                if (val === true) {
-                                    formData.append(key, '1');
-                                } else if (val === false) {
-                                    return;
-                                } else if (typeof val === 'object' && val.hasFile) {
-                                    return;
-                                } else {
-                                    formData.append(key, val);
-                                }
-                            });
-
-                            // Fondateurs
-                            console.log('📋 Phase1 - Fondateurs:', OrganisationApp.foundateurs.length);
-                            OrganisationApp.foundateurs.forEach((fondateur, index) => {
-                                Object.keys(fondateur).forEach(key => {
-                                    if (key !== 'id' && key !== 'dateAjout') {
-                                        formData.append(`fondateurs[${index}][${key}]`, fondateur[key]);
-                                    }
-                                });
-                            });
-
-                            // Membres du bureau
-                            OrganisationApp.membresBureau.forEach((membre, index) => {
-                                Object.keys(membre).forEach(key => {
-                                    if (key !== 'id' && key !== 'dateAjout') {
-                                        formData.append(`membresBureau[${index}][${key}]`, membre[key]);
-                                    }
-                                });
-                            });
-
-                            // Documents
-                            Object.keys(OrganisationApp.uploadedDocuments).forEach(docType => {
-                                const doc = OrganisationApp.uploadedDocuments[docType];
-                                if (doc.file) {
-                                    formData.append(`documents[${docType}]`, doc.file);
-                                }
-                            });
-
-                            // Marqueurs workflow
-                            formData.append('_workflow', '2_phases');
-                            formData.append('_phase', '1');
-                            formData.append('submission_mode', 'phase1_only');
-
-                            // ══════ 4. Envoyer avec retry CSRF ══════
-                            const submitUrl = document.getElementById('organisationForm').action;
-                            console.log('🔍 Phase1 - URL:', submitUrl);
-
-                            const maxRetries = 2;
-                            let lastError = null;
-
-                            for (let attempt = 1; attempt <= maxRetries; attempt++) {
-                                // Obtenir le token le plus frais pour chaque tentative
-                                if (attempt > 1) {
-                                    console.log(`🔄 Retry ${attempt}/${maxRetries} - Rafraîchissement token CSRF...`);
-                                    try {
-                                        csrfToken = await window.UnifiedCSRFManager.refreshFromServer();
-                                        formData.set('_token', csrfToken);
-                                    } catch (e) {
-                                        console.warn('⚠️ Échec refresh token:', e.message);
-                                    }
-                                }
-
-                                const response = await fetch(submitUrl, {
-                                    method: 'POST',
-                                    body: formData,
-                                    credentials: 'same-origin',
-                                    headers: {
-                                        'X-CSRF-TOKEN': csrfToken,
-                                        'X-Requested-With': 'XMLHttpRequest',
-                                        'Accept': 'application/json'
+                            // Upload des documents avant finalisation (via FormData)
+                            if (Object.keys(OrganisationApp.uploadedDocuments).length > 0) {
+                                const docFormData = new FormData();
+                                docFormData.append('_token', csrfToken);
+                                docFormData.append('draft_id', OrganisationApp.draftId);
+                                let hasFiles = false;
+                                Object.keys(OrganisationApp.uploadedDocuments).forEach(docType => {
+                                    const doc = OrganisationApp.uploadedDocuments[docType];
+                                    if (doc && doc.file) {
+                                        docFormData.append('documents[' + docType + ']', doc.file);
+                                        hasFiles = true;
                                     }
                                 });
 
-                                console.log('🔍 Phase1 - Response:', response.status, response.type);
+                                if (hasFiles) {
+                                    // Envoyer les documents au endpoint existant
+                                    const submitUrl = document.getElementById('organisationForm').action;
+                                    collectAllFormData();
 
-                                // Erreur 419 CSRF → retry
-                                if (response.status === 419 && attempt < maxRetries) {
-                                    console.warn('⚠️ CSRF 419 - retry...');
-                                    const body = await response.json().catch(() => ({}));
-                                    if (body.new_token) {
-                                        csrfToken = body.new_token;
-                                        formData.set('_token', csrfToken);
-                                        window.UnifiedCSRFManager.updateAllLocations(csrfToken);
-                                    }
-                                    continue;
-                                }
+                                    // Construire un FormData complet pour le store existant
+                                    const fullFormData = new FormData();
+                                    fullFormData.append('_token', csrfToken);
 
-                                // Redirection (session expirée)
-                                if (response.type === 'opaqueredirect' || response.status === 0) {
-                                    throw new Error('Session expirée. Veuillez rafraîchir la page et vous reconnecter.');
-                                }
+                                    Object.keys(OrganisationApp.formData).forEach(key => {
+                                        if (key === '_token') return;
+                                        const val = OrganisationApp.formData[key];
+                                        if (val === null || val === undefined || val === false) return;
+                                        if (typeof val === 'object' && val.hasFile) return;
+                                        fullFormData.append(key, val === true ? '1' : val);
+                                    });
 
-                                // Erreur serveur
-                                if (!response.ok) {
-                                    const errorData = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
-                                    console.error('❌ Erreur serveur:', response.status, errorData);
-                                    let errorMsg = errorData.message || `HTTP ${response.status}`;
-                                    if (errorData.errors) {
-                                        const errorDetails = Object.values(errorData.errors).flat().join('\n• ');
-                                        errorMsg += '\n\n• ' + errorDetails;
-                                    }
-                                    throw new Error(errorMsg);
-                                }
+                                    OrganisationApp.foundateurs.forEach((fondateur, index) => {
+                                        Object.keys(fondateur).forEach(key => {
+                                            if (key !== 'id' && key !== 'dateAjout') {
+                                                fullFormData.append('fondateurs[' + index + '][' + key + ']', fondateur[key]);
+                                            }
+                                        });
+                                    });
 
-                                // ══════ 5. Succès ══════
-                                const data = await response.json();
-                                hideGlobalLoader();
-                                console.log('✅ Phase 1 réussie:', data);
+                                    OrganisationApp.membresBureau.forEach((membre, index) => {
+                                        Object.keys(membre).forEach(key => {
+                                            if (key !== 'id' && key !== 'dateAjout') {
+                                                fullFormData.append('membresBureau[' + index + '][' + key + ']', membre[key]);
+                                            }
+                                        });
+                                    });
 
-                                if (data.success && data.phase === 1) {
-                                    WorkflowData.isPhase1Submitted = true;
-                                    clearCache();
-                                    showNotification(`Organisation créée avec succès ! N° ${data.data.numero_recepisse}`, 'success');
-
-                                    setTimeout(() => {
-                                        if (data.data.next_phase_url) {
-                                            window.location.href = data.data.next_phase_url;
-                                        } else if (data.data.dossier_id) {
-                                            window.location.href = `/operator/dossiers/${data.data.dossier_id}/adherents-import`;
-                                        } else {
-                                            showNotification('Organisation créée, mais erreur de redirection vers Phase 2', 'warning');
+                                    Object.keys(OrganisationApp.uploadedDocuments).forEach(docType => {
+                                        const doc = OrganisationApp.uploadedDocuments[docType];
+                                        if (doc && doc.file) {
+                                            fullFormData.append('documents[' + docType + ']', doc.file);
                                         }
-                                    }, 2000);
-                                } else {
-                                    throw new Error(data.message || 'Réponse inattendue du serveur');
+                                    });
+
+                                    fullFormData.append('_workflow', '2_phases');
+                                    fullFormData.append('_phase', '1');
+                                    fullFormData.append('submission_mode', 'phase1_only');
+                                    fullFormData.append('draft_id', OrganisationApp.draftId);
+
+                                    const response = await fetch(submitUrl, {
+                                        method: 'POST',
+                                        body: fullFormData,
+                                        credentials: 'same-origin',
+                                        headers: {
+                                            'X-CSRF-TOKEN': csrfToken,
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            'Accept': 'application/json'
+                                        }
+                                    });
+
+                                    if (response.status === 419) {
+                                        try {
+                                            csrfToken = await window.UnifiedCSRFManager.refreshFromServer();
+                                        } catch (e) {}
+                                        fullFormData.set('_token', csrfToken);
+                                        const retryResp = await fetch(submitUrl, {
+                                            method: 'POST',
+                                            body: fullFormData,
+                                            credentials: 'same-origin',
+                                            headers: {
+                                                'X-CSRF-TOKEN': csrfToken,
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                                'Accept': 'application/json'
+                                            }
+                                        });
+                                        return await handleFinalResponse(retryResp);
+                                    }
+
+                                    return await handleFinalResponse(response);
                                 }
-                                return; // Sortir de la boucle retry
                             }
 
-                            // Si on arrive ici, tous les retries ont échoué
-                            throw new Error('Échec après plusieurs tentatives. Token CSRF invalide.');
+                            // Finalisation via le draft (sans documents)
+                            const finalizeUrl = '/operator/organisations/draft/' + OrganisationApp.draftId + '/finalize';
+                            const response = await fetch(finalizeUrl, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                credentials: 'same-origin',
+                                body: JSON.stringify({ _token: csrfToken })
+                            });
+
+                            return await handleFinalResponse(response);
 
                         } catch (error) {
                             hideGlobalLoader();
-                            console.error('❌ Erreur Phase 1:', error);
-
-                            let errorMessage = error.message || 'Erreur lors de la création.';
-                            if (error.message.includes('413')) {
-                                errorMessage = 'Fichiers trop volumineux. Réduisez la taille des documents.';
+                            console.error('Erreur Phase 1:', error);
+                            let errorMessage = error.message || 'Erreur lors de la creation.';
+                            if (error.message && error.message.includes('413')) {
+                                errorMessage = 'Fichiers trop volumineux. Reduisez la taille des documents.';
                             }
                             showNotification(errorMessage, 'error');
+                        }
+                    }
+
+                    /**
+                     * Traiter la reponse finale (creation/finalisation)
+                     */
+                    async function handleFinalResponse(response) {
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({ message: 'HTTP ' + response.status }));
+                            let errorMsg = errorData.message || 'HTTP ' + response.status;
+                            if (errorData.errors) {
+                                const details = Object.values(errorData.errors).flat().join('\n');
+                                errorMsg += '\n' + details;
+                            }
+                            if (errorData.missing_step) {
+                                errorMsg = 'Etape ' + errorData.missing_step + ' non completee. Veuillez la completer.';
+                            }
+                            hideGlobalLoader();
+                            showNotification(errorMsg, 'error');
+                            return;
+                        }
+
+                        const data = await response.json();
+                        hideGlobalLoader();
+                        console.log('Phase 1 reussie:', data);
+
+                        if (data.success) {
+                            if (typeof WorkflowData !== 'undefined') WorkflowData.isPhase1Submitted = true;
+                            clearCache();
+
+                            const orgId = data.organisation_id || (data.data && data.data.organisation_id);
+                            const recepisse = (data.data && data.data.numero_recepisse) || '';
+                            showNotification('Organisation creee avec succes !' + (recepisse ? ' N ' + recepisse : ''), 'success');
+
+                            setTimeout(() => {
+                                if (data.redirect_url) {
+                                    window.location.href = data.redirect_url;
+                                } else if (data.data && data.data.next_phase_url) {
+                                    window.location.href = data.data.next_phase_url;
+                                } else if (data.data && data.data.dossier_id) {
+                                    window.location.href = '/operator/dossiers/' + data.data.dossier_id + '/adherents-import';
+                                } else if (orgId) {
+                                    window.location.href = '/operator/organisations/' + orgId;
+                                } else {
+                                    window.location.href = '/operator/organisations';
+                                }
+                            }, 2000);
+                        } else {
+                            throw new Error(data.message || 'Reponse inattendue du serveur');
                         }
                     }
 
@@ -3243,34 +3129,9 @@
                         }
                     }
 
-                    /**
-                     * Modifier la fonction changeStep existante pour gérer l'étape 8
-                     */
-                    const originalChangeStep = window.changeStep;
-                    window.changeStep = function (direction) {
-                        const result = originalChangeStep(direction);
+                    // Note: la logique étape 8 est gérée dans handleStepSpecificActions()
 
-                        // Si on arrive à l'étape 8, initialiser le workflow
-                        if (OrganisationApp.currentStep === 8) {
-                            setTimeout(() => {
-                                initWorkflowStep8();
-                            }, 100);
-                        }
-
-                        return result;
-                    };
-
-                    /**
-                     * Modifier la fonction updateNavigationButtons existante
-                     */
-                    const originalUpdateNavigationButtons = window.updateNavigationButtons || function () { };
-                    window.updateNavigationButtons = function () {
-                        originalUpdateNavigationButtons();
-
-                        if (OrganisationApp.currentStep === 8) {
-                            updateNavigationButtonsStep8();
-                        }
-                    };
+                    // Note: updateNavigationButtons gère déjà l'étape 8 nativement
 
                     // Exposer les fonctions nécessaires globalement
                     window.submitPhase1 = submitPhase1;
@@ -3295,20 +3156,216 @@
                     /**
                      * Navigation entre les étapes (avec sauvegarde automatique)
                      */
+                    // ══════════════════════════════════════════════
+                    // SAUVEGARDE PAR ÉTAPE (BROUILLON SERVEUR)
+                    // ══════════════════════════════════════════════
+
+                    /**
+                     * Collecter les données spécifiques à une étape frontend
+                     */
+                    function getStepDataPayload(frontendStep) {
+                        const payload = {};
+
+                        switch (frontendStep) {
+                            case 1:
+                                payload.type_organisation = OrganisationApp.organisationType ||
+                                    document.querySelector('input[name="type_organisation"]:checked')?.value || '';
+                                break;
+
+                            case 2:
+                                var guideCheck = document.getElementById('guideReadConfirm') || document.querySelector('[name="guide_read_confirm"]');
+                                payload.guide_read_confirm = (guideCheck && guideCheck.checked) ? '1' : '';
+                                break;
+
+                            case 3:
+                                ['demandeur_nip', 'demandeur_civilite', 'demandeur_nom', 'demandeur_prenom',
+                                 'demandeur_date_naissance', 'demandeur_nationalite', 'demandeur_telephone',
+                                 'demandeur_email', 'demandeur_adresse', 'demandeur_profession',
+                                 'demandeur_role', 'demandeur_responsabilite'].forEach(field => {
+                                    const el = document.getElementById(field) || document.querySelector('[name="' + field + '"]');
+                                    if (el) payload[field] = el.type === 'checkbox' ? el.checked : el.value;
+                                });
+                                break;
+
+                            case 4:
+                                ['org_nom', 'org_sigle', 'org_objet', 'org_domaine_activite_id',
+                                 'org_date_creation', 'org_telephone', 'org_email', 'org_site_web',
+                                 'org_reseaux_sociaux'].forEach(field => {
+                                    const el = document.getElementById(field) || document.querySelector('[name="' + field + '"]');
+                                    if (el) payload[field] = el.value;
+                                });
+                                break;
+
+                            case 5:
+                                ['org_province_id', 'org_departement_id', 'org_commune_id',
+                                 'org_arrondissement_id', 'org_quartier_id', 'org_canton_id',
+                                 'org_regroupement_id', 'org_village_id', 'org_prefecture',
+                                 'org_sous_prefecture', 'org_lieu_dit', 'org_latitude', 'org_longitude'].forEach(field => {
+                                    const el = document.getElementById(field) || document.querySelector('[name="' + field + '"]');
+                                    if (el) payload[field] = el.value;
+                                });
+                                // Champs mappés pour le backend
+                                const adresseEl = document.querySelector('[name="org_adresse"]') || document.getElementById('org_adresse_complete');
+                                if (adresseEl) payload.org_adresse_complete = adresseEl.value;
+                                payload.org_province = payload.org_province_id || '';
+                                payload.org_zone_type = document.getElementById('zone_type_input')?.value || 'urbaine';
+                                break;
+
+                            case 6:
+                                payload.fondateurs = OrganisationApp.foundateurs || [];
+                                payload.organization_type = OrganisationApp.organisationType || '';
+                                payload.membresBureau = OrganisationApp.membresBureau || [];
+                                break;
+
+                            case 7: // Documents (backend step 8)
+                                payload.documents = {};
+                                Object.keys(OrganisationApp.uploadedDocuments).forEach(docType => {
+                                    const doc = OrganisationApp.uploadedDocuments[docType];
+                                    if (doc && doc.file) {
+                                        payload.documents[docType] = { name: doc.file.name, size: doc.file.size };
+                                    }
+                                });
+                                break;
+
+                            case 8: // Validation finale (backend step 9)
+                                ['declaration_veracite', 'declaration_conformite', 'declaration_autorisation'].forEach(field => {
+                                    const el = document.getElementById(field);
+                                    payload[field] = el ? el.checked : false;
+                                });
+                                break;
+                        }
+
+                        return payload;
+                    }
+
+                    /**
+                     * Sauvegarder une étape sur le serveur (brouillon)
+                     */
+                    async function saveStepToServer(frontendStep) {
+                        if (OrganisationApp.isSavingStep) return { success: true };
+
+                        const backendStep = OrganisationApp.frontendToBackendStep[frontendStep];
+                        if (!backendStep) return { success: true };
+
+                        const data = getStepDataPayload(frontendStep);
+                        OrganisationApp.isSavingStep = true;
+
+                        // Indicateur visuel
+                        const saveIndicator = document.getElementById('save-indicator');
+                        if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sauvegarde...';
+
+                        try {
+                            let csrfToken;
+                            try {
+                                csrfToken = await window.UnifiedCSRFManager.getCurrentToken();
+                            } catch (e) {
+                                csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                            }
+
+                            const url = '/operator/organisations/step/' + backendStep + '/save';
+
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                credentials: 'same-origin',
+                                body: JSON.stringify({ data: data, session_id: null })
+                            });
+
+                            // Retry sur 419 (CSRF)
+                            if (response.status === 419) {
+                                try {
+                                    csrfToken = await window.UnifiedCSRFManager.refreshFromServer();
+                                } catch (e) {
+                                    csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                                }
+                                const retryResponse = await fetch(url, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': csrfToken,
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                        'Accept': 'application/json'
+                                    },
+                                    credentials: 'same-origin',
+                                    body: JSON.stringify({ data: data, session_id: null })
+                                });
+                                return await handleStepSaveResponse(retryResponse, frontendStep);
+                            }
+
+                            return await handleStepSaveResponse(response, frontendStep);
+
+                        } catch (error) {
+                            console.error('Erreur sauvegarde etape ' + frontendStep + ':', error);
+                            if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-exclamation-triangle text-warning mr-1"></i> Erreur sauvegarde';
+                            return { success: false, error: error.message };
+                        } finally {
+                            OrganisationApp.isSavingStep = false;
+                        }
+                    }
+
+                    /**
+                     * Traiter la réponse de sauvegarde d'étape
+                     */
+                    async function handleStepSaveResponse(response, frontendStep) {
+                        const saveIndicator = document.getElementById('save-indicator');
+
+                        try {
+                            const result = await response.json();
+
+                            if (result.success) {
+                                if (result.draft_id) {
+                                    OrganisationApp.draftId = result.draft_id;
+                                }
+                                OrganisationApp.stepSaveErrors[frontendStep] = null;
+                                if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-check text-success mr-1"></i> Brouillon sauvegarde';
+                                console.log('Etape ' + frontendStep + ' sauvegardee. Draft ID: ' + result.draft_id + ', completion: ' + result.completion_percentage + '%');
+
+                                // Effacer le message après 3s
+                                setTimeout(() => {
+                                    if (saveIndicator) saveIndicator.innerHTML = '';
+                                }, 3000);
+
+                                return result;
+                            } else {
+                                OrganisationApp.stepSaveErrors[frontendStep] = result.errors || {};
+                                if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-exclamation-triangle text-warning mr-1"></i> Erreurs de validation';
+                                console.warn('Erreurs sauvegarde etape ' + frontendStep + ':', result.errors);
+                                return result;
+                            }
+                        } catch (e) {
+                            if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-times text-danger mr-1"></i> Erreur serveur';
+                            return { success: false, error: 'Erreur parsing response' };
+                        }
+                    }
+
+                    // ══════════════════════════════════════════════
+
                     function changeStep(direction) {
-                        console.log(`🔄 Changement d'étape: direction ${direction}, étape actuelle: ${OrganisationApp.currentStep}`);
+                        console.log('Changement etape: direction ' + direction + ', etape actuelle: ' + OrganisationApp.currentStep);
 
                         // Sauvegarder les données de l'étape actuelle avant de changer
                         saveCurrentStepData();
 
-                        // Validation avant d'avancer (les fonctions validateStepX affichent les messages détaillés)
+                        // Validation avant d'avancer
                         if (direction === 1 && !validateCurrentStep()) {
-                            console.log('❌ Validation échouée pour l\'étape', OrganisationApp.currentStep);
+                            console.log('Validation echouee pour etape', OrganisationApp.currentStep);
                             return false;
                         }
 
+                        // Sauvegarde sur le serveur en arrière-plan (non bloquant)
+                        if (direction === 1) {
+                            saveStepToServer(OrganisationApp.currentStep).catch(function(e) {
+                                console.warn('Sauvegarde serveur en erreur:', e);
+                            });
+                        }
+
                         // Calculer la nouvelle étape
-                        const newStep = OrganisationApp.currentStep + direction;
+                        var newStep = OrganisationApp.currentStep + direction;
 
                         if (newStep >= 1 && newStep <= OrganisationApp.totalSteps) {
                             OrganisationApp.currentStep = newStep;
@@ -3345,15 +3402,122 @@
                             case 7: // Ex-étape 8 : Documents
                                 updateDocumentsRequirements();
                                 break;
-                            case 8: // Ex-étape 9 : Soumission
-                                generateRecap();
-                                // Initialiser le workflow si on arrive à l'étape 8
-                                if (typeof initWorkflowStep8 === 'function') {
-                                    setTimeout(() => {
-                                        initWorkflowStep8();
-                                    }, 100);
-                                }
+                            case 8: // Soumission
+                                generateFullRecap();
                                 break;
+                        }
+                    }
+
+                    /**
+                     * Générer le récapitulatif complet de l'organisation
+                     */
+                    function generateFullRecap() {
+                        var fd = OrganisationApp.formData || {};
+                        var recapEl = document.getElementById('recap_content');
+                        if (!recapEl) return;
+
+                        // Sauvegarder les données actuelles
+                        if (typeof saveCurrentStepData === 'function') saveCurrentStepData();
+                        fd = OrganisationApp.formData || {};
+
+                        var typeLabel = getOrganizationTypeLabel(OrganisationApp.organisationType) || OrganisationApp.organisationType || '-';
+
+                        var getValue = function(key) { return fd[key] || '-'; };
+
+                        var html = '';
+
+                        // Section 1 : Type
+                        html += '<div class="recap-section-title"><i class="fas fa-list-ul me-2"></i>Type d\'organisation</div>';
+                        html += '<table class="table table-sm mb-0 recap-table"><tbody>';
+                        html += '<tr><th>Type</th><td>' + typeLabel + '</td></tr>';
+                        html += '</tbody></table>';
+
+                        // Section 2 : Demandeur
+                        html += '<div class="recap-section-title"><i class="fas fa-user me-2"></i>Informations du demandeur</div>';
+                        html += '<table class="table table-sm mb-0 recap-table"><tbody>';
+                        html += '<tr><th>NIP</th><td>' + getValue('demandeur_nip') + '</td></tr>';
+                        html += '<tr><th>Nom</th><td>' + getValue('demandeur_nom') + '</td></tr>';
+                        html += '<tr><th>Prenom</th><td>' + getValue('demandeur_prenom') + '</td></tr>';
+                        html += '<tr><th>Email</th><td>' + getValue('demandeur_email') + '</td></tr>';
+                        html += '<tr><th>Telephone</th><td>' + getValue('demandeur_telephone') + '</td></tr>';
+                        html += '<tr><th>Role</th><td>' + getValue('demandeur_role') + '</td></tr>';
+                        html += '</tbody></table>';
+
+                        // Section 3 : Organisation
+                        html += '<div class="recap-section-title"><i class="fas fa-building me-2"></i>Informations de l\'organisation</div>';
+                        html += '<table class="table table-sm mb-0 recap-table"><tbody>';
+                        html += '<tr><th>Nom</th><td>' + getValue('org_nom') + '</td></tr>';
+                        html += '<tr><th>Sigle</th><td>' + getValue('org_sigle') + '</td></tr>';
+                        html += '<tr><th>Objet</th><td><small>' + getValue('org_objet') + '</small></td></tr>';
+                        html += '<tr><th>Date de creation</th><td>' + getValue('org_date_creation') + '</td></tr>';
+                        html += '<tr><th>Telephone</th><td>' + getValue('org_telephone') + '</td></tr>';
+                        html += '<tr><th>Email</th><td>' + getValue('org_email') + '</td></tr>';
+                        html += '<tr><th>Site web</th><td>' + getValue('org_site_web') + '</td></tr>';
+                        html += '</tbody></table>';
+
+                        // Section 4 : Localisation
+                        html += '<div class="recap-section-title"><i class="fas fa-map-marker-alt me-2"></i>Coordonnees et localisation</div>';
+                        html += '<table class="table table-sm mb-0 recap-table"><tbody>';
+                        var provinceSelect = document.querySelector('[name="org_province_id"]');
+                        var provinceName = provinceSelect && provinceSelect.selectedIndex > 0 ? provinceSelect.options[provinceSelect.selectedIndex].text : getValue('org_province_id');
+                        html += '<tr><th>Province</th><td>' + provinceName + '</td></tr>';
+                        html += '<tr><th>Prefecture</th><td>' + getValue('org_prefecture') + '</td></tr>';
+                        html += '<tr><th>Adresse</th><td>' + (getValue('org_adresse') !== '-' ? getValue('org_adresse') : getValue('org_adresse_complete')) + '</td></tr>';
+                        var zoneType = document.getElementById('zone_type_input');
+                        html += '<tr><th>Zone</th><td>' + (zoneType ? zoneType.value : '-') + '</td></tr>';
+                        html += '</tbody></table>';
+
+                        // Section 5 : Fondateurs
+                        html += '<div class="recap-section-title"><i class="fas fa-users me-2"></i>Fondateurs (' + OrganisationApp.foundateurs.length + ')</div>';
+                        if (OrganisationApp.foundateurs.length > 0) {
+                            html += '<table class="table table-sm mb-0"><thead><tr><th>#</th><th>Nom</th><th>Prenom</th><th>NIP</th><th>Fonction</th></tr></thead><tbody>';
+                            OrganisationApp.foundateurs.forEach(function(f, i) {
+                                html += '<tr><td>' + (i + 1) + '</td><td>' + (f.nom || '-') + '</td><td>' + (f.prenom || '-') + '</td><td>' + (f.nip || '-') + '</td><td>' + (f.fonction || '-') + '</td></tr>';
+                            });
+                            html += '</tbody></table>';
+                        } else {
+                            html += '<div class="p-3 text-muted text-center"><i class="fas fa-exclamation-circle me-1"></i>Aucun fondateur ajouté</div>';
+                        }
+
+                        // Section 6 : Documents
+                        var docs = OrganisationApp.uploadedDocuments || {};
+                        var docKeys = Object.keys(docs);
+                        html += '<div class="recap-section-title"><i class="fas fa-file-alt me-2"></i>Documents (' + docKeys.length + ')</div>';
+                        if (docKeys.length > 0) {
+                            html += '<table class="table table-sm mb-0"><tbody>';
+                            docKeys.forEach(function(key) {
+                                var d = docs[key];
+                                var icon = d.type && d.type.startsWith('image/') ? 'fa-file-image text-info' : 'fa-file-pdf text-danger';
+                                html += '<tr><td><i class="fas ' + icon + ' me-2"></i>' + getDocumentLabel(key) + '</td><td>' + (d.name || '-') + '</td><td class="text-muted">' + (d.size ? (d.size / 1024).toFixed(1) + ' Ko' : '') + '</td></tr>';
+                            });
+                            html += '</tbody></table>';
+                        } else {
+                            html += '<div class="p-3 text-muted text-center"><i class="fas fa-exclamation-circle me-1"></i>Aucun document charge</div>';
+                        }
+
+                        recapEl.innerHTML = html;
+                    }
+
+                    /**
+                     * Basculer le style des cartes radio de soumission
+                     */
+                    function toggleSubmissionMode() {
+                        var card1 = document.getElementById('card_phase1');
+                        var card2 = document.getElementById('card_traditional');
+                        var radio1 = document.getElementById('submissionPhase1Only');
+                        var radio2 = document.getElementById('submissionTraditional');
+                        var traditionalSection = document.getElementById('traditional-adherents-section');
+
+                        card1.classList.remove('selected-green');
+                        card2.classList.remove('selected-blue');
+
+                        if (radio1 && radio1.checked) {
+                            card1.classList.add('selected-green');
+                            if (traditionalSection) traditionalSection.classList.add('d-none');
+                        }
+                        if (radio2 && radio2.checked) {
+                            card2.classList.add('selected-blue');
+                            if (traditionalSection) traditionalSection.classList.remove('d-none');
                         }
                     }
 
@@ -4206,42 +4370,114 @@
                         allDocuments.forEach(doc => {
                             const isRequired = requirements.required.includes(doc);
                             const label = getDocumentLabel(doc);
+                            const existing = OrganisationApp.uploadedDocuments[doc];
 
                             documentsHtml += `
-                                                                        <div class="card border-0 shadow-sm mb-3">
-                                                                            <div class="card-body">
-                                                                                <div class="row align-items-center">
-                                                                                    <div class="col-md-6">
-                                                                                        <h6 class="mb-1">
-                                                                                            ${isRequired ? '<span class="text-danger">*</span> ' : ''}
-                                                                                            ${label}
-                                                                                        </h6>
-                                                                                        <input type="file" 
-                                                                                               class="form-control" 
-                                                                                               id="doc_${doc}" 
-                                                                                               name="documents[${doc}]"
-                                                                                               accept=".pdf,.jpg,.jpeg,.png"
-                                                                                               onchange="handleDocumentUpload('${doc}', this)"
-                                                                                               ${isRequired ? 'required' : ''}>
-                                                                                        <div class="form-text">
-                                                                                            <i class="fas fa-info me-1"></i>
-                                                                                            ${isRequired ? 'Document obligatoire' : 'Document optionnel'} - PDF, JPG, PNG (max 5MB)
-                                                                                        </div>
-                                                                                    </div>
-                                                                                    <div class="col-md-6">
-                                                                                        <div id="status_${doc}" class="text-muted">
-                                                                                            <i class="fas fa-clock me-1"></i>En attente
-                                                                                        </div>
-                                                                                        <div class="progress mt-2 d-none" id="progress_container_${doc}">
-                                                                                            <div class="progress-bar" id="progress_${doc}" style="width: 0%"></div>
-                                                                                        </div>
-                                                                                        <div id="preview_${doc}" class="mt-2 d-none"></div>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    `;
+                                <div class="card border-0 shadow-sm mb-3" id="doc_card_${doc}">
+                                    <div class="card-body">
+                                        <div class="row align-items-center">
+                                            <div class="col-md-6">
+                                                <h6 class="mb-1">
+                                                    ${isRequired ? '<span class="text-danger">*</span> ' : ''}
+                                                    ${label}
+                                                </h6>
+                                                <div id="upload_zone_${doc}">
+                                                    <input type="file"
+                                                           class="form-control"
+                                                           id="doc_${doc}"
+                                                           name="documents[${doc}]"
+                                                           accept=".pdf,.jpg,.jpeg,.png"
+                                                           onchange="handleDocumentUpload('${doc}', this)"
+                                                           ${isRequired ? 'required' : ''}>
+                                                    <div class="form-text">
+                                                        <i class="fas fa-info me-1"></i>
+                                                        ${isRequired ? 'Document obligatoire' : 'Document optionnel'} - PDF, JPG, PNG (max 5MB)
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div id="status_${doc}" class="text-muted">
+                                                    <i class="fas fa-clock me-1"></i>En attente
+                                                </div>
+                                                <div class="progress mt-2 d-none" id="progress_container_${doc}" style="height: 6px;">
+                                                    <div class="progress-bar bg-info" id="progress_${doc}" style="width: 0%"></div>
+                                                </div>
+                                                <div id="preview_${doc}" class="mt-2 d-none"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
                         });
+
+                        documentsContainer.innerHTML = documentsHtml;
+
+                        // Restaurer l'état des fichiers déjà chargés
+                        allDocuments.forEach(doc => {
+                            const existing = OrganisationApp.uploadedDocuments[doc];
+                            if (existing && existing.uploaded) {
+                                restoreDocumentPreview(doc, existing);
+                            }
+                        });
+                    }
+
+                    /**
+                     * Restaurer la preview d'un document déjà chargé
+                     */
+                    function restoreDocumentPreview(docType, docData) {
+                        const statusEl = document.getElementById('status_' + docType);
+                        const previewEl = document.getElementById('preview_' + docType);
+
+                        if (statusEl) {
+                            statusEl.innerHTML = '<i class="fas fa-check me-1 text-success"></i>Fichier charge';
+                        }
+
+                        if (previewEl) {
+                            var previewHtml = '';
+                            if (docData.type && docData.type.startsWith('image/') && docData.file) {
+                                var reader = new FileReader();
+                                reader.onload = function(e) {
+                                    previewEl.innerHTML = '<div class="d-flex align-items-center gap-2">' +
+                                        '<img src="' + e.target.result + '" class="img-thumbnail" style="max-height: 80px;">' +
+                                        '<div><small class="d-block text-muted">' + docData.name + '</small>' +
+                                        '<small class="text-muted">(' + (docData.size / 1024).toFixed(1) + ' Ko)</small></div>' +
+                                        '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + docType + '\')">' +
+                                        '<i class="fas fa-trash"></i></button></div>';
+                                    previewEl.classList.remove('d-none');
+                                };
+                                reader.readAsDataURL(docData.file);
+                            } else {
+                                previewEl.innerHTML = '<div class="d-flex align-items-center gap-2">' +
+                                    '<i class="fas fa-file-pdf text-danger fa-2x"></i>' +
+                                    '<div><small class="d-block text-muted">' + (docData.name || 'Document') + '</small>' +
+                                    '<small class="text-muted">(' + (docData.size / 1024).toFixed(1) + ' Ko)</small></div>' +
+                                    '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + docType + '\')">' +
+                                    '<i class="fas fa-trash"></i></button></div>';
+                                previewEl.classList.remove('d-none');
+                            }
+                        }
+                    }
+
+                    /**
+                     * Supprimer un document chargé
+                     */
+                    function removeDocument(docType) {
+                        delete OrganisationApp.uploadedDocuments[docType];
+
+                        var fileInput = document.getElementById('doc_' + docType);
+                        if (fileInput) fileInput.value = '';
+
+                        var statusEl = document.getElementById('status_' + docType);
+                        if (statusEl) statusEl.innerHTML = '<i class="fas fa-clock me-1"></i>En attente';
+
+                        var previewEl = document.getElementById('preview_' + docType);
+                        if (previewEl) {
+                            previewEl.innerHTML = '';
+                            previewEl.classList.add('d-none');
+                        }
+
+                        console.log('Document supprime:', docType);
+                    }
 
                         documentsContainer.innerHTML = documentsHtml;
                     }
@@ -4313,24 +4549,26 @@
                                             statusElement.innerHTML = '<i class="fas fa-check me-1 text-success"></i>Fichier téléchargé';
                                         }
 
-                                        // Aperçu pour les images
+                                        // Aperçu avec bouton supprimer
                                         if (file.type.startsWith('image/') && previewElement) {
                                             const reader = new FileReader();
                                             reader.onload = function (e) {
-                                                previewElement.innerHTML = `
-                                                                                            <img src="${e.target.result}" class="img-thumbnail" style="max-height: 100px;">
-                                                                                            <small class="d-block text-muted">${file.name}</small>
-                                                                                        `;
+                                                previewElement.innerHTML = '<div class="d-flex align-items-center gap-2">' +
+                                                    '<img src="' + e.target.result + '" class="img-thumbnail" style="max-height: 80px;">' +
+                                                    '<div><small class="d-block text-muted">' + file.name + '</small>' +
+                                                    '<small class="text-muted">(' + (file.size / 1024).toFixed(1) + ' Ko)</small></div>' +
+                                                    '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + docType + '\')">' +
+                                                    '<i class="fas fa-trash"></i></button></div>';
                                                 previewElement.classList.remove('d-none');
                                             };
                                             reader.readAsDataURL(file);
                                         } else if (previewElement) {
-                                            previewElement.innerHTML = `
-                                                                                        <div class="d-flex align-items-center">
-                                                                                            <i class="fas fa-file-pdf text-danger me-2"></i>
-                                                                                            <small class="text-muted">${file.name}</small>
-                                                                                        </div>
-                                                                                    `;
+                                            previewElement.innerHTML = '<div class="d-flex align-items-center gap-2">' +
+                                                '<i class="fas fa-file-pdf text-danger fa-2x"></i>' +
+                                                '<div><small class="d-block text-muted">' + file.name + '</small>' +
+                                                '<small class="text-muted">(' + (file.size / 1024).toFixed(1) + ' Ko)</small></div>' +
+                                                '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + docType + '\')">' +
+                                                '<i class="fas fa-trash"></i></button></div>';
                                             previewElement.classList.remove('d-none');
                                         }
                                     }, 500);
@@ -4422,6 +4660,9 @@
 
                                     // Mettre à jour le type dans l'application
                                     OrganisationApp.organisationType = radio.value;
+
+                                    // Sauvegarde auto du brouillon dès la sélection du type
+                                    saveStepToServer(1);
 
                                     // Afficher/masquer la déclaration exclusivité parti politique
                                     const partiDeclarationDiv = document.getElementById('declaration_parti_politique');
@@ -5884,21 +6125,163 @@
                     }
 
                     /**
+                     * Charger un brouillon depuis le serveur et restaurer le formulaire
+                     */
+                    async function loadDraftFromServer(draftId) {
+                        try {
+                            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                            const response = await fetch('/operator/organisations/draft/' + draftId, {
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken
+                                },
+                                credentials: 'same-origin'
+                            });
+
+                            const result = await response.json();
+                            if (!result.success || !result.draft) {
+                                updateStepDisplay();
+                                updateNavigationButtons();
+                                return;
+                            }
+
+                            const draft = result.draft;
+                            const formData = draft.form_data || {};
+
+                            // Stocker le draftId
+                            OrganisationApp.draftId = draft.id;
+
+                            // Mapping backend step -> frontend step
+                            const backendToFrontend = {};
+                            Object.entries(OrganisationApp.frontendToBackendStep).forEach(function(entry) {
+                                backendToFrontend[entry[1]] = parseInt(entry[0]);
+                            });
+
+                            // Restaurer le type d'organisation (step_1)
+                            if (formData.step_1 && formData.step_1.data) {
+                                var orgType = formData.step_1.data.type_organisation;
+                                if (orgType) {
+                                    OrganisationApp.organisationType = orgType;
+
+                                    // Cocher le radio
+                                    var typeRadio = document.querySelector('input[name="type_organisation"][value="' + orgType + '"]');
+                                    if (typeRadio) {
+                                        typeRadio.checked = true;
+
+                                        // Mettre à jour le hidden field
+                                        var hiddenType = document.getElementById('organizationType');
+                                        if (hiddenType) hiddenType.value = orgType;
+
+                                        // Highlight visuel de la carte sélectionnée
+                                        document.querySelectorAll('.organization-type-card').forEach(function(c) {
+                                            c.classList.remove('selected', 'border-primary', 'shadow-lg');
+                                        });
+                                        var card = typeRadio.closest('.organization-type-card');
+                                        if (card) {
+                                            card.classList.add('selected', 'border-primary', 'shadow-lg');
+                                        }
+
+                                        // Afficher l'info de sélection
+                                        var selectedInfo = document.getElementById('selectedTypeInfo');
+                                        var selectedTypeName = document.getElementById('selectedTypeName');
+                                        if (selectedTypeName && card) {
+                                            var titleEl = card.querySelector('.card-title');
+                                            selectedTypeName.textContent = titleEl ? titleEl.textContent : orgType;
+                                        }
+                                        if (selectedInfo) selectedInfo.classList.remove('d-none');
+
+                                        // Afficher/masquer la déclaration parti politique
+                                        var partiDiv = document.getElementById('declaration_parti_politique');
+                                        if (partiDiv) {
+                                            partiDiv.classList.toggle('d-none', orgType !== 'parti_politique');
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Restaurer les données de chaque étape dans les champs du formulaire
+                            Object.keys(formData).forEach(function(stepKey) {
+                                var stepData = formData[stepKey] && formData[stepKey].data ? formData[stepKey].data : {};
+                                Object.keys(stepData).forEach(function(field) {
+                                    if (field === 'fondateurs' || field === 'membresBureau' || field === 'documents' || field === 'organization_type') return;
+                                    var el = document.getElementById(field) || document.querySelector('[name="' + field + '"]');
+                                    if (!el) return;
+                                    if (el.type === 'checkbox') {
+                                        el.checked = !!stepData[field];
+                                    } else if (el.type === 'radio') {
+                                        if (el.value === stepData[field]) el.checked = true;
+                                    } else if (el.type !== 'file') {
+                                        el.value = stepData[field] || '';
+                                    }
+                                });
+                            });
+
+                            // Restaurer les fondateurs (step_6)
+                            if (formData.step_6 && formData.step_6.data && formData.step_6.data.fondateurs) {
+                                OrganisationApp.foundateurs = formData.step_6.data.fondateurs;
+                                if (typeof updateFoundersList === 'function') updateFoundersList();
+                            }
+
+                            // Restaurer les membres du bureau (step_6)
+                            if (formData.step_6 && formData.step_6.data && formData.step_6.data.membresBureau) {
+                                OrganisationApp.membresBureau = formData.step_6.data.membresBureau;
+                                if (typeof updateMembresBureauList === 'function') updateMembresBureauList();
+                            }
+
+                            // Déterminer la première étape frontend non complétée
+                            var frontendToBackend = OrganisationApp.frontendToBackendStep;
+                            var targetFrontendStep = OrganisationApp.totalSteps; // par défaut dernière étape
+                            for (var fe = 1; fe <= OrganisationApp.totalSteps; fe++) {
+                                var be = frontendToBackend[fe];
+                                var sk = 'step_' + be;
+                                if (!formData[sk] || formData[sk].status !== 'completed') {
+                                    targetFrontendStep = fe;
+                                    break;
+                                }
+                            }
+
+                            OrganisationApp.currentStep = targetFrontendStep;
+                            updateStepDisplay();
+                            updateNavigationButtons();
+                            handleStepSpecificActions(targetFrontendStep);
+
+                            showNotification('Brouillon restaure - Etape ' + targetFrontendStep + ' sur ' + OrganisationApp.totalSteps, 'success');
+                            console.log('Brouillon ' + draftId + ' restaure. Etape frontend: ' + targetFrontendStep);
+
+                        } catch (error) {
+                            console.error('Erreur chargement brouillon:', error);
+                            updateStepDisplay();
+                            updateNavigationButtons();
+                        }
+                    }
+
+                    /**
                      * Initialisation complète de l'application
                      */
-                    function initApplicationComplete() {
-                        console.log('🚀 Initialisation complète OrganisationApp v2.0 (8 étapes)');
+                    async function initApplicationComplete() {
+                        console.log('Initialisation OrganisationApp v2.0 (8 etapes)');
 
                         // Nettoyer les caches expirés au démarrage
                         clearExpiredCache();
 
-                        // Essayer de charger depuis le cache
-                        const cacheLoaded = loadFromCache();
-
-                        if (!cacheLoaded) {
-                            // Initialiser l'affichage par défaut
-                            updateStepDisplay();
-                            updateNavigationButtons();
+                        // Vérifier si on reprend un brouillon serveur
+                        var resumeDraftId = @json($resumeDraftId ?? null);
+                        if (resumeDraftId) {
+                            try {
+                                await loadDraftFromServer(resumeDraftId);
+                            } catch (draftErr) {
+                                console.error('Erreur restauration brouillon:', draftErr);
+                                updateStepDisplay();
+                                updateNavigationButtons();
+                            }
+                        } else {
+                            // Sinon, essayer de charger depuis le cache localStorage
+                            var cacheLoaded = loadFromCache();
+                            if (!cacheLoaded) {
+                                updateStepDisplay();
+                                updateNavigationButtons();
+                            }
                         }
 
                         // Initialiser les cartes de type
@@ -5981,10 +6364,19 @@
                     // Initialisation au chargement de la page
                     document.addEventListener('DOMContentLoaded', initApplicationComplete);
 
+                    // Sauvegarde auto quand l'usager quitte la page
+                    window.addEventListener('beforeunload', function() {
+                        if (OrganisationApp.currentStep >= 1 && !OrganisationApp.isSavingStep) {
+                            saveStepToServer(OrganisationApp.currentStep);
+                        }
+                    });
+
                     // Fonctions globales pour les boutons et événements
                     window.changeStep = changeStep;
                     window.removeFondateur = removeFondateur;
                     window.handleDocumentUpload = handleDocumentUpload;
+                    window.removeDocument = removeDocument;
+                    window.toggleSubmissionMode = toggleSubmissionMode;
                     window.saveManually = saveManually;
                     window.clearCacheManually = clearCacheManually;
 
@@ -6101,92 +6493,7 @@
                         return { formAction, formMethod, currentOrigin, csrfToken };
                     };
 
-                    // Fonction submitPhase1 globale — utilise TOUJOURS le workflow Blade
-                    // qui construit le FormData manuellement avec fondateurs + membres bureau
-                    // NE PAS utiliser Workflow2Phases.submitPhase1() car preparePhase1Data()
-                    // ne collecte PAS les fondateurs depuis OrganisationApp.foundateurs
-                    window.submitPhase1 = submitPhase1;
-
-                    // 🔍 Intercepteur global fetch pour debug
-                    (function () {
-                        const originalFetch = window.fetch;
-                        window.fetch = function (url, options) {
-                            if (options && options.method === 'POST' && String(url).includes('organisation')) {
-                                console.group('🔍 FETCH INTERCEPTÉ - POST organisations');
-                                console.log('📡 URL:', url);
-                                console.log('📋 Method:', options.method);
-                                console.log('📋 Headers:', JSON.stringify(options.headers || {}));
-                                console.log('📋 Body type:', options.body ? options.body.constructor.name : 'none');
-                                console.log('📋 Credentials:', options.credentials || 'default');
-                                console.groupEnd();
-                            }
-                            return originalFetch.apply(this, arguments).then(function (response) {
-                                if (String(url).includes('organisation')) {
-                                    console.group('🔍 FETCH RESPONSE - organisations');
-                                    console.log('📡 URL:', response.url);
-                                    console.log('📊 Status:', response.status, response.statusText);
-                                    console.log('📊 Redirected:', response.redirected);
-                                    console.log('📊 Type:', response.type);
-                                    console.groupEnd();
-                                }
-                                return response;
-                            });
-                        };
-                    })();
-                    // 🔍 DEBUG PANEL - Test de route au chargement de la page
-                    document.addEventListener('DOMContentLoaded', function () {
-                        const formEl = document.getElementById('organisationForm');
-                        const rawAction = formEl ? formEl.getAttribute('action') : 'N/A';
-                        const resolvedAction = formEl ? formEl.action : 'N/A';
-
-                        // Créer panneau de debug visible
-                        const debugPanel = document.createElement('div');
-                        debugPanel.id = 'submission-debug-panel';
-                        debugPanel.style.cssText = 'position:fixed;bottom:10px;right:10px;background:#1a1a2e;color:#0f0;font-family:monospace;font-size:11px;padding:12px;border-radius:8px;z-index:99999;max-width:500px;max-height:300px;overflow:auto;border:1px solid #0f0;opacity:0.9;';
-                        debugPanel.innerHTML = '<div style="color:#ff0;font-weight:bold;margin-bottom:6px;">🔍 DEBUG SOUMISSION</div>'
-                            + '<div>📍 Page: ' + window.location.href + '</div>'
-                            + '<div>🌐 Origin: ' + window.location.origin + '</div>'
-                            + '<div>📝 Form action (raw): <span style="color:#ff0">' + rawAction + '</span></div>'
-                            + '<div>📝 Form action (resolved): <span style="color:#ff0">' + resolvedAction + '</span></div>'
-                            + '<div>🔧 Workflow2Phases: <span style="color:' + (window.Workflow2Phases ? '#0f0' : '#f00') + '">' + (window.Workflow2Phases ? 'OUI' : 'NON') + '</span></div>'
-                            + '<div id="debug-route-test" style="color:#ccc;">⏳ Test de route en cours...</div>'
-                            + '<div id="debug-submit-log" style="margin-top:6px;border-top:1px solid #333;padding-top:6px;"></div>'
-                            + '<button onclick="this.parentElement.remove()" style="position:absolute;top:4px;right:8px;background:none;border:none;color:#f00;cursor:pointer;font-size:14px;">✕</button>';
-                        document.body.appendChild(debugPanel);
-
-                        // Test GET vers la route debug (pour vérifier que le serveur est accessible)
-                        fetch('/operator/organisations-debug-test', { method: 'GET' })
-                            .then(function (r) {
-                                document.getElementById('debug-route-test').innerHTML =
-                                    '✅ Route debug test: HTTP ' + r.status;
-                                document.getElementById('debug-route-test').style.color = '#0f0';
-                                return r.text();
-                            })
-                            .then(function (body) {
-                                console.log('🔍 Debug route response:', body);
-                            })
-                            .catch(function (err) {
-                                document.getElementById('debug-route-test').innerHTML =
-                                    '❌ Route debug test ÉCHOUÉ: ' + err.message;
-                                document.getElementById('debug-route-test').style.color = '#f00';
-                            });
-
-                        // Vérifier après chargement de workflow-2phases.js
-                        setTimeout(function () {
-                            const w2pStatus = document.querySelector('#submission-debug-panel div:nth-child(6) span');
-                            if (w2pStatus) {
-                                const loaded = !!window.Workflow2Phases;
-                                w2pStatus.textContent = loaded ? 'OUI' : 'NON';
-                                w2pStatus.style.color = loaded ? '#0f0' : '#f00';
-                                if (loaded && window.Workflow2Phases.config) {
-                                    const el = document.createElement('div');
-                                    el.innerHTML = '🔧 W2P route phase1: <span style="color:#ff0">'
-                                        + window.Workflow2Phases.config.routes.phase1 + '</span>';
-                                    document.getElementById('debug-route-test').after(el);
-                                }
-                            }
-                        }, 2000);
-                    });
+                    // submitPhase1 déjà exposé dans le bloc workflow
                 </script>
 
                 <script src="{{ asset('js/unified-config-manager.js') }}"></script>

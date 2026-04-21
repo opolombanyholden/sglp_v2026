@@ -5,6 +5,11 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\VerificationController;
 use App\Http\Controllers\Auth\TwoFactorController;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Auth\Events\PasswordReset;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,27 +26,71 @@ Route::middleware('guest')->group(function () {
         ->name('register');
     Route::post('register', [RegisterController::class, 'register']);
 
+    // === CONFIRMATION INSCRIPTION ===
+    Route::get('register/success', function () {
+        return view('auth.register-success');
+    })->name('register.success');
+
     // === CONNEXION ===
     Route::get('login', [LoginController::class, 'showLoginForm'])
         ->name('login');
     Route::post('login', [LoginController::class, 'login']);
 
-    // === MOT DE PASSE OUBLIÉ (Routes basiques Laravel) ===
+    // === MOT DE PASSE OUBLIÉ ===
     Route::get('forgot-password', function () {
         return view('auth.forgot-password');
     })->name('password.request');
-    
-    Route::post('forgot-password', function () {
-        return redirect()->back()->with('status', 'Fonctionnalité en cours de développement');
+
+    Route::post('forgot-password', function (Request $request) {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ], [
+            'email.required' => 'L\'adresse email est obligatoire.',
+            'email.email' => 'Veuillez entrer une adresse email valide.',
+        ]);
+
+        $status = Password::sendResetLink($request->only('email'));
+
+        return $status === Password::RESET_LINK_SENT
+            ? back()->with('status', 'Un lien de réinitialisation a été envoyé à votre adresse email.')
+            : back()->withErrors(['email' => 'Aucun compte ne correspond à cette adresse email.']);
     })->name('password.email');
 
-    // === RÉINITIALISATION MOT DE PASSE (Routes basiques Laravel) ===
-    Route::get('reset-password/{token}', function ($token) {
-        return view('auth.reset-password', ['token' => $token]);
+    // === RÉINITIALISATION MOT DE PASSE ===
+    Route::get('reset-password/{token}', function (Request $request, $token) {
+        return view('auth.reset-password', [
+            'token' => $token,
+            'email' => $request->query('email', ''),
+        ]);
     })->name('password.reset');
-    
-    Route::post('reset-password', function () {
-        return redirect()->route('login')->with('status', 'Fonctionnalité en cours de développement');
+
+    Route::post('reset-password', function (Request $request) {
+        $request->validate([
+            'token' => ['required'],
+            'email' => ['required', 'email'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'email.required' => 'L\'adresse email est obligatoire.',
+            'password.required' => 'Le mot de passe est obligatoire.',
+            'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
+            'password.confirmed' => 'Les mots de passe ne correspondent pas.',
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($user, $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        return $status === Password::PASSWORD_RESET
+            ? redirect()->route('login')->with('success', 'Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.')
+            : back()->withErrors(['email' => 'Ce lien de réinitialisation est invalide ou a expiré.']);
     })->name('password.store');
 
     // === AUTHENTIFICATION À DEUX FACTEURS (2FA) ===
@@ -69,7 +118,7 @@ Route::middleware('auth')->group(function () {
         ->name('verification.send');
     
     Route::get('email/verified', [VerificationController::class, 'verified'])
-        ->name('email.verified');
+        ->name('email.verified')->withoutMiddleware('auth');
 
     // === CONFIRMATION MOT DE PASSE (Routes basiques) ===
     Route::get('confirm-password', function () {

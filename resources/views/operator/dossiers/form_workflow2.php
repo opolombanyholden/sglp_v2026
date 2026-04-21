@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workflow 2 Phases - SGLP Gabon</title>
+    <title>Workflow 2 Phases - DGELP Gabon</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -707,7 +707,7 @@
                     <i class="fas fa-check-circle fa-3x"></i>
                 </div>
                 <h1 class="display-4 fw-bold mb-3">Phase 1 Complétée avec Succès !</h1>
-                <p class="lead mb-4">Votre organisation a été créée et enregistrée dans la base de données SGLP</p>
+                <p class="lead mb-4">Votre organisation a été créée et enregistrée dans la base de données DGELP</p>
                 
                 <div class="row justify-content-center">
                     <div class="col-md-8">
@@ -1082,7 +1082,7 @@
                     <p>Vos données sont sauvegardées automatiquement. En cas d'interruption, vous pourrez reprendre.</p>
                     
                     <h6><i class="fas fa-phone me-2 text-primary"></i>Support</h6>
-                    <p>Besoin d'aide ? Contactez le support SGLP au +241 01 23 45 67</p>
+                    <p>Besoin d'aide ? Contactez le support DGELP au +241 01 23 45 67</p>
                 </div>
             `;
             
@@ -1168,7 +1168,7 @@
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🇬🇦 Interface Workflow 2 Phases - SGLP Gabon initialisée');
+            console.log('🇬🇦 Interface Workflow 2 Phases - DGELP Gabon initialisée');
             
             // Simulation mise à jour temps réel des stats
             updateStatsRealTime();

@@ -54,6 +54,11 @@ Route::prefix('documents')->name('documents.')->group(function () {
     Route::get('/download/{id}', [DocumentController::class, 'download'])->name('download');
 });
 
+// Redirection /public/annuaire/... → /annuaire/... (anciens QR codes)
+Route::get('/public/annuaire/{any}', function ($any) {
+    return redirect('/annuaire/' . $any, 301);
+})->where('any', '.*');
+
 // Annuaire des organisations
 Route::prefix('annuaire')->name('annuaire.')->group(function () {
     Route::get('/', [AnnuaireController::class, 'index'])->name('index')->middleware('throttle:60,1');
@@ -249,6 +254,9 @@ Route::middleware(['auth', 'verified', 'operator'])->prefix('operator')->name('o
     // Profil operator
     Route::get('/profile', [ProfileController::class, 'show'])->name('profile');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
+
+    // Brouillons (doit être avant le resource pour éviter que {organisation} capture "brouillons")
+    Route::get('/organisations/brouillons', [\App\Http\Controllers\Operator\OrganisationController::class, 'draftsPage'])->name('organisations.drafts.index');
 
     // Gestion des organisations
     Route::resource('organisations', OrganisationController::class)->except(['index']);

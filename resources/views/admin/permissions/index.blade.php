@@ -15,7 +15,7 @@
                                 <i class="fas fa-key me-2"></i>
                                 Gestion des Permissions
                             </h2>
-                            <p class="mb-0 opacity-90">Administration des droits d'accès et permissions système SGLP</p>
+                            <p class="mb-0 opacity-90">Administration des droits d'accès et permissions système DGELP</p>
                         </div>
                         <div class="col-md-4 text-end">
                             <span class="badge bg-light text-dark fs-6 me-3">
@@ -1237,6 +1237,6 @@ function showNotification(message, type = 'info') {
     }, 5000);
 }
 
-console.log('🔑 Permissions SGLP - Version fonctionnelle chargée');
+console.log('🔑 Permissions DGELP - Version fonctionnelle chargée');
 </script>
 @endsection

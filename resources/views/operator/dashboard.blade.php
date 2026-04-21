@@ -690,31 +690,33 @@
                 </div>
             </div>
 
-            <!-- Messages -->
+            <!-- Brouillons -->
             <div class="col-lg-3 col-md-6">
-                <div class="stat-card card-red">
+                <a href="{{ route('operator.organisations.drafts.index') }}" class="text-decoration-none">
+                <div class="stat-card card-red" style="border-left-color: #FFD700; cursor: pointer;">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <small class="text-muted text-uppercase fw-semibold">
-                                <i class="fas fa-comments me-1"></i>
-                                Messages
+                                <i class="fas fa-pencil-alt me-1"></i>
+                                Brouillons
                             </small>
-                            <h3 class="mt-2 mb-0">0</h3>
-                            <small class="text-danger">
-                                <i class="fas fa-envelope me-1"></i>
-                                Non lu
+                            <h3 class="mt-2 mb-0">{{ isset($drafts) ? $drafts->count() : 0 }}</h3>
+                            <small class="text-warning">
+                                <i class="fas fa-clock me-1"></i>
+                                En attente de finalisation
                             </small>
                         </div>
-                        <div class="stat-icon icon-red">
-                            <i class="fas fa-comments"></i>
+                        <div class="stat-icon" style="background: rgba(255, 215, 0, 0.15); color: #FFD700;">
+                            <i class="fas fa-pencil-alt"></i>
                         </div>
                     </div>
                     <div class="progress-wrapper">
                         <div class="progress-custom">
-                            <div class="progress-bar-custom progress-bar-red" style="width: 20%;"></div>
+                            <div class="progress-bar-custom" style="background: #FFD700; width: {{ isset($drafts) && $drafts->count() > 0 ? '100' : '0' }}%;"></div>
                         </div>
                     </div>
                 </div>
+                </a>
             </div>
         </div>
 
@@ -756,6 +758,8 @@
             </div>
         </div>
 
+        <div id="brouillons"></div>
+
         <!-- Timeline et graphiques -->
         <div class="row">
             <!-- Timeline -->
@@ -773,7 +777,7 @@
                             <div class="timeline-dot"></div>
                             <div class="timeline-content">
                                 <h6>Compte créé</h6>
-                                <p>Bienvenue sur SGLP !</p>
+                                <p>Bienvenue sur DGELP !</p>
                                 <span class="timeline-time">{{ now()->format('H:i') }}</span>
                             </div>
                         </div>
@@ -951,7 +955,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Message de bienvenue personnalisé
-    console.log('%c🇬🇦 SGLP - Système de Gestion des Libertés Publiques', 
+    console.log('%c🇬🇦 DGELP - Système de Gestion des Libertés Publiques', 
         'color: #003f7f; font-size: 16px; font-weight: bold;');
     console.log('%cBienvenue sur votre tableau de bord opérateur', 
         'color: #003f7f; font-size: 14px;');
@@ -982,5 +986,26 @@ document.addEventListener('mouseout', () => {
         card.style.transform = '';
     });
 });
+
+// Suppression de brouillon
+async function deleteDraft(draftId) {
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        const response = await fetch('/operator/organisations/draft/' + draftId, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            credentials: 'same-origin'
+        });
+        if (response.ok) {
+            location.reload();
+        }
+    } catch (e) {
+        console.error('Erreur suppression brouillon:', e);
+    }
+}
 </script>
 @endpush

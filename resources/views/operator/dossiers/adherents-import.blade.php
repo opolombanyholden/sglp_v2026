@@ -1,7 +1,7 @@
 {{--
 ============================================================================
 ADHERENTS-IMPORT.BLADE.PHP - VUE PHASE 2 IMPORT ADHÉRENTS
-Vue complète pour l'import d'adhérents en Phase 2 du workflow SGLP
+Vue complète pour l'import d'adhérents en Phase 2 du workflow DGELP
 Version: 4.3 - Timeout étendu + Architecture modulaire CORRIGÉE
 ============================================================================
 --}}
@@ -839,7 +839,7 @@ Version: 4.3 - Timeout étendu + Architecture modulaire CORRIGÉE
                 <div class="modal-header bg-primary text-white">
                     <h5 class="modal-title">
                         <i class="fas fa-question-circle me-2"></i>
-                        Guide d'Import Phase 2 - Adhérents SGLP
+                        Guide d'Import Phase 2 - Adhérents DGELP
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
@@ -884,7 +884,7 @@ Version: 4.3 - Timeout étendu + Architecture modulaire CORRIGÉE
                             </ul>
                             <h6 class="text-info">📞 Support</h6>
                             <p class="small">
-                                En cas de problème, contactez le support technique SGLP
+                                En cas de problème, contactez le support technique DGELP
                                 ou utilisez le système de diagnostic intégré.
                             </p>
                         </div>

@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Inscription - PNGDI')
+@section('title', 'Inscription - DGELP')
 
 @section('content')
 <div class="container my-5">
@@ -12,7 +12,7 @@
                         <i class="fas fa-user-plus me-2"></i>
                         Créer un compte
                     </h3>
-                    <p class="mb-0 mt-2 small">Rejoignez la plateforme PNGDI</p>
+                    <p class="mb-0 mt-2 small">Rejoignez la plateforme DGELP</p>
                 </div>
                 
                 <div class="card-body p-4">
@@ -86,48 +86,7 @@
                             @enderror
                         </div>
 
-                        <!-- Adresse -->
-                        <div class="mb-3">
-                            <label for="address" class="form-label">
-                                <i class="fas fa-map-marker-alt me-1"></i>
-                                Adresse
-                            </label>
-                            <input type="text" 
-                                   class="form-control @error('address') is-invalid @enderror" 
-                                   id="address" 
-                                   name="address" 
-                                   value="{{ old('address') }}" 
-                                   placeholder="Quartier, BP...">
-                            @error('address')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Ville -->
-                        <div class="mb-3">
-                            <label for="city" class="form-label">
-                                <i class="fas fa-city me-1"></i>
-                                Ville
-                            </label>
-                            <select class="form-select @error('city') is-invalid @enderror" 
-                                    id="city" 
-                                    name="city">
-                                <option value="">Sélectionnez une ville</option>
-                                <option value="Libreville" {{ old('city') == 'Libreville' ? 'selected' : '' }}>Libreville</option>
-                                <option value="Port-Gentil" {{ old('city') == 'Port-Gentil' ? 'selected' : '' }}>Port-Gentil</option>
-                                <option value="Franceville" {{ old('city') == 'Franceville' ? 'selected' : '' }}>Franceville</option>
-                                <option value="Oyem" {{ old('city') == 'Oyem' ? 'selected' : '' }}>Oyem</option>
-                                <option value="Moanda" {{ old('city') == 'Moanda' ? 'selected' : '' }}>Moanda</option>
-                                <option value="Mouila" {{ old('city') == 'Mouila' ? 'selected' : '' }}>Mouila</option>
-                                <option value="Lambaréné" {{ old('city') == 'Lambaréné' ? 'selected' : '' }}>Lambaréné</option>
-                                <option value="Tchibanga" {{ old('city') == 'Tchibanga' ? 'selected' : '' }}>Tchibanga</option>
-                                <option value="Koulamoutou" {{ old('city') == 'Koulamoutou' ? 'selected' : '' }}>Koulamoutou</option>
-                                <option value="Makokou" {{ old('city') == 'Makokou' ? 'selected' : '' }}>Makokou</option>
-                            </select>
-                            @error('city')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        {{-- Champs Adresse et Ville masqués --}}
 
                         <!-- Mot de passe -->
                         <div class="mb-3">
@@ -232,7 +191,7 @@
             </div>
             <div class="modal-body">
                 <h6>1. Acceptation des conditions</h6>
-                <p>En créant un compte sur la plateforme PNGDI, vous acceptez les présentes conditions d'utilisation...</p>
+                <p>En créant un compte sur la plateforme DGELP, vous acceptez les présentes conditions d'utilisation...</p>
                 
                 <h6>2. Utilisation du service</h6>
                 <p>La plateforme est destinée à la gestion des organisations associatives, religieuses et politiques...</p>

@@ -113,6 +113,12 @@
                                         <i class="fas fa-undo"></i> Remettre en Brouillon
                                     </button>
                                 @endif
+                                @if($dossier->canBeCorrected())
+                                    <a href="{{ route('admin.corrections.create', $dossier->organisation_id) }}"
+                                       class="btn btn-warning mb-2">
+                                        <i class="fas fa-pen-fancy"></i> Corriger ce dossier
+                                    </a>
+                                @endif
                                 <!-- FIN Actions principales -->
 
                             </div>

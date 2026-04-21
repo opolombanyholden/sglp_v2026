@@ -184,11 +184,28 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
         // Enregistrement de l'opération
         Route::post('/{organisation}/{operationType}/store', [OperationController::class, 'store'])->name('store');
-    });    /*
-|--------------------------------------------------------------------------
-| 🗺️ API GÉOLOCALISATION - ROUTES AJAX (pour formulaires dynamiques)
-|--------------------------------------------------------------------------
-*/
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | CORRECTIONS ADMINISTRATIVES
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('corrections')->name('corrections.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\CorrectionController::class, 'index'])->name('index');
+        Route::get('/select-organisation', [\App\Http\Controllers\Admin\CorrectionController::class, 'selectOrganisation'])->name('select-organisation');
+        Route::get('/{organisation}/create', [\App\Http\Controllers\Admin\CorrectionController::class, 'create'])->name('create');
+        Route::post('/{organisation}/store', [\App\Http\Controllers\Admin\CorrectionController::class, 'store'])->name('store');
+        Route::get('/{dossier}/review', [\App\Http\Controllers\Admin\CorrectionController::class, 'review'])->name('review');
+        Route::post('/{dossier}/approve', [\App\Http\Controllers\Admin\CorrectionController::class, 'approve'])->name('approve');
+        Route::post('/{dossier}/reject', [\App\Http\Controllers\Admin\CorrectionController::class, 'reject'])->name('reject');
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | 🗺️ API GÉOLOCALISATION - ROUTES AJAX (pour formulaires dynamiques)
+    |--------------------------------------------------------------------------
+    */
     Route::prefix('api/geolocation')->name('api.geolocation.')->group(function () {
         Route::get('/provinces', [DossierController::class, 'getProvinces'])->name('provinces');
         Route::get('/departements/{province_id}', [DossierController::class, 'getDepartements'])->name('departements');

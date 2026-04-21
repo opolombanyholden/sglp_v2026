@@ -8,10 +8,9 @@
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-8">
-                <h1 class="page-title">À propos du SGLP</h1>
+                <h1 class="page-title">Qui sommes-nous ?</h1>
                 <p class="page-subtitle">
-                    Découvrez notre mission, nos valeurs et notre engagement pour la modernisation 
-                    de la gestion des organisations au Gabon.
+                    Direction Générale des Élections et des Libertés Publiques
                 </p>
             </div>
             <div class="col-lg-4 text-lg-end">
@@ -26,149 +25,223 @@
     </div>
 </section>
 
-<!-- Mission Section -->
+<!-- Présentation DGELP -->
 <section class="py-5">
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-6 mb-5 mb-lg-0">
                 <div class="about-image-wrapper">
-                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 600 400'%3E%3Crect fill='%23002B7F' width='600' height='400'/%3E%3Ctext fill='%23FFD700' font-size='30' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3ESGLP%3C/text%3E%3C/svg%3E" 
-                         alt="SGLP" class="img-fluid rounded-3 shadow">
+                    <img src="{{ asset('images/slides/004.png') }}" alt="DGELP" class="img-fluid rounded-3 shadow">
                     <div class="experience-badge">
-                        <span class="number">2025</span>
-                        <span class="text">Année de lancement</span>
+                        <span class="number">DGELP</span>
+                        <span class="text">Dieudonné YAYA</span>
                     </div>
                 </div>
             </div>
             <div class="col-lg-6">
-                <span class="section-badge">NOTRE MISSION</span>
+                <span class="section-badge">LA DGELP</span>
                 <h2 class="display-5 fw-bold text-primary mt-3 mb-4">
-                    Moderniser et simplifier la gestion des organisations
+                    Qui sommes-nous ?
                 </h2>
                 <p class="lead text-muted mb-4">
-                    Le Portail National de Gestion des Libertés Individuelles (SGLP) est une initiative 
-                    du Ministère de l'Intérieur et de la Sécurité visant à digitaliser et optimiser 
-                    les processus de formalisation des organisations au Gabon.
+                    Placée sous l'autorité du Ministère de l'Intérieur, de la Sécurité et de la Décentralisation,
+                    la Direction Générale des Elections et des Libertés Publiques (DGELP) est l'organe central chargé de la mise en oeuvre de la politique du Gouvernement
+                    en matière d'élections et de libertés publiques.
                 </p>
-                <div class="mission-points">
-                    <div class="mission-item">
-                        <div class="icon-box">
-                            <i class="fas fa-check"></i>
-                        </div>
-                        <div>
-                            <h5>Simplification administrative</h5>
-                            <p>Réduction des délais et des démarches bureaucratiques</p>
-                        </div>
-                    </div>
-                    <div class="mission-item">
-                        <div class="icon-box">
-                            <i class="fas fa-shield-alt"></i>
-                        </div>
-                        <div>
-                            <h5>Transparence totale</h5>
-                            <p>Suivi en temps réel et processus clairs</p>
-                        </div>
-                    </div>
-                    <div class="mission-item">
-                        <div class="icon-box">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div>
-                            <h5>Accessibilité pour tous</h5>
-                            <p>Plateforme disponible 24/7 depuis n'importe où</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Values Section -->
+<!-- Notre Vision -->
 <section class="py-5 bg-light">
     <div class="container">
-        <div class="text-center mb-5">
-            <span class="section-badge">NOS VALEURS</span>
-            <h2 class="display-5 fw-bold text-primary mt-3">
-                Les principes qui nous guident
-            </h2>
-        </div>
-        <div class="row g-4">
-            <div class="col-md-4">
-                <div class="value-card">
-                    <div class="value-icon">
-                        <i class="fas fa-balance-scale"></i>
-                    </div>
-                    <h4>Intégrité</h4>
-                    <p>Nous garantissons un traitement équitable et impartial de tous les dossiers.</p>
-                </div>
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <span class="section-badge">NOTRE VISION</span>
+                <h2 class="display-5 fw-bold text-primary mt-3 mb-4">
+                    La Modernisation au service du Citoyen
+                </h2>
+                <p class="lead text-muted mb-3">
+                    Conformément à la vision de S.E. Brice Clotaire OLIGUI NGUEMA, Président de la République,
+                    Chef de l'Etat, Chef du Gouvernement, la DGELP s'est engagée dans une transformation profonde
+                    de ses méthodes de travail.
+                </p>
+                <p class="text-muted">
+                    La digitalisation de nos services n'est pas seulement une évolution technique, c'est un pilier
+                    de la Restauration des Institutions visant à garantir la <strong>transparence</strong>,
+                    l'<strong>équité</strong> et la <strong>proximité</strong> avec chaque acteur de la société civile.
+                </p>
             </div>
-            <div class="col-md-4">
-                <div class="value-card">
-                    <div class="value-icon">
-                        <i class="fas fa-rocket"></i>
+            <div class="col-lg-5">
+                <div class="value-card p-4 text-center">
+                    <div class="value-icon mx-auto mb-3">
+                        <i class="fas fa-eye"></i>
                     </div>
-                    <h4>Innovation</h4>
-                    <p>Nous utilisons les dernières technologies pour améliorer continuellement nos services.</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="value-card">
-                    <div class="value-icon">
-                        <i class="fas fa-handshake"></i>
+                    <h4 class="text-primary">Transparence</h4>
+                    <p class="mb-3">Équité et proximité avec chaque acteur de la société civile</p>
+                    <div class="value-icon mx-auto mb-3">
+                        <i class="fas fa-laptop"></i>
                     </div>
-                    <h4>Collaboration</h4>
-                    <p>Nous travaillons main dans la main avec les organisations pour leur réussite.</p>
+                    <h4 class="text-primary">Digitalisation</h4>
+                    <p class="mb-0">Transformation profonde pour une administration modernisée</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Team Section -->
+<!-- Nos Missions Régaliennes -->
 <section class="py-5">
     <div class="container">
         <div class="text-center mb-5">
-            <span class="section-badge">NOTRE ÉQUIPE</span>
+            <span class="section-badge">NOS MISSIONS</span>
             <h2 class="display-5 fw-bold text-primary mt-3">
-                Une équipe dédiée à votre service
+                Nos Missions Régaliennes
+            </h2>
+            <p class="lead text-muted mt-3">
+                En s'appuyant sur le cadre légal, la DGELP assure des missions essentielles
+                pour la vie démocratique du Gabon
+            </p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-3">
+                <div class="value-card h-100">
+                    <div class="value-icon">
+                        <i class="fas fa-gavel"></i>
+                    </div>
+                    <h4>Gestion des Libertés Publiques</h4>
+                    <p>Instruction des dossiers de déclaration des partis politiques, des associations civiles et religieuses, ainsi que des syndicats professionnels.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="value-card h-100">
+                    <div class="value-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h4>Encadrement de la Vie Associative</h4>
+                    <p>Suivi du fonctionnement des organisations et instruction des demandes de reconnaissance d'utilité publique.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="value-card h-100">
+                    <div class="value-icon">
+                        <i class="fas fa-vote-yea"></i>
+                    </div>
+                    <h4>Processus Électoraux</h4>
+                    <p>Établissement de la liste nationale électorale, distribution des cartes d'électeurs et gestion du matériel électoral.</p>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="value-card h-100">
+                    <div class="value-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h4>Éducation Citoyenne</h4>
+                    <p>Information et sensibilisation des citoyens sur la réglementation en matière de libertés publiques et d'élections.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Notre Organisation -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <span class="section-badge">NOTRE ORGANISATION</span>
+            <h2 class="display-5 fw-bold text-primary mt-3">
+                Une structure au service du territoire national
             </h2>
         </div>
         <div class="row g-4">
-            <div class="col-lg-3 col-md-6">
-                <div class="team-card">
-                    <div class="team-avatar">
-                        <i class="fas fa-user-tie"></i>
+            <div class="col-lg-6">
+                <div class="value-card h-100">
+                    <div class="value-icon">
+                        <i class="fas fa-building"></i>
                     </div>
-                    <h5>Direction Générale</h5>
-                    <p class="text-muted">Supervision et orientation stratégique</p>
+                    <h4>Services Centraux</h4>
+                    <ul class="list-unstyled text-start mt-3">
+                        <li class="mb-2">
+                            <i class="fas fa-chevron-right text-primary mr-2"></i>
+                            Direction des Élections
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-chevron-right text-primary mr-2"></i>
+                            Direction des Partis Politiques, des Associations et des Libertés de Culte
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-chevron-right text-primary mr-2"></i>
+                            Direction de la Formation et Action Citoyenne
+                        </li>
+                    </ul>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="team-card">
-                    <div class="team-avatar">
-                        <i class="fas fa-users-cog"></i>
+            <div class="col-lg-6">
+                <div class="value-card h-100">
+                    <div class="value-icon">
+                        <i class="fas fa-server"></i>
                     </div>
-                    <h5>Service Technique</h5>
-                    <p class="text-muted">Développement et maintenance de la plateforme</p>
+                    <h4>Support Technique Moderne</h4>
+                    <p>Un service dédié aux Systèmes d'Information garantissant la sécurité des données et la maintenance de nos plateformes digitales.</p>
+                    <div class="mission-points mt-3">
+                        <div class="mission-item">
+                            <div class="icon-box"><i class="fas fa-shield-alt"></i></div>
+                            <div><p class="mb-0">Sécurité des données</p></div>
+                        </div>
+                        <div class="mission-item">
+                            <div class="icon-box"><i class="fas fa-tools"></i></div>
+                            <div><p class="mb-0">Maintenance des plateformes</p></div>
+                        </div>
+                        <div class="mission-item">
+                            <div class="icon-box"><i class="fas fa-cloud"></i></div>
+                            <div><p class="mb-0">Infrastructure digitale</p></div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="team-card">
-                    <div class="team-avatar">
-                        <i class="fas fa-gavel"></i>
+        </div>
+    </div>
+</section>
+
+<!-- Notre Engagement -->
+<section class="py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-12">
+                <span class="section-badge">NOTRE ENGAGEMENT</span>
+                <h2 class="display-5 fw-bold text-primary mt-3 mb-4">
+                    Transparence et Sécurité
+                </h2>
+                <p class="lead text-muted mb-3">
+                    La plateforme DGELP-Services en ligne incarne notre engagement pour une administration de résultats.
+                </p>
+                <p class="text-muted mb-4">
+                    Grâce à l'archivage numérique et à la centralisation des données, nous offrons aux usagers
+                    un accès simplifié à leurs dossiers et une traçabilité totale des procédures administratives.
+                </p>
+                <div class="mission-points">
+                    <div class="mission-item">
+                        <div class="icon-box"><i class="fas fa-archive"></i></div>
+                        <div>
+                            <h5>Archivage numérique</h5>
+                            <p>Conservation sécurisée de tous les documents</p>
+                        </div>
                     </div>
-                    <h5>Service Juridique</h5>
-                    <p class="text-muted">Conformité légale et réglementaire</p>
-                </div>
-            </div>
-            <div class="col-lg-3 col-md-6">
-                <div class="team-card">
-                    <div class="team-avatar">
-                        <i class="fas fa-headset"></i>
+                    <div class="mission-item">
+                        <div class="icon-box"><i class="fas fa-database"></i></div>
+                        <div>
+                            <h5>Centralisation des données</h5>
+                            <p>Accès simplifié aux dossiers des usagers</p>
+                        </div>
                     </div>
-                    <h5>Support Client</h5>
-                    <p class="text-muted">Assistance et accompagnement des utilisateurs</p>
+                    <div class="mission-item">
+                        <div class="icon-box"><i class="fas fa-search"></i></div>
+                        <div>
+                            <h5>Traçabilité totale</h5>
+                            <p>Suivi transparent de chaque procédure administrative</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

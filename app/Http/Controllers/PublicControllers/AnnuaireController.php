@@ -135,28 +135,74 @@ class AnnuaireController extends Controller
         $organisation = null;
         $verifiedViaQr = false;
 
-        // 1. Recherche par QR code (TYPE_ORGANISATION uniquement)
+        // 1. Recherche par code QR (colonne `code`)
         $qr = QrCode::active()
             ->notExpired()
             ->where('code', $code)
-            ->where('type', QrCode::TYPE_ORGANISATION)
-            ->with('verifiable')
             ->first();
 
-        if ($qr && $qr->verifiable instanceof Organisation) {
-            $organisation = $qr->verifiable->load(['organisationType', 'membresBureauPourRecepisse']);
-            $qr->markAsVerified();
-            $verifiedViaQr = true;
+        if ($qr) {
+            // Si le QR a un verifiable_id, charger directement
+            if ($qr->verifiable instanceof Organisation) {
+                $organisation = $qr->verifiable->load(['organisationType', 'membresBureauPourRecepisse']);
+            }
+            // Sinon, extraire l'organisation_id depuis donnees_verification
+            if (!$organisation && $qr->donnees_verification) {
+                $data = is_array($qr->donnees_verification)
+                    ? $qr->donnees_verification
+                    : json_decode($qr->donnees_verification, true);
+                if (!empty($data['organisation_id'])) {
+                    $organisation = Organisation::with(['organisationType', 'membresBureauPourRecepisse'])
+                        ->find($data['organisation_id']);
+                }
+            }
+            if ($organisation) {
+                $qr->markAsVerified();
+                $verifiedViaQr = true;
+            }
         }
 
-        // 2. Recherche par numéro de récépissé
+        // 2. Recherche par document_numero du QR code (ex: RECEP-PROV-2026-00134)
+        if (!$organisation) {
+            // Recherche exacte d'abord
+            $qr = QrCode::active()
+                ->notExpired()
+                ->where('document_numero', $code)
+                ->first();
+
+            // Si pas trouvé et que le code ressemble à un numéro de récépissé,
+            // normaliser sur 5 chiffres (ex: RECEP-DEF-2026-0019 → RECEP-DEF-2026-00019)
+            if (!$qr && preg_match('/^(RECEP-(?:PROV|DEF)-\d{4}-)(\d+)$/i', $code, $m)) {
+                $normalized = $m[1] . str_pad($m[2], 5, '0', STR_PAD_LEFT);
+                if ($normalized !== $code) {
+                    $qr = QrCode::active()
+                        ->notExpired()
+                        ->where('document_numero', $normalized)
+                        ->first();
+                }
+            }
+
+            if ($qr && $qr->donnees_verification) {
+                $data = $qr->donnees_verification;
+                if (!empty($data['organisation_id'])) {
+                    $organisation = Organisation::with(['organisationType', 'membresBureauPourRecepisse'])
+                        ->find($data['organisation_id']);
+                }
+                if ($organisation) {
+                    $qr->markAsVerified();
+                    $verifiedViaQr = true;
+                }
+            }
+        }
+
+        // 3. Recherche par numéro de récépissé (ex: ASS/2026/00002)
         if (!$organisation) {
             $organisation = Organisation::where('numero_recepisse', $code)
                 ->with(['organisationType', 'membresBureauPourRecepisse'])
                 ->first();
         }
 
-        // 3. Recherche par ID numérique
+        // 4. Recherche par ID numérique
         if (!$organisation && ctype_digit($code)) {
             $organisation = Organisation::whereNotNull('numero_recepisse')
                 ->with(['organisationType', 'membresBureauPourRecepisse'])

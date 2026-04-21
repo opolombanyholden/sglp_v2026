@@ -30,7 +30,7 @@ class OrganisationStepService
             'name' => 'Guide et exigences',
             'required_fields' => ['guide_read_confirm'],
             'validation_rules' => [
-                'guide_read_confirm' => 'required|accepted'
+                'guide_read_confirm' => 'required'
             ],
             'can_generate_accuse' => true,
             'auto_save_enabled' => true
@@ -421,6 +421,11 @@ class OrganisationStepService
         $draft->current_step = max($draft->current_step, $stepNumber);
         $draft->completion_percentage = $this->calculateCompletionPercentage($draft);
         $draft->last_saved_at = now();
+
+        // Stocker le type d'organisation dans la colonne dédiée (étape 1)
+        if ($stepNumber === 1 && !empty($data['type_organisation'])) {
+            $draft->organization_type = $data['type_organisation'];
+        }
 
         return $stepData;
     }

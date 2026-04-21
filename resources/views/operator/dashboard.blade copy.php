@@ -613,7 +613,7 @@
                         <div class="timeline-dot"></div>
                         <div class="timeline-content">
                             <h6>Compte créé</h6>
-                            <p>Bienvenue sur PNGDI !</p>
+                            <p>Bienvenue sur DGELP !</p>
                             <span class="timeline-time">{{ now()->format('H:i') }}</span>
                         </div>
                     </div>

@@ -81,6 +81,7 @@ class Dossier extends Model
     const TYPE_RETRAIT_ADHERENT = 'retrait_adherent';
     const TYPE_DECLARATION_ACTIVITE = 'declaration_activite';
     const TYPE_CHANGEMENT_STATUTAIRE = 'changement_statutaire';
+    const TYPE_CORRECTION = 'correction';
 
     // Constantes pour les statuts
     const STATUT_BROUILLON = 'brouillon';
@@ -142,6 +143,9 @@ class Dossier extends Model
             case self::TYPE_CHANGEMENT_STATUTAIRE:
                 $prefix = 'CST';
                 break;
+            case self::TYPE_CORRECTION:
+                $prefix = 'COR';
+                break;
             default:
                 $prefix = 'DOS';
                 break;
@@ -193,6 +197,11 @@ class Dossier extends Model
     public function comments(): HasMany
     {
         return $this->hasMany(DossierComment::class);
+    }
+
+    public function corrections(): HasMany
+    {
+        return $this->hasMany(DossierCorrection::class, 'dossier_id');
     }
 
     public function lock(): HasOne
@@ -588,6 +597,21 @@ class Dossier extends Model
     public function canBeCancelled(): bool
     {
         return !in_array($this->statut, [self::STATUT_ACCEPTE, self::STATUT_ARCHIVE, self::STATUT_ANNULE]);
+    }
+
+    /**
+     * Vérifie si le dossier peut faire l'objet d'une correction administrative
+     */
+    public function canBeCorrected(): bool
+    {
+        if (!in_array($this->statut, [self::STATUT_ACCEPTE, 'approuve'])) {
+            return false;
+        }
+        // Pas de correction si une autre correction est déjà en cours
+        return !self::where('parent_dossier_id', $this->id)
+            ->where('type_operation', self::TYPE_CORRECTION)
+            ->whereIn('statut', [self::STATUT_BROUILLON, self::STATUT_SOUMIS, self::STATUT_EN_COURS])
+            ->exists();
     }
 
     /**

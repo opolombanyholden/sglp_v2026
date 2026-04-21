@@ -5,7 +5,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>@yield('title', 'Administration') - SGLP</title>
+        <title>@yield('title', 'Administration') - DGELP</title>
 
         <!-- Bootstrap 4 -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
@@ -745,7 +745,7 @@
                             <i class="fas fa-shield-alt"></i>
                         </div>
                         <div class="logo-text-group">
-                            <h5 class="sidebar-title">SGLP</h5>
+                            <h5 class="sidebar-title">DGELP</h5>
                             <div class="sidebar-subtitle">Admin</div>
                         </div>
                     </div>
@@ -760,7 +760,7 @@
                         {{ strtoupper(substr(auth()->user()->name ?? 'AD', 0, 2)) }}
                     </div>
                     <div class="profile-info">
-                        <h6>{{ auth()->user()->name ?? 'Administrateur SGLP' }}</h6>
+                        <h6>{{ auth()->user()->name ?? 'Administrateur DGELP' }}</h6>
                         <small>
                             <i class="fas fa-crown"></i>
                             {{ auth()->user()->role ?? 'Administrateur' }}
@@ -863,6 +863,21 @@
                                             class="nav-link-custom {{ request()->input('operation') == 'declaration_activite' || request()->is('admin/operations/*/declaration_activite/*') ? 'active' : '' }}">
                                             <i class="nav-icon fas fa-file-alt text-primary"></i>
                                             <span class="nav-text">Déclaration Activité</span>
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.corrections.index') }}"
+                                            class="nav-link-custom {{ request()->routeIs('admin.corrections.*') ? 'active' : '' }}">
+                                            <i class="nav-icon fas fa-pen-fancy text-warning"></i>
+                                            <span class="nav-text">Corrections</span>
+                                            @php
+                                                $correctionsPending = class_exists('App\Models\Dossier')
+                                                    ? \App\Models\Dossier::where('type_operation', 'correction')->where('statut', 'soumis')->count()
+                                                    : 0;
+                                            @endphp
+                                            @if($correctionsPending > 0)
+                                                <span class="badge bg-warning text-dark ms-auto">{{ $correctionsPending }}</span>
+                                            @endif
                                         </a>
                                     </li>
                                 @endif
@@ -1576,6 +1591,13 @@
                                     <span class="nav-text">API / Interopérabilité</span>
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a href="{{ route('admin.corrections.index') }}"
+                                   class="nav-link-custom {{ request()->routeIs('admin.corrections.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fas fa-pen-fancy"></i>
+                                    <span class="nav-text">Corrections</span>
+                                </a>
+                            </li>
                         </ul>
                     </div>
 
@@ -1589,7 +1611,7 @@
                     <div class="header-left">
                         <h1 class="header-title">
                             <i class="fas fa-shield-alt" style="color: var(--gabon-blue);"></i>
-                            @yield('title', 'Administration SGLP')
+                            @yield('title', 'Administration DGELP')
                         </h1>
                     </div>
 
@@ -1619,7 +1641,7 @@
                                         {{ auth()->check() ? strtoupper(substr(auth()->user()->name, 0, 2)) : 'AD' }}
                                     </div>
                                     <div class="user-info-header">
-                                        <div class="user-name">{{ auth()->user()->name ?? 'Admin SGLP' }}</div>
+                                        <div class="user-name">{{ auth()->user()->name ?? 'Admin DGELP' }}</div>
                                         <div class="user-role">{{ auth()->user()->role ?? 'Administrateur' }}</div>
                                     </div>
                                     <i class="fas fa-chevron-down ml-2" style="color: #6b7280; font-size: 0.8rem;"></i>
@@ -1692,7 +1714,7 @@
 
         <script>
             $(document).ready(function () {
-                console.log('SGLP Admin Layout Optimisé - Accordéons Activés');
+                console.log('DGELP Admin Layout Optimisé - Accordéons Activés');
 
                 // Auto-dismiss des alertes
                 setTimeout(function () {
@@ -2043,7 +2065,7 @@
                 setInterval(updateRealtimeStats, 120000);
             @endif
 
-            console.log('✅ Layout Admin SGLP - Accordéons optimisés chargés avec succès');
+            console.log('✅ Layout Admin DGELP - Accordéons optimisés chargés avec succès');
         </script>
 
         @stack('scripts')

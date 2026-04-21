@@ -160,8 +160,8 @@
                         </div>
                         <div class="contact-details">
                             <h6>Email</h6>
-                            <p><a href="mailto:contact@SGLP.ga">contact@SGLP.ga</a><br>
-                            <a href="mailto:support@SGLP.ga">support@SGLP.ga</a></p>
+                            <p><a href="mailto:contact@DGELP.ga">contact@DGELP.ga</a><br>
+                            <a href="mailto:support@DGELP.ga">support@DGELP.ga</a></p>
                         </div>
                     </div>
                     

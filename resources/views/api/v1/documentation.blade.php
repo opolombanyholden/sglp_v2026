@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SGLP API V1 — Documentation</title>
+    <title>DGELP API V1 — Documentation</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
     <style>
@@ -35,7 +35,7 @@
     <!-- Sidebar -->
     <nav class="sidebar" style="width:240px; flex-shrink:0;">
         <div class="mb-4">
-            <strong style="color:var(--gold); font-size:1.1rem;">SGLP API V1</strong><br>
+            <strong style="color:var(--gold); font-size:1.1rem;">DGELP API V1</strong><br>
             <small>Documentation officielle</small>
         </div>
         <h6>Démarrage</h6>
@@ -55,7 +55,7 @@
     <!-- Contenu -->
     <div class="main-content flex-grow-1">
         <section id="introduction">
-            <h1 class="mb-1">SGLP API V1</h1>
+            <h1 class="mb-1">DGELP API V1</h1>
             <p class="text-muted lead mb-4">API d'interopérabilité du Système de Gestion des Libertés Publiques — Gabon</p>
 
             <div class="endpoint-card">
@@ -74,7 +74,7 @@
             <div class="security-box mb-3">
                 <strong><i class="fas fa-key me-2"></i>Bearer Token requis</strong><br>
                 Chaque requête doit inclure un token d'API valide dans le header <code>Authorization</code>.<br>
-                Contactez l'administrateur SGLP pour obtenir un token.
+                Contactez l'administrateur DGELP pour obtenir un token.
             </div>
             <div class="endpoint-card">
                 <strong>Header obligatoire :</strong>
@@ -248,7 +248,7 @@ Retry-After: 30   (présent uniquement si limite atteinte)</pre></div>
   "success": true,
   "verified": false,
   "status": "NOT_FOUND",
-  "message": "Aucun récépissé correspondant à ce code dans la base officielle SGLP.",
+  "message": "Aucun récépissé correspondant à ce code dans la base officielle DGELP.",
   "code": "ASS-XXXX-000000"
 }</pre></div>
             </div>
@@ -287,7 +287,7 @@ Retry-After: 30   (présent uniquement si limite atteinte)</pre></div>
         </section>
 
         <footer class="mt-5 pt-4 border-top text-muted small">
-            <p>SGLP — Système de Gestion des Libertés Publiques &copy; {{ date('Y') }} Ministère de l'Intérieur, Gabon.</p>
+            <p>DGELP — Système de Gestion des Libertés Publiques &copy; {{ date('Y') }} Ministère de l'Intérieur, Gabon.</p>
             <p>Données officielles — Usage soumis aux conditions d'accès. <a href="{{ url('/contact') }}">Contact</a>.</p>
         </footer>
     </div>

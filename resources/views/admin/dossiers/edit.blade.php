@@ -3035,7 +3035,7 @@
                                 @endif
                             @endif
 
-                            console.log('✅ Formulaire SGLP (édition) initialisé');
+                            console.log('✅ Formulaire DGELP (édition) initialisé');
                             });
                         </script>
 @endsection

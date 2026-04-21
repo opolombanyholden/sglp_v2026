@@ -18,14 +18,14 @@ class CustomVerifyEmail extends BaseVerifyEmail
         $verificationUrl = $this->verificationUrl($notifiable);
 
         return (new MailMessage)
-            ->subject('Vérifiez votre adresse email - PNGDI')
+            ->subject('Vérifiez votre adresse email - DGELP')
             ->greeting('Bonjour ' . $notifiable->name . ',')
-            ->line('Merci de vous être inscrit sur la Plateforme Nationale de Gestion des Libertés Individuelles (PNGDI).')
+            ->line('Merci de vous être inscrit sur la plateforme de la Direction Générale des Élections et des Libertés Publiques (DGELP).')
             ->line('Pour activer votre compte, veuillez cliquer sur le bouton ci-dessous pour vérifier votre adresse email.')
             ->action('Vérifier mon email', $verificationUrl)
             ->line('Ce lien de vérification expirera dans 60 minutes.')
             ->line('Si vous n\'avez pas créé de compte, aucune action n\'est requise.')
-            ->salutation('Cordialement, L\'équipe PNGDI');
+            ->salutation('Cordialement, L\'équipe DGELP');
     }
 
     /**

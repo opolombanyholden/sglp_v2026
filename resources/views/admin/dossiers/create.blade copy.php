@@ -1785,7 +1785,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var selectedType = document.querySelector('input[name="organisation_type_id"]:checked');
     if (selectedType) loadTypeConfiguration(selectedType.value);
 
-    console.log('✅ Formulaire SGLP initialisé');
+    console.log('✅ Formulaire DGELP initialisé');
 });
 </script>
 @endsection

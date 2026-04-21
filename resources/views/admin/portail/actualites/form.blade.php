@@ -91,7 +91,7 @@
                         <div class="form-group">
                             <label>Auteur</label>
                             <input type="text" name="auteur" class="form-control"
-                                   value="{{ old('auteur', $actualite->auteur ?? 'Administration PNGDI') }}">
+                                   value="{{ old('auteur', $actualite->auteur ?? 'Administration DGELP') }}">
                         </div>
                         <div class="form-group">
                             <div class="custom-control custom-switch">

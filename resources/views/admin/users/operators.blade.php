@@ -13,7 +13,7 @@
                             <div class="col-md-8">
                                 <h2 class="mb-2">
                                     <i class="fas fa-users me-2"></i>
-                                    Gestion des Opérateurs SGLP
+                                    Gestion des Opérateurs DGELP
                                 </h2>
                                 <p class="mb-0 opacity-90">Administration et supervision des comptes opérateurs</p>
                             </div>
@@ -189,7 +189,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
                                 <i class="fas fa-users me-2" style="color: #003f7f;"></i>
-                                Liste des Opérateurs SGLP
+                                Liste des Opérateurs DGELP
                             </h5>
                             <span class="badge bg-primary">{{ isset($operators) ? $operators->total() : 0 }}
                                 opérateurs</span>
@@ -541,7 +541,7 @@
     <script>
         // ✅ JAVASCRIPT BASÉ SUR LE MODÈLE INDEX.BLADE.PHP QUI FONCTIONNE
         document.addEventListener('DOMContentLoaded', function () {
-            console.log('Module Gestion Opérateurs SGLP chargé');
+            console.log('Module Gestion Opérateurs DGELP chargé');
         });
 
         let currentOperatorId = null;

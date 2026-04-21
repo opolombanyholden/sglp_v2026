@@ -92,8 +92,9 @@ Route::prefix('operator')->name('operator.')->middleware(['web', 'auth', 'verifi
         // ðŸ†• GESTION PAR Ã‰TAPES - NOUVELLES ROUTES
         // =============================================
         
-        // Gestion des brouillons par Ã©tapes
+        // Gestion des brouillons par étapes
         Route::get('/drafts', [OrganisationController::class, 'listDrafts'])->name('drafts.list');
+        Route::get('/brouillons', [OrganisationController::class, 'draftsPage'])->name('drafts.index');
         Route::post('/draft/create', [OrganisationController::class, 'createDraft'])->name('draft.create');
         Route::get('/draft/{draftId}', [OrganisationController::class, 'getDraft'])->name('draft.get');
         Route::delete('/draft/{draftId}', [OrganisationController::class, 'deleteDraft'])->name('draft.delete');

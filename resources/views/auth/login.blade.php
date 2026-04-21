@@ -4,7 +4,7 @@
     $isAdmin = ($loginType ?? 'operator') === 'admin';
 @endphp
 
-@section('title', $isAdmin ? 'Connexion Administration - PNGDI' : 'Connexion - PNGDI')
+@section('title', $isAdmin ? 'Connexion Administration - DGELP' : 'Connexion - DGELP')
 
 @section('content')
     <div class="container my-5">

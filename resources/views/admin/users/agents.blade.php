@@ -13,7 +13,7 @@
                             <div class="col-md-8">
                                 <h2 class="mb-2">
                                     <i class="fas fa-user-tie me-2"></i>
-                                    Gestion des Agents SGLP
+                                    Gestion des Agents DGELP
                                 </h2>
                                 <p class="mb-0 opacity-90">Supervision et coordination de l'équipe d'agents de validation
                                 </p>
@@ -258,7 +258,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="mb-0">
                                 <i class="fas fa-user-tie me-2" style="color: #009e3f;"></i>
-                                Équipe d'Agents SGLP
+                                Équipe d'Agents DGELP
                             </h5>
                             <span class="badge bg-success">{{ isset($agents) ? $agents->total() : 0 }} agents</span>
                         </div>

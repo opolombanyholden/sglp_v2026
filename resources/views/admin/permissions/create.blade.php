@@ -15,7 +15,7 @@
                                 <i class="fas fa-plus-circle me-2"></i>
                                 Créer une Permission
                             </h2>
-                            <p class="mb-0 opacity-90">Ajouter une nouvelle permission au système SGLP</p>
+                            <p class="mb-0 opacity-90">Ajouter une nouvelle permission au système DGELP</p>
                         </div>
                         <div class="col-md-4 text-end">
                             <a href="{{ route('admin.permissions.index') }}" class="btn btn-light btn-lg">

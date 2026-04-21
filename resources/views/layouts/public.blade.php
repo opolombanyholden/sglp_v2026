@@ -5,7 +5,7 @@
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title>@yield('title', 'Accueil') - SGLP | Système de Gestion des Libertés Publiques</title>
+        <title>@yield('title', 'Accueil') - DGELP | Direction Générale des Élections et des Libertés Publiques</title>
 
         <!-- Bootstrap 5 CSS via CDN -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
@@ -68,15 +68,16 @@
                 width: 50px;
                 height: 50px;
                 margin-right: 10px;
-                background: var(--secondary-gold);
-                border-radius: 50%;
+                background: var(--white);
+                border-radius: 5px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 position: relative;
-                background-image: url("{{ asset('public/storage/images/logo-ministere.png') }}");
+                background-image: url("{{ asset('images/logo.png') }}");
                 background-repeat: no-repeat;
-                background-size: cover;
+                background-size: contain;
+                background-position: center;
             }
 
             .logo-icon::before {}
@@ -396,7 +397,7 @@
             <div class="container">
                 <a class="navbar-brand" href="{{ route('home') }}">
                     <div class="logo-icon"></div>
-                    SGLP
+                    DGELP
                 </a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarMain">
                     <span class="navbar-toggler-icon"></span>
@@ -410,12 +411,14 @@
                                 <i class="fas fa-home mr-1"></i>Accueil
                             </a>
                         </li>
+                        {{-- Lien Actualités masqué
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('actualites.*') ? 'active' : '' }}"
                                 href="{{ route('actualites.index') }}">
                                 <i class="fas fa-newspaper mr-1"></i>Actualités
                             </a>
                         </li>
+                        --}}
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('annuaire*') ? 'active' : '' }}"
                                 href="{{ route('annuaire.index') }}">
@@ -426,7 +429,7 @@
                             <a class="nav-link dropdown-toggle {{ request()->routeIs(['documents.*', 'faq', 'guides', 'calendrier']) ? 'active' : '' }}"
                                 href="#" id="servicesDropdown" role="button" aria-haspopup="true" aria-expanded="false"
                                 onclick="toggleServicesMenu(event)">
-                                <i class="fas fa-th mr-1"></i>Services
+                                <i class="fas fa-th mr-1"></i>Ressources
                             </a>
                             <ul class="dropdown-menu" id="servicesMenu" style="display:none; position:absolute; z-index:9999;">
                                 <li>
@@ -518,9 +521,9 @@
                 <div class="row">
                     <div class="col-md-4 mb-4">
                         <h5 class="mb-3">
-                            <i class="fas fa-info-circle mr-2"></i>À propos du SGLP
+                            <i class="fas fa-info-circle mr-2"></i>À propos de la DGELP
                         </h5>
-                        <p>Le Portail National de Gestion des Libertés Individuelles facilite la formalisation et la
+                        <p>La Direction Générale des Élections et des Libertés Publiques facilite la formalisation et la
                             gestion des organisations associatives, religieuses et politiques du Gabon.</p>
                         <div class="mt-3">
                             <a href="#" class="text-white mr-3"><i class="fab fa-facebook-f"></i></a>
@@ -572,7 +575,7 @@
                             <i class="fas fa-phone mr-2"></i>+241 01 23 45 67
                         </p>
                         <p class="mb-2">
-                            <i class="fas fa-envelope mr-2"></i>contact@SGLP.ga
+                            <i class="fas fa-envelope mr-2"></i>contact@dgelp.ga
                         </p>
                         <p class="mb-0">
                             <i class="fas fa-clock mr-2"></i>Lun - Ven: 8h00 - 17h00
@@ -581,8 +584,8 @@
                 </div>
                 <hr style="border-color: rgba(255,255,255,0.2);">
                 <div class="text-center py-3">
-                    <p class="mb-0">&copy; 2025 SGLP - Ministère de l'Intérieur et de la Sécurité. Tous droits réservés.
-                    </p>
+                    <p class="mb-0">&copy; 2026 Ministère de l'Intérieur, de la Sécurité et de la Décentralisation - Direction Générale des Élections et des Libertés Publiques. Tous droits réservés.</p>
+                    <p class="mb-0 mt-2 small" style="opacity: 0.7;">Développé par <a href="https://www.yubilegroupe.com" target="_blank" rel="noopener noreferrer" style="color: var(--secondary-gold); text-decoration: none;">Yubile</a></p>
                 </div>
             </div>
         </footer>

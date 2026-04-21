@@ -15,7 +15,7 @@
                                 <i class="fas fa-user-shield mr-2"></i>
                                 Gestion des Rôles
                             </h2>
-                            <p class="mb-0" style="opacity: 0.9;">Configuration des rôles et permissions du système SGLP avec hiérarchie gabonaise</p>
+                            <p class="mb-0" style="opacity: 0.9;">Configuration des rôles et permissions du système DGELP avec hiérarchie gabonaise</p>
                         </div>
                         <div class="col-md-4 text-right">
                             <span class="badge badge-light text-dark" style="font-size: 1rem; margin-right: 1rem;">
@@ -648,7 +648,7 @@ const CONFIG = {
 
 // Initialisation au chargement de la page
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Module Gestion Rôles SGLP initialisé');
+    console.log('✅ Module Gestion Rôles DGELP initialisé');
     initEventListeners();
     loadRoles(); // Charger les rôles au démarrage
 });
@@ -1102,7 +1102,7 @@ function exporterRoles() {
 }
 
 async function initSystemRoles() {
-    if (!confirm('Initialiser les rôles système ?\n\nCette action créera les rôles de base du système PNGDI.')) {
+    if (!confirm('Initialiser les rôles système ?\n\nCette action créera les rôles de base du système DGELP.')) {
         return;
     }
     

@@ -163,7 +163,13 @@ class DossierController extends Controller
         // Charger les fonctions/rôles dans l'organisation
         $fonctions = Fonction::active()->ordered()->get(['id', 'code', 'nom', 'categorie', 'is_bureau']);
 
-        return view('operator.dossiers.create', compact('type', 'fullType', 'provinces', 'domainesActivite', 'typesOrganisation', 'typesOrganisationJson', 'fonctions'));
+        // Récupérer et nettoyer le draft ID de la session si on reprend un brouillon
+        $resumeDraftId = session('resume_draft_id');
+        if ($resumeDraftId) {
+            session()->forget('resume_draft_id');
+        }
+
+        return view('operator.dossiers.create', compact('type', 'fullType', 'provinces', 'domainesActivite', 'typesOrganisation', 'typesOrganisationJson', 'fonctions', 'resumeDraftId'));
     }
 
     /**

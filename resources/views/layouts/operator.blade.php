@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Espace Opérateur') - SGLP</title>
+    <title>@yield('title', 'Espace Opérateur') - DGELP</title>
 
     <!-- ✅ Bootstrap 4.6.2 CSS via CDN -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
@@ -629,7 +629,7 @@
                     <div class="logo-img">
                         <i class="fas fa-building"></i>
                     </div>
-                    <span class="logo-text">SGLP</span>
+                    <span class="logo-text">DGELP</span>
                 </a>
                 <button class="sidebar-toggle d-md-none" onclick="toggleSidebar()">
                     <i class="fas fa-times"></i>
@@ -681,6 +681,22 @@
                             <i class="fas fa-plus-circle"></i>
                         </div>
                         <span class="nav-text">Nouvelle organisation</span>
+                    </a>
+
+                    @php
+                        $draftsCount = \App\Models\OrganizationDraft::where('user_id', auth()->id())
+                            ->where('expires_at', '>', now())
+                            ->count();
+                    @endphp
+                    <a href="{{ route('operator.organisations.drafts.index') }}"
+                        class="nav-item-custom {{ request()->routeIs('operator.organisations.drafts.*') ? 'active' : '' }}">
+                        <div class="nav-icon">
+                            <i class="fas fa-pencil-alt"></i>
+                        </div>
+                        <span class="nav-text">Brouillons</span>
+                        @if($draftsCount > 0)
+                            <span class="nav-badge" style="background: #FFD700; color: #002B7F;">{{ $draftsCount }}</span>
+                        @endif
                     </a>
                 </div>
 

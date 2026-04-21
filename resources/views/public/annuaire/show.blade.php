@@ -15,7 +15,7 @@
                 <i class="fas fa-shield-alt fa-2x text-success"></i>
                 <div>
                     <strong class="d-block">Document authentifié</strong>
-                    <span>Ce récépissé est valide et a été émis par le PNGDI. L'organisation est officiellement enregistrée.</span>
+                    <span>Ce récépissé est valide et a été émis par le DGELP. L'organisation est officiellement enregistrée.</span>
                 </div>
                 <span class="ms-auto badge bg-success fs-6 px-3 py-2">
                     <i class="fas fa-check-circle me-1"></i>VALIDE
@@ -213,7 +213,7 @@
                     </div>
                     <div class="status-body">
                         @if($organisation->statut === 'approuve')
-                        <p class="mb-2">Cette organisation est officiellement reconnue par le PNGDI.</p>
+                        <p class="mb-2">Cette organisation est officiellement reconnue par le DGELP.</p>
                         @elseif($organisation->statut === 'suspendu')
                         <p class="mb-2 text-warning">Cette organisation est actuellement suspendue. Ses activités peuvent être restreintes.</p>
                         @else
