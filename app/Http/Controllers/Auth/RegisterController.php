@@ -22,7 +22,7 @@ class RegisterController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'phone' => ['required', 'string', 'regex:/^(\+241)?[0-9]{8,9}$/'],
+            'phone' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'address' => ['nullable', 'string', 'max:255'],
             'city' => ['nullable', 'string', 'max:100'],
@@ -32,7 +32,7 @@ class RegisterController extends Controller
             'email.required' => 'L\'adresse email est obligatoire.',
             'email.unique' => 'Cette adresse email est déjà utilisée.',
             'phone.required' => 'Le numéro de téléphone est obligatoire.',
-            'phone.regex' => 'Le format du numéro de téléphone est invalide. Exemple: +24101234567 ou 01234567',
+            'phone.max' => 'Le numéro de téléphone ne doit pas dépasser 255 caractères.',
             'password.required' => 'Le mot de passe est obligatoire.',
             'password.min' => 'Le mot de passe doit contenir au moins 8 caractères.',
             'password.confirmed' => 'Les mots de passe ne correspondent pas.',

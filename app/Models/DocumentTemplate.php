@@ -69,6 +69,11 @@ class DocumentTemplate extends Model
         'template_path',
         'layout_path',
 
+        // Designer WYSIWYG (publipostage)
+        'body_content',
+        'use_designer',
+        'page_config',
+
         // Variables
         'variables',
         'required_variables',
@@ -102,15 +107,31 @@ class DocumentTemplate extends Model
         'variables' => 'array',
         'required_variables' => 'array',
         'pdf_config' => 'array',
+        'page_config' => 'array',
         'metadata' => 'array',
         'has_qr_code' => 'boolean',
         'has_watermark' => 'boolean',
         'has_signature' => 'boolean',
         'auto_generate' => 'boolean',
+        'use_designer' => 'boolean',
         'is_active' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    /**
+     * Rendre le contenu designer en remplaçant les variables par leurs valeurs
+     */
+    public function renderBodyContent(array $data = []): string
+    {
+        $content = (string) ($this->body_content ?? '');
+        if ($content === '') return '';
+
+        // Remplace {{ key }} et {{key}} par la valeur
+        return preg_replace_callback('/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/', function ($m) use ($data) {
+            return array_key_exists($m[1], $data) ? (string) $data[$m[1]] : $m[0];
+        }, $content);
+    }
 
     /**
      * ========================================

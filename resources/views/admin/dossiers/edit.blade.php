@@ -233,7 +233,7 @@
                                             <div class="form-group">
                                                 <label class="form-label-modern">Téléphone <span
                                                         class="required">*</span></label>
-                                                <input type="tel" class="form-input-modern" name="demandeur_telephone"
+                                                <input type="text" class="form-input-modern" name="demandeur_telephone"
                                                     id="demandeur_telephone"
                                                     value="{{ old('demandeur_telephone', $declarant['telephone'] ?? '') }}"
                                                     required placeholder="+241 XX XX XX XX">
@@ -340,7 +340,7 @@
                                             <div class="form-group">
                                                 <label class="form-label-modern">Téléphone <span
                                                         class="required">*</span></label>
-                                                <input type="tel" class="form-input-modern" name="org_telephone"
+                                                <input type="text" class="form-input-modern" name="org_telephone"
                                                     id="org_telephone"
                                                     value="{{ old('org_telephone', $dossier->organisation->telephone ?? '') }}"
                                                     required placeholder="+241 XX XX XX XX">

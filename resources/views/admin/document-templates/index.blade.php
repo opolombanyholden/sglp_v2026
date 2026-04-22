@@ -203,8 +203,13 @@
                                            target="_blank">
                                             <i class="fas fa-search"></i>
                                         </a>
-                                        <a href="{{ route('admin.document-templates.edit', $template) }}" 
-                                           class="btn btn-outline-primary" 
+                                        <a href="{{ route('admin.document-templates.designer', $template) }}"
+                                           class="btn btn-outline-warning"
+                                           title="Designer (publipostage)">
+                                            <i class="fas fa-drafting-compass"></i>
+                                        </a>
+                                        <a href="{{ route('admin.document-templates.edit', $template) }}"
+                                           class="btn btn-outline-primary"
                                            title="Modifier">
                                             <i class="fas fa-edit"></i>
                                         </a>

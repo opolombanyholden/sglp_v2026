@@ -1473,7 +1473,7 @@ class OrganisationController extends Controller
             'demandeur_nom' => 'required|string|max:255',
             'demandeur_prenom' => 'required|string|max:255',
             'demandeur_email' => 'required|email|max:255',
-            'demandeur_telephone' => 'required|string|max:20',
+            'demandeur_telephone' => 'required|string|max:255',
 
             // Fondateurs - validation souple
             'fondateurs' => 'nullable|array|min:1'
@@ -1629,7 +1629,7 @@ class OrganisationController extends Controller
             'demandeur_nom' => 'required|string|max:255',
             'demandeur_prenom' => 'required|string|max:255',
             'demandeur_email' => 'required|email|max:255',
-            'demandeur_telephone' => 'required|string|max:20',
+            'demandeur_telephone' => 'required|string|max:255',
             'demandeur_role' => 'nullable|string|max:255',
             'demandeur_civilite' => 'nullable|in:M,Mme,Mlle',
             'demandeur_date_naissance' => 'nullable|date|before:-18 years',
@@ -2621,7 +2621,7 @@ class OrganisationController extends Controller
             'demandeur_nom' => 'required|string|max:255',
             'demandeur_prenom' => 'required|string|max:255',
             'demandeur_email' => 'required|email|max:255',
-            'demandeur_telephone' => 'required|string|max:20',
+            'demandeur_telephone' => 'required|string|max:255',
             'demandeur_role' => 'nullable|string|max:255',
             'demandeur_civilite' => 'nullable|in:M,Mme,Mlle',
             'demandeur_date_naissance' => 'nullable|date|before:-18 years',
@@ -4196,7 +4196,7 @@ class OrganisationController extends Controller
     {
         try {
             $request->validate([
-                'nip' => 'required|string|max:20'
+                'string|max:255'
             ]);
 
             $nip = $request->input('nip');
@@ -4343,7 +4343,7 @@ class OrganisationController extends Controller
         try {
             $request->validate([
                 'nips' => 'required|array|max:100',
-                'nips.*' => 'required|string|max:20'
+                'string|max:255'
             ]);
 
             $nips = $request->input('nips');

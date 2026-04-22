@@ -104,7 +104,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Téléphone</label>
-                                    <input type="tel" class="form-control" name="adherents[0][telephone]">
+                                    <input type="text" class="form-control" name="adherents[0][telephone]">
                                 </div>
                                 <div class="col-md-6">
                                     <label class="form-label">Email</label>

@@ -110,7 +110,7 @@ class CorrectionController extends Controller
             'corrections' => 'required|array|min:1',
             'corrections.*.champ' => 'required|string|max:100',
             'corrections.*.categorie' => 'required|in:organisation,adherent,fondateur,membre_bureau,document,autre',
-            'corrections.*.nouvelle_valeur' => 'required|string',
+            'corrections.*.nouvelle_valeur' => 'nullable|string',
             'corrections.*.motif' => 'required|string|max:500',
             'corrections.*.entity_id' => 'nullable|integer',
         ]);

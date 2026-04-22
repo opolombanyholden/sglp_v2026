@@ -73,7 +73,7 @@
                                 <span class="input-group-text">
                                     <img src="https://flagcdn.com/w20/ga.png" alt="Gabon"> +241
                                 </span>
-                                <input type="tel" 
+                                <input type="text" 
                                        class="form-control @error('phone') is-invalid @enderror" 
                                        id="phone" 
                                        name="phone" 

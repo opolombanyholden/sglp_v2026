@@ -108,6 +108,12 @@ class OperationController extends Controller
         // Champs sélectionnés pour modification (passés via requête)
         $champsModifies = request()->input('champs_modifies', []);
 
+        // Provinces pour la géolocalisation (utilisé par le formulaire de modification)
+        $provinces = \App\Models\Province::where('is_active', true)
+            ->orderBy('ordre_affichage')
+            ->orderBy('nom')
+            ->get(['id', 'nom', 'code']);
+
         // Données spécifiques selon le type
         $viewData = [
             'organisation' => $organisation->load(['organisationType', 'fondateurs', 'membresBureau', 'adherents']),
@@ -115,6 +121,7 @@ class OperationController extends Controller
             'documentTypes' => $documentTypes,
             'dossierActuel' => $dossierActuel,
             'champsModifies' => $champsModifies,
+            'provinces' => $provinces,
         ];
 
         // Vue spécifique selon le type d'opération

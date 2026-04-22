@@ -17,6 +17,8 @@ class DomaineActivite extends Model
         'description',
         'is_active',
         'ordre',
+        'suggested_by_user_id',
+        'suggestion_status',
     ];
 
     protected $casts = [
@@ -45,7 +47,16 @@ class DomaineActivite extends Model
      */
     public function scopeActif($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_active', true)
+            ->where(function($q) {
+                $q->whereNull('suggestion_status')
+                  ->orWhere('suggestion_status', 'approved');
+            });
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('suggestion_status', 'pending');
     }
 
     /**

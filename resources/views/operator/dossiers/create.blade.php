@@ -1021,7 +1021,7 @@
                                                         </label>
                                                         <div class="input-group">
                                                             <span class="input-group-text">+241</span>
-                                                            <input type="tel" class="form-control form-control-lg"
+                                                            <input type="text" class="form-control form-control-lg"
                                                                 id="demandeur_telephone" name="demandeur_telephone"
                                                                 placeholder="01 23 45 67" pattern="[0-9]{8,9}" required>
                                                         </div>
@@ -1223,7 +1223,7 @@
                                                             Domaine d'activité
                                                         </label>
                                                         <select class="form-select form-select-lg" id="org_domaine"
-                                                            name="org_domaine_activite_id">
+                                                            name="org_domaine_activite_id" data-allow-other="domaine">
                                                             <option value="">Sélectionnez un domaine</option>
                                                             @foreach($domainesActivite ?? [] as $domaine)
                                                                 <option value="{{ $domaine->id }}">{{ $domaine->nom }}</option>
@@ -1265,7 +1265,7 @@
                                                         </label>
                                                         <div class="input-group">
                                                             <span class="input-group-text">+241</span>
-                                                            <input type="tel" class="form-control form-control-lg"
+                                                            <input type="text" class="form-control form-control-lg"
                                                                 id="org_telephone" name="org_telephone"
                                                                 placeholder="01 23 45 67" pattern="[0-9]{8,9}" required>
                                                         </div>
@@ -1676,7 +1676,7 @@
                                                     <div class="col-md-4 mb-3">
                                                         <label for="fondateur_fonction"
                                                             class="form-label fw-bold">Fonction <span class="text-danger">*</span></label>
-                                                        <select class="form-select" id="fondateur_fonction">
+                                                        <select class="form-select" id="fondateur_fonction" data-allow-other="fonction">
                                                             <option value="">Sélectionnez</option>
                                                             @if(isset($fonctions) && $fonctions->where('categorie', 'bureau')->count())
                                                                 <optgroup label="Bureau">
@@ -1702,7 +1702,7 @@
                                                             class="form-label fw-bold">Téléphone <span class="text-danger">*</span></label>
                                                         <div class="input-group">
                                                             <span class="input-group-text">+241</span>
-                                                            <input type="tel" class="form-control" id="fondateur_telephone"
+                                                            <input type="text" class="form-control" id="fondateur_telephone"
                                                                 placeholder="01234567" pattern="[0-9]{8,9}">
                                                         </div>
                                                         <small class="form-text text-muted">8 ou 9 chiffres</small>
@@ -1809,7 +1809,7 @@
                                                             <div class="col-md-4 mb-3">
                                                                 <label for="membre_fonction"
                                                                     class="form-label fw-bold">Fonction *</label>
-                                                                <select class="form-select" id="membre_fonction">
+                                                                <select class="form-select" id="membre_fonction" data-allow-other="fonction">
                                                                     <option value="">Sélectionnez</option>
                                                                     @if(isset($fonctions) && $fonctions->where('categorie', 'bureau')->count())
                                                                         <optgroup label="Bureau">
@@ -1835,7 +1835,7 @@
                                                                     class="form-label fw-bold">Contact</label>
                                                                 <div class="input-group">
                                                                     <span class="input-group-text">+241</span>
-                                                                    <input type="tel" class="form-control"
+                                                                    <input type="text" class="form-control"
                                                                         id="membre_contact" placeholder="01234567">
                                                                 </div>
                                                             </div>
@@ -2142,6 +2142,12 @@
                                 <!-- Bouton suivant (étapes 1-7) -->
                                 <button type="button" class="btn btn-success" id="nextBtn" onclick="changeStep(1)">
                                     Suivant <i class="fas fa-arrow-right ms-2"></i>
+                                </button>
+
+                                <!-- Bouton "Garder en brouillon" visible partout à partir de l'étape 2 -->
+                                <button type="button" class="btn btn-outline-warning" id="saveDraftBtn"
+                                    onclick="saveDraftAndExit()" style="display: none;">
+                                    <i class="fas fa-save me-2"></i>Garder en brouillon
                                 </button>
 
                                 <!-- Boutons de soumission (étape 8) -->
@@ -3345,7 +3351,7 @@
 
                     // ══════════════════════════════════════════════
 
-                    function changeStep(direction) {
+                    async function changeStep(direction) {
                         console.log('Changement etape: direction ' + direction + ', etape actuelle: ' + OrganisationApp.currentStep);
 
                         // Sauvegarder les données de l'étape actuelle avant de changer
@@ -3357,11 +3363,21 @@
                             return false;
                         }
 
-                        // Sauvegarde sur le serveur en arrière-plan (non bloquant)
+                        // Sauvegarde synchrone sur le serveur à chaque clic sur "Suivant"
                         if (direction === 1) {
-                            saveStepToServer(OrganisationApp.currentStep).catch(function(e) {
-                                console.warn('Sauvegarde serveur en erreur:', e);
-                            });
+                            var saveIndicator = document.getElementById('save-indicator');
+                            if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sauvegarde...';
+
+                            try {
+                                var result = await saveStepToServer(OrganisationApp.currentStep);
+                                if (result && result.success) {
+                                    console.log('Etape ' + OrganisationApp.currentStep + ' sauvegardee (draft_id=' + (result.draft_id || '?') + ')');
+                                } else {
+                                    console.warn('Sauvegarde serveur echouee, navigation autorisee', result);
+                                }
+                            } catch (e) {
+                                console.warn('Erreur sauvegarde serveur:', e);
+                            }
                         }
 
                         // Calculer la nouvelle étape
@@ -3375,7 +3391,7 @@
                             // Actions spécifiques selon l'étape
                             handleStepSpecificActions(newStep);
 
-                            // Sauvegarde après changement d'étape
+                            // Sauvegarde cache local (localStorage)
                             saveToCache();
 
                             scrollToTop();
@@ -3921,9 +3937,10 @@
                         const submitBtn = document.getElementById('submitBtn');
                         const submitPhase1Btn = document.getElementById('submitPhase1Btn');
                         const submitTraditionalBtn = document.getElementById('submitTraditionalBtn');
+                        const saveDraftBtn = document.getElementById('saveDraftBtn');
                         const submissionInfo = document.getElementById('submission-info');
 
-                        console.log(`🔄 updateNavigationButtons - Étape: ${OrganisationApp.currentStep}/${OrganisationApp.totalSteps}`);
+                        console.log('updateNavigationButtons - Etape: ' + OrganisationApp.currentStep + '/' + OrganisationApp.totalSteps);
 
                         // Bouton précédent
                         if (prevBtn) {
@@ -3931,6 +3948,15 @@
                                 prevBtn.style.display = 'inline-block';
                             } else {
                                 prevBtn.style.display = 'none';
+                            }
+                        }
+
+                        // Bouton "Garder en brouillon" - visible à partir de l'étape 2
+                        if (saveDraftBtn) {
+                            if (OrganisationApp.currentStep >= 2) {
+                                saveDraftBtn.style.display = 'inline-block';
+                            } else {
+                                saveDraftBtn.style.display = 'none';
                             }
                         }
 
@@ -5549,7 +5575,7 @@
                         });
 
                         // Validation téléphone
-                        const phoneInputs = document.querySelectorAll('input[type="tel"]');
+                        const phoneInputs = document.querySelectorAll('input[type="text"]');
                         phoneInputs.forEach(input => {
                             input.addEventListener('blur', function () {
                                 if (this.value && !isValidGabonPhone(this.value)) {
@@ -6378,6 +6404,34 @@
                     window.removeDocument = removeDocument;
                     window.toggleSubmissionMode = toggleSubmissionMode;
                     window.saveManually = saveManually;
+
+                    /**
+                     * Sauvegarder l'étape courante en brouillon puis rediriger vers la liste des brouillons
+                     */
+                    window.saveDraftAndExit = async function () {
+                        try {
+                            // Sauvegarder les données locales puis le serveur
+                            if (typeof saveCurrentStepData === 'function') saveCurrentStepData();
+
+                            var saveIndicator = document.getElementById('save-indicator');
+                            if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Enregistrement du brouillon...';
+
+                            var res = await saveStepToServer(OrganisationApp.currentStep);
+
+                            if (res && res.success) {
+                                showNotification('Brouillon enregistré avec succès. Vous pourrez le reprendre depuis votre espace.', 'success');
+                                setTimeout(function () {
+                                    window.location.href = '/operator/organisations/brouillons';
+                                }, 1500);
+                            } else {
+                                showNotification('Impossible d\'enregistrer le brouillon. Veuillez réessayer.', 'warning');
+                                if (saveIndicator) saveIndicator.innerHTML = '';
+                            }
+                        } catch (e) {
+                            console.error('Erreur saveDraftAndExit:', e);
+                            showNotification('Erreur lors de la sauvegarde : ' + e.message, 'error');
+                        }
+                    };
                     window.clearCacheManually = clearCacheManually;
 
                     // Fonctions utilitaires globales

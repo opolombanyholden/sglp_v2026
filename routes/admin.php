@@ -234,6 +234,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
     | 📁 DOSSIERS - ROUTES COMPLÈTES (23 routes)
     |--------------------------------------------------------------------------
     */
+    // Suggestions (Fonctions et Domaines proposés par les usagers)
+    Route::prefix('suggestions')->name('suggestions.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SuggestionController::class, 'adminIndex'])->name('index');
+        Route::post('/{type}/{id}/approve', [\App\Http\Controllers\SuggestionController::class, 'adminApprove'])->name('approve');
+        Route::post('/{type}/{id}/reject', [\App\Http\Controllers\SuggestionController::class, 'adminReject'])->name('reject');
+    });
+
     Route::prefix('dossiers')->name('dossiers.')->group(function () {
 
         // ========== ROUTES AVEC CHEMINS FIXES EN PREMIER ==========
@@ -241,6 +248,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::get('/', [DossierController::class, 'index'])->name('index');
         Route::get('/create', [DossierController::class, 'create'])->name('create');
         Route::post('/', [DossierController::class, 'store'])->name('store');
+
+        // Sauvegarde progressive par étape (AJAX) - brouillon admin
+        Route::post('/save-draft-step', [DossierController::class, 'saveDraftStep'])->name('save-draft-step');
 
         // API Configuration type d'organisation (pour formulaire création)
         Route::get('/type-config/{id}', [DossierController::class, 'getTypeConfig'])->name('type-config');
@@ -744,6 +754,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::get('/{documentTemplate}/edit', [DocumentTemplateController::class, 'edit'])->name('edit');
         Route::put('/{documentTemplate}', [DocumentTemplateController::class, 'update'])->name('update');
         Route::delete('/{documentTemplate}', [DocumentTemplateController::class, 'destroy'])->name('destroy');
+
+        // Édition du code source du fichier Blade
+        Route::get('/{documentTemplate}/edit-source', [DocumentTemplateController::class, 'editSource'])->name('edit-source');
+        Route::put('/{documentTemplate}/edit-source', [DocumentTemplateController::class, 'updateSource'])->name('update-source');
+
+        // Designer WYSIWYG (publipostage sans code)
+        Route::get('/{documentTemplate}/designer', [DocumentTemplateController::class, 'designer'])->name('designer');
+        Route::put('/{documentTemplate}/designer', [DocumentTemplateController::class, 'updateDesigner'])->name('update-designer');
+        Route::post('/{documentTemplate}/designer/preview', [DocumentTemplateController::class, 'previewDesigner'])->name('preview-designer');
 
         // Actions sur template
         Route::post('/{documentTemplate}/duplicate', [DocumentTemplateController::class, 'duplicate'])->name('duplicate');

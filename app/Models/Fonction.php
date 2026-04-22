@@ -44,6 +44,8 @@ class Fonction extends Model
         'icone',
         'couleur',
         'is_active',
+        'suggested_by_user_id',
+        'suggestion_status',
     ];
 
     protected $casts = [
@@ -69,7 +71,16 @@ class Fonction extends Model
      */
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('is_active', true)
+            ->where(function($q) {
+                $q->whereNull('suggestion_status')
+                  ->orWhere('suggestion_status', 'approved');
+            });
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('suggestion_status', 'pending');
     }
 
     /**

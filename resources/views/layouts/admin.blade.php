@@ -1481,6 +1481,25 @@
                                     </li>
                                 @endif
 
+                                @if(Route::has('admin.suggestions.index'))
+                                    <li class="nav-item">
+                                        <a href="{{ route('admin.suggestions.index') }}"
+                                            class="nav-link-custom {{ request()->routeIs('admin.suggestions*') ? 'active' : '' }}">
+                                            <i class="nav-icon fas fa-lightbulb"></i>
+                                            <span class="nav-text">Suggestions en attente</span>
+                                            @php
+                                                $pendingSuggestions = 0;
+                                                try {
+                                                    $pendingSuggestions = \App\Models\Fonction::where('suggestion_status', 'pending')->count()
+                                                        + \App\Models\DomaineActivite::where('suggestion_status', 'pending')->count();
+                                                } catch (\Exception $e) {}
+                                            @endphp
+                                            @if($pendingSuggestions > 0)
+                                                <span class="nav-badge warning">{{ $pendingSuggestions }}</span>
+                                            @endif
+                                        </a>
+                                    </li>
+                                @endif
                                 @if(Route::has('admin.settings.index'))
                                     <li class="nav-item">
                                         <a href="{{ route('admin.settings.index') }}"
@@ -2067,6 +2086,8 @@
 
             console.log('✅ Layout Admin DGELP - Accordéons optimisés chargés avec succès');
         </script>
+
+        <script src="{{ asset('js/other-suggestion.js') }}"></script>
 
         @stack('scripts')
     </body>

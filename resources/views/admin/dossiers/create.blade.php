@@ -59,6 +59,9 @@
             </div>
 
             <!-- Stepper horizontal -->
+            <div class="text-right small pr-3 pt-2">
+                <span id="admin-draft-indicator" class="text-muted"></span>
+            </div>
             <div class="stepper-container">
                 <div class="stepper">
                     <div class="stepper-track">
@@ -224,7 +227,7 @@
                                             <div class="form-group">
                                                 <label class="form-label-modern">Téléphone <span
                                                         class="required">*</span></label>
-                                                <input type="tel" class="form-input-modern" name="demandeur_telephone"
+                                                <input type="text" class="form-input-modern" name="demandeur_telephone"
                                                     id="demandeur_telephone" value="{{ old('demandeur_telephone') }}"
                                                     required placeholder="+241 XX XX XX XX">
                                             </div>
@@ -299,7 +302,7 @@
                                                 <label class="form-label-modern">Domaine d'activité <span
                                                         class="required">*</span></label>
                                                 <select class="form-select-modern" name="org_domaine_activite_id"
-                                                    id="org_domaine_activite_id" required>
+                                                    id="org_domaine_activite_id" required data-allow-other="domaine">
                                                     <option value="">Sélectionner un domaine...</option>
                                                     @foreach($domainesActivite as $domaine)
                                                         <option value="{{ $domaine->id }}"
@@ -318,7 +321,7 @@
                                             <div class="form-group">
                                                 <label class="form-label-modern">Téléphone <span
                                                         class="required">*</span></label>
-                                                <input type="tel" class="form-input-modern" name="org_telephone"
+                                                <input type="text" class="form-input-modern" name="org_telephone"
                                                     id="org_telephone" value="{{ old('org_telephone') }}" required
                                                     placeholder="+241 XX XX XX XX">
                                             </div>
@@ -584,7 +587,7 @@
                                                     placeholder="Nom">
                                                 <input type="text" class="form-input-modern" id="fondateur_prenom"
                                                     placeholder="Prénom">
-                                                <select class="form-select-modern" id="fondateur_fonction">
+                                                <select class="form-select-modern" id="fondateur_fonction" data-allow-other="fonction">
                                                     <option value="">Fonction...</option>
                                                 </select>
                                                 <button type="button" class="btn-add" id="btnAddFondateur">
@@ -674,7 +677,7 @@
                                                         placeholder="Prénom *">
                                                 </div>
                                                 <div class="form-group">
-                                                    <select class="form-select-modern" id="membre_fonction">
+                                                    <select class="form-select-modern" id="membre_fonction" data-allow-other="fonction">
                                                         <option value="">Chargement des fonctions...</option>
                                                     </select>
                                                 </div>
@@ -1884,6 +1887,41 @@
                 justify-content: center;
             }
         }
+
+        /* Champs obligatoires non remplis - alerte visuelle */
+        .field-required-empty,
+        input.is-invalid,
+        select.is-invalid,
+        textarea.is-invalid {
+            border: 2px solid #dc3545 !important;
+            background-color: #fff5f5 !important;
+            box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.15) !important;
+            animation: shake-alert 0.4s ease;
+        }
+
+        label.field-required-empty,
+        .form-check.field-required-empty {
+            background-color: #fff5f5 !important;
+            border: 2px solid #dc3545 !important;
+            border-radius: 6px;
+            padding: 0.5rem;
+        }
+
+        @keyframes shake-alert {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+
+        /* Indicateur visuel sur les labels de champs obligatoires */
+        label:has(+ input[required])::after,
+        label:has(+ select[required])::after,
+        label:has(+ textarea[required])::after,
+        label:has(input[required])::after {
+            content: ' *';
+            color: #dc3545;
+            font-weight: bold;
+        }
     </style>
 
     <script>
@@ -1963,12 +2001,211 @@
                 });
             }
 
-            // Type organisation
+            // Type organisation — auto-avancement à l'étape 2 au clic
             document.querySelectorAll('input[name="organisation_type_id"]').forEach(function (radio) {
                 radio.addEventListener('change', function () {
                     loadTypeConfiguration(this.value);
+                    window.AdminDossierDraft.organisationTypeId = this.value;
+
+                    // Auto-avancement vers l'étape suivante (Déclarant)
+                    setTimeout(function () {
+                        if (typeof goToSection === 'function') {
+                            goToSection('collapseDeclarant');
+                        }
+                    }, 400);
                 });
             });
+
+            // Retirer le highlight d'erreur dès que l'utilisateur saisit une valeur
+            document.addEventListener('input', function (e) {
+                var t = e.target;
+                if (t && (t.classList.contains('is-invalid') || t.classList.contains('field-required-empty'))) {
+                    var val = (t.value || '').trim();
+                    if (val.length > 0 || (t.type === 'checkbox' && t.checked)) {
+                        t.classList.remove('is-invalid', 'field-required-empty');
+                    }
+                }
+            });
+            document.addEventListener('change', function (e) {
+                var t = e.target;
+                if (t && t.type === 'radio' && t.checked) {
+                    document.querySelectorAll('input[type="radio"][name="' + t.name + '"]').forEach(function (r) {
+                        r.classList.remove('is-invalid', 'field-required-empty');
+                        var lbl = r.closest('label, .form-check');
+                        if (lbl) lbl.classList.remove('field-required-empty');
+                    });
+                }
+            });
+
+            // Validation des champs obligatoires avant passage à l'étape suivante
+            window.validateCurrentStep = function (currentSection) {
+                if (!currentSection) return true;
+                var invalid = [];
+                currentSection.querySelectorAll('[required]').forEach(function (field) {
+                    if (field.disabled || field.type === 'hidden') return;
+
+                    // Ignorer les champs cachés dans un conteneur fermé
+                    var isVisible = field.offsetParent !== null;
+                    if (!isVisible) return;
+
+                    var val = (field.value || '').trim();
+                    var isCheckable = (field.type === 'checkbox' || field.type === 'radio');
+                    var ok = isCheckable ? field.checked : val.length > 0;
+
+                    if (!ok) {
+                        invalid.push(field);
+                        field.classList.add('is-invalid', 'field-required-empty');
+                    } else {
+                        field.classList.remove('is-invalid', 'field-required-empty');
+                    }
+                });
+
+                // Cas spécial : groupes de radios
+                var radioGroups = {};
+                currentSection.querySelectorAll('input[type="radio"][required]').forEach(function (r) {
+                    radioGroups[r.name] = radioGroups[r.name] || [];
+                    radioGroups[r.name].push(r);
+                });
+                Object.keys(radioGroups).forEach(function (name) {
+                    var list = radioGroups[name];
+                    var checked = list.some(function (r) { return r.checked; });
+                    if (!checked) {
+                        list.forEach(function (r) {
+                            r.classList.add('is-invalid', 'field-required-empty');
+                            var lbl = r.closest('label, .form-check');
+                            if (lbl) lbl.classList.add('field-required-empty');
+                        });
+                        if (!invalid.includes(list[0])) invalid.push(list[0]);
+                    } else {
+                        list.forEach(function (r) {
+                            r.classList.remove('is-invalid', 'field-required-empty');
+                            var lbl = r.closest('label, .form-check');
+                            if (lbl) lbl.classList.remove('field-required-empty');
+                        });
+                    }
+                });
+
+                if (invalid.length > 0) {
+                    // Scroller et focus sur le premier champ invalide
+                    invalid[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    try { invalid[0].focus(); } catch (e) {}
+
+                    // Message d'erreur
+                    var indicator = document.getElementById('admin-draft-indicator');
+                    if (indicator) {
+                        indicator.innerHTML = '<i class="fas fa-exclamation-circle text-danger mr-1"></i> ' + invalid.length + ' champ(s) obligatoire(s) manquant(s)';
+                    }
+                    return false;
+                }
+                return true;
+            };
+
+            // Intercepter les clics sur les boutons "Suivant" (goToSection) pour valider avant d'avancer
+            document.querySelectorAll('[onclick*="goToSection"]').forEach(function (btn) {
+                // Ne pas intercepter les éléments du stepper (navigation libre entre étapes déjà remplies)
+                if (btn.classList.contains('step')) return;
+
+                // Extraire la section cible
+                var onclickStr = btn.getAttribute('onclick') || '';
+                var match = onclickStr.match(/goToSection\(['"]([^'"]+)['"]\)/);
+                if (!match) return;
+                var targetSection = match[1];
+
+                // Ne pas valider si c'est un retour en arrière (Précédent)
+                var isBackButton = btn.textContent.toLowerCase().includes('précédent') || btn.classList.contains('btn-nav-prev');
+
+                btn.removeAttribute('onclick');
+                btn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    var currentSection = document.querySelector('#accordionDossier .accordion-collapse.show');
+
+                    if (!isBackButton && currentSection && !window.validateCurrentStep(currentSection)) {
+                        return false;
+                    }
+
+                    if (currentSection && !isBackButton) {
+                        window.AdminDossierDraft.saveCurrentStep(currentSection.id);
+                    }
+
+                    goToSection(targetSection);
+                });
+            });
+
+            /**
+             * Gestionnaire de sauvegarde progressive (brouillon admin)
+             */
+            window.AdminDossierDraft = {
+                dossierId: null,
+                organisationTypeId: null,
+                sectionToStep: { 'collapseDeclarant': 2, 'collapseOrganisation': 3, 'collapseLocalisation': 4, 'collapseFondateurs': 5, 'collapseMembresBureau': 6, 'collapseAdherents': 7, 'collapseDocuments': 8 },
+
+                collectData: function (sectionId) {
+                    var section = document.getElementById(sectionId);
+                    if (!section) return {};
+                    var data = {};
+                    section.querySelectorAll('input, select, textarea').forEach(function (el) {
+                        if (!el.name) return;
+                        if (el.type === 'file' || el.type === 'radio' || el.type === 'checkbox') return;
+                        if (el.name.indexOf('[') !== -1) return; // ignorer les arrays (fondateurs, etc.)
+                        data[el.name] = el.value;
+                    });
+                    // Radios cochés
+                    section.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked').forEach(function (el) {
+                        if (el.name && el.name.indexOf('[') === -1) {
+                            data[el.name] = el.value;
+                        }
+                    });
+                    return data;
+                },
+
+                saveCurrentStep: function (sectionId) {
+                    var step = this.sectionToStep[sectionId];
+                    if (!step) return; // on ne sauvegarde pas l'étape 1 (type)
+
+                    if (!this.organisationTypeId) {
+                        var r = document.querySelector('input[name="organisation_type_id"]:checked');
+                        if (r) this.organisationTypeId = r.value;
+                    }
+                    if (!this.organisationTypeId) return;
+
+                    var payload = {
+                        _token: document.querySelector('meta[name="csrf-token"]')?.content,
+                        step: step,
+                        dossier_id: this.dossierId,
+                        organisation_type_id: this.organisationTypeId,
+                        data: this.collectData(sectionId),
+                    };
+
+                    var indicator = document.getElementById('admin-draft-indicator');
+                    if (indicator) indicator.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sauvegarde...';
+
+                    fetch('{{ route("admin.dossiers.save-draft-step") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': payload._token,
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        },
+                        credentials: 'same-origin',
+                        body: JSON.stringify(payload)
+                    })
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) {
+                        if (res.success) {
+                            window.AdminDossierDraft.dossierId = res.dossier_id;
+                            if (indicator) indicator.innerHTML = '<i class="fas fa-check text-success mr-1"></i> Brouillon sauvegardé (N° ' + (res.numero_dossier || '—') + ')';
+                            setTimeout(function () { if (indicator) indicator.innerHTML = ''; }, 3000);
+                        } else {
+                            if (indicator) indicator.innerHTML = '<i class="fas fa-exclamation-triangle text-warning mr-1"></i> Erreur de sauvegarde';
+                        }
+                    })
+                    .catch(function (e) {
+                        console.warn('AdminDossierDraft erreur:', e);
+                        if (indicator) indicator.innerHTML = '<i class="fas fa-times text-danger mr-1"></i> Erreur réseau';
+                    });
+                }
+            };
 
             function loadTypeConfiguration(typeId) {
                 fetch('{{ url("admin/api/geo/organisation-types") }}/' + typeId + '/rules')

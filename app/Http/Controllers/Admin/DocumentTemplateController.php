@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
 
 /**
  * CONTROLLER - GESTION DES TEMPLATES DE DOCUMENTS
@@ -278,6 +279,307 @@ class DocumentTemplateController extends Controller
             DB::rollBack();
 
             return back()->with('error', 'Erreur lors de la suppression : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Designer WYSIWYG : publipostage - créer/configurer templates sans code
+     */
+    public function designer(DocumentTemplate $documentTemplate)
+    {
+        return view('admin.document-templates.designer', compact('documentTemplate'));
+    }
+
+    /**
+     * Sauvegarder les modifications du designer (body HTML + variables + config page)
+     */
+    public function updateDesigner(Request $request, DocumentTemplate $documentTemplate)
+    {
+        // SÉCURITÉ : l'endpoint est déjà protégé par middleware admin
+        if (!auth()->check() || auth()->user()->role !== 'admin') {
+            abort(403, 'Accès refusé.');
+        }
+
+        $validated = $request->validate([
+            'body_content' => 'nullable|string|max:500000',
+            'header_text' => 'nullable|string|max:50000',
+            'signature_text' => 'nullable|string|max:50000',
+            'variables' => 'nullable|array',
+            'variables.*.key' => 'required|string|regex:/^[a-z0-9_]+$/|max:50',
+            'variables.*.label' => 'required|string|max:255',
+            'variables.*.type' => 'required|in:text,textarea,number,date,email,url',
+            'variables.*.required' => 'nullable|boolean',
+            'variables.*.default' => 'nullable|string|max:500',
+            'page_config.format' => 'nullable|in:A4,A5,Letter,Legal',
+            'page_config.orientation' => 'nullable|in:portrait,landscape',
+            'page_config.margin_top' => 'nullable|integer|min:0|max:100',
+            'page_config.margin_right' => 'nullable|integer|min:0|max:100',
+            'page_config.margin_bottom' => 'nullable|integer|min:0|max:100',
+            'page_config.margin_left' => 'nullable|integer|min:0|max:100',
+            'has_qr_code' => 'nullable|boolean',
+            'has_watermark' => 'nullable|boolean',
+            'has_signature' => 'nullable|boolean',
+        ], [
+            'variables.*.key.regex' => 'La clé d\'une variable ne doit contenir que minuscules, chiffres et underscores.',
+        ]);
+
+        // Sanitization : retirer scripts, iframes, event handlers inline
+        $sanitize = function (?string $html): ?string {
+            if ($html === null || $html === '') return $html;
+            // Retirer balises dangereuses
+            $html = preg_replace('#<(script|iframe|object|embed|applet|meta|link|base|form)\b[^>]*>.*?</\1>#is', '', $html);
+            $html = preg_replace('#<(script|iframe|object|embed|applet|meta|link|base|form)\b[^>]*/?\s*>#is', '', $html);
+            // Retirer event handlers inline (onclick, onerror, etc.)
+            $html = preg_replace('#\s+on[a-z]+\s*=\s*"[^"]*"#i', '', $html);
+            $html = preg_replace("#\s+on[a-z]+\s*=\s*'[^']*'#i", '', $html);
+            // Retirer javascript: URIs
+            $html = preg_replace('#(href|src|action)\s*=\s*["\']\s*javascript:#i', '$1="#', $html);
+            return $html;
+        };
+
+        try {
+            $documentTemplate->body_content = $sanitize($validated['body_content'] ?? '');
+            $documentTemplate->header_text = $sanitize($validated['header_text'] ?? null);
+            $documentTemplate->signature_text = $sanitize($validated['signature_text'] ?? null);
+            $documentTemplate->variables = $validated['variables'] ?? [];
+            $documentTemplate->required_variables = collect($validated['variables'] ?? [])
+                ->filter(fn($v) => !empty($v['required']))
+                ->pluck('key')
+                ->values()
+                ->toArray();
+            $documentTemplate->page_config = $validated['page_config'] ?? null;
+            $documentTemplate->has_qr_code = $request->boolean('has_qr_code');
+            $documentTemplate->has_watermark = $request->boolean('has_watermark');
+            $documentTemplate->has_signature = $request->boolean('has_signature');
+            $documentTemplate->use_designer = true;
+            $documentTemplate->template_path = 'documents.templates.universal';
+            $documentTemplate->save();
+
+            Log::info('Designer template updated', [
+                'template_id' => $documentTemplate->id,
+                'user_id' => auth()->id(), 'ip' => request()->ip(), 'ua' => substr(request()->userAgent() ?? '', 0, 200),
+            ]);
+
+            return redirect()
+                ->route('admin.document-templates.designer', $documentTemplate->id)
+                ->with('success', 'Template enregistré avec succès.');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur sauvegarde designer: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Erreur lors de la sauvegarde : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Prévisualiser le template designer avec des valeurs de test (AJAX HTML)
+     */
+    public function previewDesigner(Request $request, DocumentTemplate $documentTemplate)
+    {
+        $data = $request->input('data', []);
+
+        // Compléter avec des valeurs par défaut pour les variables non fournies
+        $variables = $documentTemplate->variables ?? [];
+        foreach ($variables as $var) {
+            $key = is_array($var) ? ($var['key'] ?? null) : null;
+            if ($key && !array_key_exists($key, $data)) {
+                $data[$key] = is_array($var) ? ($var['default'] ?? '...') : '...';
+            }
+        }
+
+        try {
+            $html = view('documents.templates.universal', [
+                'documentTemplate' => $documentTemplate,
+                'data' => $data,
+                'qr_code_url' => null,
+            ])->render();
+
+            return response()->json(['success' => true, 'html' => $html]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Convertir un template_path (ex: "documents.templates.association.recepisse")
+     * en chemin absolu vers le fichier .blade.php
+     *
+     * SÉCURITÉ : protection contre le path traversal.
+     * - Le template_path ne doit contenir que [A-Za-z0-9_.] (pas de / ni ..)
+     * - Le chemin résolu DOIT rester dans resource_path('views/documents/')
+     */
+    private function resolveTemplateAbsolutePath(string $templatePath): string
+    {
+        // Validation stricte du format
+        if (!preg_match('/^[A-Za-z0-9_.]+$/', $templatePath)) {
+            abort(400, 'Chemin de template invalide (caractères interdits).');
+        }
+
+        // Interdire les séquences suspectes
+        if (strpos($templatePath, '..') !== false || strpos($templatePath, '//') !== false) {
+            abort(400, 'Chemin de template invalide (séquences interdites).');
+        }
+
+        $relative = str_replace('.', '/', $templatePath) . '.blade.php';
+        $absolute = resource_path('views/' . $relative);
+
+        // Vérifier que le chemin final est bien dans le dossier documents autorisé
+        $allowedBase = realpath(resource_path('views/documents'));
+        $resolvedBase = dirname($absolute);
+        // realpath peut renvoyer false si le dossier n'existe pas encore
+        $resolvedReal = $resolvedBase && is_dir($resolvedBase) ? realpath($resolvedBase) : $resolvedBase;
+
+        if ($allowedBase === false || $resolvedReal === false ||
+            strpos($resolvedReal, $allowedBase) !== 0) {
+            abort(403, 'Accès au chemin non autorisé.');
+        }
+
+        return $absolute;
+    }
+
+    /**
+     * Afficher l'éditeur de code source du template
+     */
+    public function editSource(DocumentTemplate $documentTemplate)
+    {
+        $absolutePath = $this->resolveTemplateAbsolutePath($documentTemplate->template_path);
+        $exists = File::exists($absolutePath);
+        $content = $exists ? File::get($absolutePath) : '';
+
+        return view('admin.document-templates.edit-source', compact(
+            'documentTemplate',
+            'content',
+            'absolutePath',
+            'exists'
+        ));
+    }
+
+    /**
+     * Sauvegarder le code source modifié du template
+     */
+    public function updateSource(Request $request, DocumentTemplate $documentTemplate)
+    {
+        // SÉCURITÉ : seuls les super-admins peuvent éditer le code source (privilège élevé)
+        if (!auth()->user() || auth()->user()->role !== 'admin') {
+            abort(403, 'Seuls les administrateurs peuvent modifier le code source des templates.');
+        }
+
+        $request->validate([
+            'content' => 'required|string|max:500000',
+        ], [
+            'content.required' => 'Le contenu du template est obligatoire.',
+            'content.max' => 'Le contenu du template ne peut pas dépasser 500 Ko.',
+        ]);
+
+        $absolutePath = $this->resolveTemplateAbsolutePath($documentTemplate->template_path);
+        $directory = dirname($absolutePath);
+
+        try {
+            if (!File::isDirectory($directory)) {
+                File::makeDirectory($directory, 0755, true);
+            }
+
+            // Sauvegarde de l'ancienne version (backup)
+            if (File::exists($absolutePath)) {
+                $backupPath = $absolutePath . '.bak.' . date('YmdHis');
+                File::copy($absolutePath, $backupPath);
+            }
+
+            File::put($absolutePath, $request->input('content'));
+
+            // Invalider le cache des vues Blade compilées
+            if (function_exists('view') && method_exists(app('view'), 'flushFinderCache')) {
+                app('view')->flushFinderCache();
+            }
+
+            Log::info('Template source updated', [
+                'template_id' => $documentTemplate->id,
+                'path' => $absolutePath,
+                'user_id' => auth()->id(), 'ip' => request()->ip(), 'ua' => substr(request()->userAgent() ?? '', 0, 200),
+            ]);
+
+            return redirect()
+                ->route('admin.document-templates.edit-source', $documentTemplate->id)
+                ->with('success', 'Code source du template mis à jour avec succès. Une sauvegarde de l\'ancienne version a été créée.');
+
+        } catch (\Exception $e) {
+            Log::error('Erreur sauvegarde template source: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Erreur lors de la sauvegarde : ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Dupliquer un template (création d'un nouveau template basé sur un existant)
+     */
+    public function duplicate(Request $request, DocumentTemplate $documentTemplate)
+    {
+        $request->validate([
+            'code' => 'required|string|max:100|regex:/^[A-Z0-9_]+$/|unique:document_templates,code',
+            'nom' => 'required|string|max:255',
+            'copy_file' => 'nullable|boolean',
+            'new_template_path' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z0-9_.]+$/'],
+        ], [
+            'code.unique' => 'Ce code est déjà utilisé.',
+            'code.regex' => 'Le code ne doit contenir que des majuscules, chiffres et underscores.',
+            'new_template_path.regex' => 'Le chemin de template ne peut contenir que lettres, chiffres, tiret bas et points.',
+        ]);
+
+        // SÉCURITÉ : réservé aux administrateurs (privilège élevé)
+        if (!auth()->user() || auth()->user()->role !== 'admin') {
+            abort(403, 'Seuls les administrateurs peuvent dupliquer un template.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $copy = $documentTemplate->replicate();
+            $copy->code = $request->input('code');
+            $copy->nom = $request->input('nom');
+            $copy->is_active = false; // Désactivé par défaut pour révision
+
+            // Dupliquer le fichier source si demandé
+            $copyFile = $request->boolean('copy_file', true);
+            $newTemplatePath = $request->input('new_template_path');
+
+            if ($copyFile) {
+                if (!$newTemplatePath) {
+                    // Générer un chemin basé sur le code (en minuscules)
+                    $originalParts = explode('.', $documentTemplate->template_path);
+                    $fileName = Str::slug($request->input('code'), '_');
+                    $originalParts[count($originalParts) - 1] = $fileName;
+                    $newTemplatePath = implode('.', $originalParts);
+                }
+
+                $sourcePath = $this->resolveTemplateAbsolutePath($documentTemplate->template_path);
+                $destPath = $this->resolveTemplateAbsolutePath($newTemplatePath);
+
+                if (File::exists($sourcePath)) {
+                    $destDir = dirname($destPath);
+                    if (!File::isDirectory($destDir)) {
+                        File::makeDirectory($destDir, 0755, true);
+                    }
+                    File::copy($sourcePath, $destPath);
+                }
+
+                $copy->template_path = $newTemplatePath;
+            }
+
+            $copy->save();
+
+            DB::commit();
+
+            Log::info('Template duplicated', [
+                'original_id' => $documentTemplate->id,
+                'new_id' => $copy->id,
+                'user_id' => auth()->id(), 'ip' => request()->ip(), 'ua' => substr(request()->userAgent() ?? '', 0, 200),
+            ]);
+
+            return redirect()
+                ->route('admin.document-templates.edit', $copy->id)
+                ->with('success', 'Template dupliqué avec succès. Vous pouvez maintenant le modifier.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Erreur duplication template: ' . $e->getMessage());
+            return back()->with('error', 'Erreur lors de la duplication : ' . $e->getMessage());
         }
     }
 

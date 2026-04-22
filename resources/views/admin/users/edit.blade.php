@@ -173,7 +173,7 @@
                                         <i class="fas fa-phone text-info me-2"></i>
                                         Téléphone
                                     </label>
-                                    <input type="tel" id="phone" name="phone" class="form-control form-control-lg" 
+                                    <input type="text" id="phone" name="phone" class="form-control form-control-lg" 
                                            value="{{ old('phone', $user->phone) }}" 
                                            placeholder="+241 01 23 45 67">
                                     <div class="form-text">Numéro de téléphone (optionnel)</div>

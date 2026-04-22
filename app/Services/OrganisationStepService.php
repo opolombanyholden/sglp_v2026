@@ -43,7 +43,7 @@ class OrganisationStepService
                 'demandeur_nom' => 'required|string|max:255',
                 'demandeur_prenom' => 'required|string|max:255',
                 'demandeur_email' => 'required|email|max:255',
-                'demandeur_telephone' => 'required|string|max:20',
+                'demandeur_telephone' => 'required|string|max:255',
                 'demandeur_role' => 'required|string'
             ],
             'can_generate_accuse' => true,

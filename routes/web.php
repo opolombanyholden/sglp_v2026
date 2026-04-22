@@ -360,6 +360,14 @@ Route::middleware(['auth', 'verified', 'operator'])->prefix('operator')->name('o
 | Route CSRF token (protégée par authentification)
 |--------------------------------------------------------------------------
 */
+// Routes de suggestions (usagers authentifiés)
+Route::middleware(['auth'])->group(function () {
+    Route::post('/suggestions/fonction', [\App\Http\Controllers\SuggestionController::class, 'suggestFonction'])
+        ->middleware('throttle:20,1')->name('suggestions.fonction');
+    Route::post('/suggestions/domaine', [\App\Http\Controllers\SuggestionController::class, 'suggestDomaine'])
+        ->middleware('throttle:20,1')->name('suggestions.domaine');
+});
+
 Route::middleware(['web', 'auth'])->get('/csrf-token', function () {
     return response()->json([
         'token' => csrf_token(),

@@ -222,6 +222,14 @@
     <body>
         {{-- Background image is added by PdfTemplateHelper --}}
 
+        {{-- Logo Ministère fixe en haut à droite --}}
+        @php $logoMinistere = public_path('images/logo-ministere.png'); @endphp
+        @if(file_exists($logoMinistere))
+            <div style="position: absolute; top: 10mm; right: 10mm; width: 25mm;">
+                <img src="{{ $logoMinistere }}" alt="Logo Ministère" style="width: 100%; height: auto;">
+            </div>
+        @endif
+
         {{-- En-tête --}}
         @include('documents.components.header')
 

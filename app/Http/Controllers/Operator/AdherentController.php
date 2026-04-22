@@ -95,7 +95,7 @@ class AdherentController extends Controller
         
         // === VALIDATION DE BASE (NON-BLOQUANTE POUR NIP) ===
         $validated = $request->validate([
-            'nip' => 'nullable|string|max:20', // ✅ NIP non obligatoire
+            'string|max:255', // ✅ NIP non obligatoire
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100', 
             'date_naissance' => 'nullable|date|before:today', // ✅ Non obligatoire
@@ -106,7 +106,7 @@ class AdherentController extends Controller
             'adresse_complete' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:100',
             'departement' => 'nullable|string|max:100',
-            'telephone' => 'nullable|string|max:20',
+            'telephone' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'fonction' => 'required|string|max:100',
             'motif_adhesion' => 'nullable|string|max:500',
@@ -613,7 +613,7 @@ class AdherentController extends Controller
         }
 
         $validated = $request->validate([
-            'nip' => 'nullable|string|max:20',
+            'string|max:255',
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
             'date_naissance' => 'nullable|date|before:today',
@@ -624,7 +624,7 @@ class AdherentController extends Controller
             'adresse_complete' => 'nullable|string|max:255',
             'province' => 'nullable|string|max:100',
             'departement' => 'nullable|string|max:100',
-            'telephone' => 'nullable|string|max:20',
+            'telephone' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'fonction' => 'required|string|max:100',
             'piece_identite' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
@@ -899,7 +899,7 @@ class AdherentController extends Controller
         }
         
         $validated = $request->validate([
-            'nip' => 'required|string|max:20',
+            'string|max:255',
             'nom' => 'required|string|max:100',
             'prenom' => 'required|string|max:100',
             'date_naissance' => 'required|date|before:today',
@@ -908,7 +908,7 @@ class AdherentController extends Controller
             'nationalite' => 'required|string|max:100',
             'profession' => 'required|string|max:255',
             'adresse_complete' => 'required|string|max:255',
-            'telephone' => 'required|string|max:20',
+            'telephone' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'fonction' => 'required|string|max:100',
             'piece_identite' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120'

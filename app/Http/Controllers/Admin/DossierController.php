@@ -257,6 +257,106 @@ class DossierController extends Controller
             return back()->with('error', 'Erreur lors du chargement du formulaire.');
         }
     }
+
+    /**
+     * Sauvegarde progressive par étape (AJAX) — côté admin.
+     * Crée/met à jour un brouillon de dossier à chaque étape (à partir de l'étape 2).
+     */
+    public function saveDraftStep(\Illuminate\Http\Request $request)
+    {
+        // SÉCURITÉ : l'endpoint est déjà protégé par middleware admin, mais on verrouille explicitement
+        if (!auth()->check() || !in_array(auth()->user()->role, ['admin', 'agent'])) {
+            abort(403, 'Accès refusé.');
+        }
+
+        $request->validate([
+            'step' => 'required|integer|min:2|max:8',
+            'dossier_id' => 'nullable|integer|exists:dossiers,id',
+            'organisation_type_id' => 'required|integer|exists:organisation_types,id',
+            'data' => 'nullable|array',
+            'data.*' => 'nullable|string|max:5000',
+        ]);
+
+        \DB::beginTransaction();
+        try {
+            $data = $request->input('data', []);
+            $dossier = null;
+            $organisation = null;
+
+            if ($request->filled('dossier_id')) {
+                $dossier = Dossier::with('organisation')->find($request->dossier_id);
+                if ($dossier) {
+                    $organisation = $dossier->organisation;
+                }
+            }
+
+            if (!$organisation) {
+                $organisation = Organisation::create([
+                    'user_id' => auth()->id(),
+                    'organisation_type_id' => $request->organisation_type_id,
+                    'type' => optional(OrganisationType::find($request->organisation_type_id))->code ?? 'association',
+                    'nom' => $data['nom_organisation'] ?? ('Brouillon admin #' . now()->timestamp),
+                    'statut' => 'brouillon',
+                    'is_active' => false,
+                ]);
+            }
+
+            // Mise à jour incrémentale de l'organisation selon les champs fournis
+            $orgFields = [
+                'nom', 'sigle', 'objet', 'siege_social', 'province', 'departement', 'prefecture',
+                'email', 'telephone', 'telephone_secondaire', 'site_web', 'date_creation',
+                'domaine_activite_id', 'zone_type', 'latitude', 'longitude',
+            ];
+            $orgData = array_intersect_key($data, array_flip($orgFields));
+            if (!empty($data['nom_organisation'])) $orgData['nom'] = $data['nom_organisation'];
+            if (!empty($orgData)) {
+                $organisation->fill($orgData)->save();
+            }
+
+            if (!$dossier) {
+                $dossier = Dossier::create([
+                    'organisation_id' => $organisation->id,
+                    'type_operation' => 'creation',
+                    'statut' => 'brouillon',
+                    'current_step_id' => null,
+                    'is_active' => true,
+                    'donnees_supplementaires' => [
+                        'admin_draft' => true,
+                        'step' => $request->step,
+                        'data' => $data,
+                    ],
+                ]);
+            } else {
+                $existing = $dossier->donnees_supplementaires ?? [];
+                if (!is_array($existing)) $existing = [];
+                $existing['admin_draft'] = true;
+                $existing['step'] = max($existing['step'] ?? 0, $request->step);
+                $existing['data'] = array_merge($existing['data'] ?? [], $data);
+                $dossier->donnees_supplementaires = $existing;
+                $dossier->save();
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'dossier_id' => $dossier->id,
+                'organisation_id' => $organisation->id,
+                'numero_dossier' => $dossier->numero_dossier,
+                'step' => $request->step,
+                'message' => 'Étape ' . $request->step . ' enregistrée en brouillon.',
+            ]);
+
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Erreur saveDraftStep admin: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Erreur lors de la sauvegarde : ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
     /**
      * ========================================
      * EDIT - Formulaire de modification de dossier (Admin)
@@ -372,10 +472,10 @@ class DossierController extends Controller
             // Validation des données
             $validated = $request->validate([
                 // Déclarant
-                'demandeur_nip' => 'required|string|max:20',
+                'string|max:255',
                 'demandeur_nom' => 'required|string|max:100',
                 'demandeur_prenom' => 'required|string|max:100',
-                'demandeur_telephone' => 'required|string|max:20',
+                'demandeur_telephone' => 'required|string|max:255',
                 'demandeur_email' => 'nullable|email|max:255',
                 'demandeur_civilite' => 'nullable|string|max:10',
 
@@ -385,7 +485,7 @@ class DossierController extends Controller
                 'org_objet' => 'required|string',
                 'org_domaine_activite_id' => 'nullable|exists:domaines_activite,id',
                 'org_date_creation' => 'nullable|date',
-                'org_telephone' => 'required|string|max:20',
+                'org_telephone' => 'required|string|max:255',
                 'org_email' => 'nullable|email|max:255',
 
                 // Localisation
@@ -575,20 +675,20 @@ class DossierController extends Controller
                 'organisation_type_id' => 'required|exists:organisation_types,id',
 
                 // Déclarant
-                'demandeur_nip' => 'required|string|max:20',
+                'string|max:255',
                 'demandeur_nom' => 'required|string|max:100',
                 'demandeur_prenom' => 'required|string|max:100',
                 'demandeur_email' => 'nullable|email|max:255',
-                'demandeur_telephone' => 'required|string|max:20',
+                'demandeur_telephone' => 'required|string|max:255',
                 'demandeur_role' => 'nullable|string|max:100',
 
                 // Organisation
                 'org_nom' => 'required|string|max:255',
-                'org_sigle' => 'nullable|string|max:20',
+                'string|max:255',
                 'org_objet' => 'required|string',
                 'org_domaine_activite_id' => 'required|exists:domaines_activite,id',
                 'org_date_creation' => 'required|date',
-                'org_telephone' => 'required|string|max:20',
+                'org_telephone' => 'required|string|max:255',
                 'org_email' => 'nullable|email|max:255',
                 'org_site_web' => 'nullable|url|max:255',
 
@@ -604,20 +704,20 @@ class DossierController extends Controller
 
                 // Fondateurs
                 'fondateurs' => 'required|array|min:1',
-                'fondateurs.*.nip' => 'required|string|max:20',
+                'string|max:255',
                 'fondateurs.*.civilite' => 'required|in:M,Mme,Mlle',
                 'fondateurs.*.nom' => 'required|string|max:100',
                 'fondateurs.*.prenom' => 'required|string|max:100',
                 'fondateurs.*.fonction' => 'required|string|max:100',
-                'fondateurs.*.telephone' => 'nullable|string|max:20',
+                'fondateurs.*.telephone' => 'nullable|string|max:255',
                 'fondateurs.*.email' => 'nullable|email|max:255',
 
                 // Adhérents (optionnels selon config)
                 'adherents' => 'nullable|array',
-                'adherents.*.nip' => 'required_with:adherents|string|max:20',
+                'string|max:255',
                 'adherents.*.nom' => 'required_with:adherents|string|max:100',
                 'adherents.*.prenom' => 'required_with:adherents|string|max:100',
-                'adherents.*.telephone' => 'nullable|string|max:20',
+                'adherents.*.telephone' => 'nullable|string|max:255',
                 'adherents.*.profession' => 'nullable|string|max:100',
 
                 // Documents
@@ -1304,7 +1404,7 @@ class DossierController extends Controller
                 'numero_recepisse_final' => 'required|string|max:100',
                 'date_approbation' => 'required|date',
                 'validite_mois' => 'nullable|integer|min:1|max:120',
-                'commentaire_approbation' => 'nullable|string|max:2000',
+                'string|max:25500',
                 'generer_recepisse' => 'nullable',
                 'envoyer_email_approbation' => 'nullable',
                 'publier_annuaire' => 'nullable'
@@ -2221,7 +2321,7 @@ class DossierController extends Controller
                 'numero_recepisse_final' => 'required|string|max:100|unique:organisations,numero_recepisse,' . $id,
                 'date_approbation' => 'required|date',
                 'validite_mois' => 'nullable|integer|min:1|max:120',
-                'commentaire_approbation' => 'nullable|string|max:2000',
+                'string|max:25500',
                 'generer_recepisse' => 'boolean',
                 'envoyer_email_approbation' => 'boolean',
                 'publier_annuaire' => 'boolean'
@@ -2362,7 +2462,7 @@ class DossierController extends Controller
         try {
             $request->validate([
                 'motif_rejet' => 'required|string|max:100',
-                'justification_rejet' => 'required|string|max:2000',
+                'string|max:25500',
                 'recommandations' => 'nullable|string|max:1000',
                 'possibilite_recours' => 'required|in:oui,oui_avec_delai,non',
                 'delai_recours' => 'nullable|integer|min:0|max:365',
@@ -2510,7 +2610,7 @@ class DossierController extends Controller
             $request->validate([
                 'modifications' => 'required|array|min:1',
                 'modifications.*' => 'string|max:100',
-                'details_modifications' => 'required|string|max:2000',
+                'string|max:25500',
                 'delai_modification' => 'required|integer|min:1|max:365',
                 'priorite_modification' => 'required|in:normale,haute,basse',
                 'envoyer_email_modification' => 'boolean',
@@ -3538,7 +3638,7 @@ class DossierController extends Controller
                 'lieu_dit' => 'nullable|string|max:255',
 
                 // Contact
-                'telephone' => 'required|string|max:20',
+                'telephone' => 'required|string|max:255',
                 'email' => 'nullable|email|max:255',
 
                 // ✅ Fondateurs (validation dynamique)
@@ -3547,7 +3647,7 @@ class DossierController extends Controller
                 'fondateurs.*.nom' => 'required|string|max:255',
                 'fondateurs.*.prenom' => 'required|string|max:255',
                 'fondateurs.*.fonction' => 'required|string|max:255',
-                'fondateurs.*.telephone' => 'nullable|string|max:20',
+                'fondateurs.*.telephone' => 'nullable|string|max:255',
                 'fondateurs.*.email' => 'nullable|email|max:255',
             ], [
                 'province_ref_id.required' => 'La province est obligatoire',

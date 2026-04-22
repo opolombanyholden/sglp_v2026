@@ -149,60 +149,121 @@
                                     <small class="form-text text-muted">Actuel : {{ $organisation->siege_social }}</small>
                                 @endif
                             </div>
+
                             <div class="col-md-4">
-                                <label for="province" class="form-label">Province</label>
-                                <input type="text" class="form-control" id="province" name="modifications[province]"
-                                    value="{{ old('modifications.province', $organisation->province) }}">
+                                <label for="zone_type" class="form-label">Type de zone</label>
+                                <select class="form-select" id="zone_type" name="modifications[zone_type]">
+                                    <option value="">Sélectionnez...</option>
+                                    <option value="urbaine" {{ old('modifications.zone_type', $organisation->zone_type) == 'urbaine' ? 'selected' : '' }}>Urbaine</option>
+                                    <option value="rurale" {{ old('modifications.zone_type', $organisation->zone_type) == 'rurale' ? 'selected' : '' }}>Rurale</option>
+                                </select>
                             </div>
+
                             <div class="col-md-4">
-                                <label for="departement" class="form-label">Département</label>
-                                <input type="text" class="form-control" id="departement" name="modifications[departement]"
-                                    value="{{ old('modifications.departement', $organisation->departement) }}">
+                                <label for="province_id" class="form-label">Province</label>
+                                <select class="form-select" id="province_id" name="modifications[province_ref_id]" data-current-text="{{ $organisation->province }}">
+                                    <option value="">Sélectionnez une province</option>
+                                    @foreach($provinces ?? [] as $prov)
+                                        <option value="{{ $prov->id }}"
+                                            {{ old('modifications.province_ref_id', $organisation->province_ref_id) == $prov->id ? 'selected' : '' }}>
+                                            {{ $prov->nom }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @if($organisation->province)
+                                    <small class="form-text text-muted">Actuelle : {{ $organisation->province }}</small>
+                                @endif
                             </div>
+
                             <div class="col-md-4">
-                                <label for="ville_commune" class="form-label">Ville / Commune</label>
-                                <input type="text" class="form-control" id="ville_commune"
-                                    name="modifications[ville_commune]"
-                                    value="{{ old('modifications.ville_commune', $organisation->ville_commune) }}">
+                                <label for="departement_id" class="form-label">Département</label>
+                                <select class="form-select" id="departement_id" name="modifications[departement_ref_id]"
+                                    data-current-id="{{ $organisation->departement_ref_id }}"
+                                    data-current-text="{{ $organisation->departement }}" disabled>
+                                    <option value="">Sélectionnez d'abord une province</option>
+                                </select>
+                                @if($organisation->departement)
+                                    <small class="form-text text-muted">Actuel : {{ $organisation->departement }}</small>
+                                @endif
                             </div>
-                            <div class="col-md-4">
-                                <label for="arrondissement" class="form-label">Arrondissement</label>
-                                <input type="text" class="form-control" id="arrondissement"
-                                    name="modifications[arrondissement]"
-                                    value="{{ old('modifications.arrondissement', $organisation->arrondissement) }}">
+
+                            {{-- Zone URBAINE --}}
+                            <div class="col-md-4 zone-urbaine-field" style="display:none;">
+                                <label for="commune_id" class="form-label">Commune / Ville</label>
+                                <select class="form-select" id="commune_id" name="modifications[commune_ville_ref_id]"
+                                    data-current-id="{{ $organisation->commune_ville_ref_id }}"
+                                    data-current-text="{{ $organisation->ville_commune }}" disabled>
+                                    <option value="">Sélectionnez d'abord un département</option>
+                                </select>
+                                @if($organisation->ville_commune)
+                                    <small class="form-text text-muted">Actuelle : {{ $organisation->ville_commune }}</small>
+                                @endif
                             </div>
-                            <div class="col-md-4">
-                                <label for="quartier" class="form-label">Quartier</label>
-                                <input type="text" class="form-control" id="quartier" name="modifications[quartier]"
-                                    value="{{ old('modifications.quartier', $organisation->quartier) }}">
+
+                            <div class="col-md-4 zone-urbaine-field" style="display:none;">
+                                <label for="arrondissement_id" class="form-label">Arrondissement</label>
+                                <select class="form-select" id="arrondissement_id" name="modifications[arrondissement_ref_id]"
+                                    data-current-id="{{ $organisation->arrondissement_ref_id }}"
+                                    data-current-text="{{ $organisation->arrondissement }}" disabled>
+                                    <option value="">Sélectionnez d'abord une commune</option>
+                                </select>
+                                @if($organisation->arrondissement)
+                                    <small class="form-text text-muted">Actuel : {{ $organisation->arrondissement }}</small>
+                                @endif
                             </div>
-                            <div class="col-md-4">
-                                <label for="village" class="form-label">Village / Lieu-dit</label>
-                                <input type="text" class="form-control" id="village" name="modifications[village]"
-                                    value="{{ old('modifications.village', $organisation->village) }}">
+
+                            <div class="col-md-4 zone-urbaine-field" style="display:none;">
+                                <label for="quartier_id" class="form-label">Quartier</label>
+                                <select class="form-select" id="quartier_id" name="modifications[quartier]"
+                                    data-current-text="{{ $organisation->quartier }}" disabled>
+                                    <option value="">Sélectionnez d'abord un arrondissement</option>
+                                </select>
+                                @if($organisation->quartier)
+                                    <small class="form-text text-muted">Actuel : {{ $organisation->quartier }}</small>
+                                @endif
                             </div>
-                            <div class="col-md-4">
-                                <label for="canton" class="form-label">Canton</label>
-                                <input type="text" class="form-control" id="canton" name="modifications[canton]"
-                                    value="{{ old('modifications.canton', $organisation->canton) }}">
+
+                            {{-- Zone RURALE --}}
+                            <div class="col-md-4 zone-rurale-field" style="display:none;">
+                                <label for="canton_id" class="form-label">Canton</label>
+                                <select class="form-select" id="canton_id" name="modifications[canton_ref_id]"
+                                    data-current-id="{{ $organisation->canton_ref_id }}"
+                                    data-current-text="{{ $organisation->canton }}" disabled>
+                                    <option value="">Sélectionnez d'abord un département</option>
+                                </select>
+                                @if($organisation->canton)
+                                    <small class="form-text text-muted">Actuel : {{ $organisation->canton }}</small>
+                                @endif
                             </div>
+
+                            <div class="col-md-4 zone-rurale-field" style="display:none;">
+                                <label for="regroupement_id" class="form-label">Regroupement</label>
+                                <select class="form-select" id="regroupement_id" name="modifications[regroupement_ref_id]"
+                                    data-current-id="{{ $organisation->regroupement_ref_id }}"
+                                    data-current-text="{{ $organisation->regroupement }}" disabled>
+                                    <option value="">Sélectionnez d'abord un canton</option>
+                                </select>
+                                @if($organisation->regroupement)
+                                    <small class="form-text text-muted">Actuel : {{ $organisation->regroupement }}</small>
+                                @endif
+                            </div>
+
+                            <div class="col-md-4 zone-rurale-field" style="display:none;">
+                                <label for="village_id" class="form-label">Village / Lieu-dit</label>
+                                <select class="form-select" id="village_id" name="modifications[village]"
+                                    data-current-text="{{ $organisation->village }}" disabled>
+                                    <option value="">Sélectionnez d'abord un regroupement</option>
+                                </select>
+                                @if($organisation->village)
+                                    <small class="form-text text-muted">Actuel : {{ $organisation->village }}</small>
+                                @endif
+                            </div>
+
                             <div class="col-md-4">
                                 <label for="sous_prefecture" class="form-label">Sous-préfecture</label>
                                 <input type="text" class="form-control" id="sous_prefecture"
                                     name="modifications[sous_prefecture]"
                                     value="{{ old('modifications.sous_prefecture', $organisation->sous_prefecture) }}">
-                            </div>
-                            <div class="col-md-4">
-                                <label for="zone_type" class="form-label">Type de zone</label>
-                                <select class="form-select" id="zone_type" name="modifications[zone_type]">
-                                    <option value="">Sélectionnez...</option>
-                                    <option value="urbaine"
-                                        {{ old('modifications.zone_type', $organisation->zone_type) == 'urbaine' ? 'selected' : '' }}>
-                                        Urbaine</option>
-                                    <option value="rurale"
-                                        {{ old('modifications.zone_type', $organisation->zone_type) == 'rurale' ? 'selected' : '' }}>
-                                        Rurale</option>
-                                </select>
                             </div>
                         </div>
                     </div>
@@ -225,7 +286,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="telephone" class="form-label">Téléphone principal</label>
-                                <input type="tel" class="form-control" id="telephone" name="modifications[telephone]"
+                                <input type="text" class="form-control" id="telephone" name="modifications[telephone]"
                                     value="{{ old('modifications.telephone', $organisation->telephone) }}">
                                 @if($organisation->telephone)
                                     <small class="form-text text-muted">Actuel : {{ $organisation->telephone }}</small>
@@ -233,7 +294,7 @@
                             </div>
                             <div class="col-md-6">
                                 <label for="telephone_secondaire" class="form-label">Téléphone secondaire</label>
-                                <input type="tel" class="form-control" id="telephone_secondaire"
+                                <input type="text" class="form-control" id="telephone_secondaire"
                                     name="modifications[telephone_secondaire]"
                                     value="{{ old('modifications.telephone_secondaire', $organisation->telephone_secondaire) }}">
                             </div>
@@ -469,7 +530,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Téléphone</label>
-                                        <input type="tel" class="form-control form-control-sm"
+                                        <input type="text" class="form-control form-control-sm"
                                             name="bureau_membres[0][telephone]" placeholder="+241...">
                                     </div>
                                     <div class="col-md-6">
@@ -832,7 +893,7 @@
                                     </div>
                                     <div class="col-md-6">
                                         <label class="form-label">Téléphone</label>
-                                        <input type="tel" class="form-control form-control-sm" 
+                                        <input type="text" class="form-control form-control-sm" 
                                                name="bureau_membres[${bureauMemberIndex}][telephone]" placeholder="+241...">
                                     </div>
                                     <div class="col-md-6">
@@ -884,5 +945,159 @@
                 updateBureauRemoveButtons();
             }
         });
+    </script>
+
+    {{-- Cascades géolocalisation --}}
+    <script>
+        (function () {
+            var provinceSel = document.getElementById('province_id');
+            var departementSel = document.getElementById('departement_id');
+            var communeSel = document.getElementById('commune_id');
+            var arrondissementSel = document.getElementById('arrondissement_id');
+            var quartierSel = document.getElementById('quartier_id');
+            var cantonSel = document.getElementById('canton_id');
+            var regroupementSel = document.getElementById('regroupement_id');
+            var villageSel = document.getElementById('village_id');
+            var zoneTypeSel = document.getElementById('zone_type');
+
+            if (!provinceSel) return;
+
+            function toggleZoneFields() {
+                var zone = zoneTypeSel ? zoneTypeSel.value : '';
+                document.querySelectorAll('.zone-urbaine-field').forEach(function (el) {
+                    el.style.display = (zone === 'urbaine') ? '' : 'none';
+                });
+                document.querySelectorAll('.zone-rurale-field').forEach(function (el) {
+                    el.style.display = (zone === 'rurale') ? '' : 'none';
+                });
+            }
+
+            function fetchAndFill(select, url, currentId, currentText) {
+                if (!select) return Promise.resolve();
+                select.innerHTML = '<option value="">Chargement...</option>';
+                select.disabled = true;
+                return fetch(url, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                    .then(function (r) { return r.json(); })
+                    .then(function (res) {
+                        var items = res.data || res.items || res || [];
+                        select.innerHTML = '<option value="">Sélectionnez...</option>';
+                        items.forEach(function (item) {
+                            var opt = document.createElement('option');
+                            opt.value = item.id;
+                            opt.textContent = item.nom || item.name || item.libelle || '';
+                            if (currentId && String(currentId) === String(item.id)) opt.selected = true;
+                            else if (!currentId && currentText && opt.textContent.toLowerCase() === String(currentText).toLowerCase()) opt.selected = true;
+                            select.appendChild(opt);
+                        });
+                        select.disabled = false;
+                    })
+                    .catch(function () {
+                        select.innerHTML = '<option value="">Erreur de chargement</option>';
+                        select.disabled = false;
+                    });
+            }
+
+            if (provinceSel) {
+                provinceSel.addEventListener('change', function () {
+                    [departementSel, communeSel, arrondissementSel, quartierSel, cantonSel, regroupementSel, villageSel].forEach(function (s) {
+                        if (s) { s.innerHTML = '<option value="">--</option>'; s.disabled = true; }
+                    });
+                    if (this.value) {
+                        fetchAndFill(departementSel, '/admin/api/geo/departements/' + this.value,
+                            departementSel.dataset.currentId, departementSel.dataset.currentText);
+                    }
+                });
+            }
+
+            if (departementSel) {
+                departementSel.addEventListener('change', function () {
+                    [communeSel, arrondissementSel, quartierSel, cantonSel, regroupementSel, villageSel].forEach(function (s) {
+                        if (s) { s.innerHTML = '<option value="">--</option>'; s.disabled = true; }
+                    });
+                    if (this.value) {
+                        if (communeSel) fetchAndFill(communeSel, '/admin/api/geo/communes/' + this.value,
+                            communeSel.dataset.currentId, communeSel.dataset.currentText);
+                        if (cantonSel) fetchAndFill(cantonSel, '/admin/api/geo/cantons/' + this.value,
+                            cantonSel.dataset.currentId, cantonSel.dataset.currentText);
+                    }
+                });
+            }
+
+            if (communeSel) {
+                communeSel.addEventListener('change', function () {
+                    [arrondissementSel, quartierSel].forEach(function (s) {
+                        if (s) { s.innerHTML = '<option value="">--</option>'; s.disabled = true; }
+                    });
+                    if (this.value && arrondissementSel) {
+                        fetchAndFill(arrondissementSel, '/admin/api/geo/arrondissements/' + this.value,
+                            arrondissementSel.dataset.currentId, arrondissementSel.dataset.currentText);
+                    }
+                });
+            }
+
+            if (arrondissementSel) {
+                arrondissementSel.addEventListener('change', function () {
+                    if (quartierSel) { quartierSel.innerHTML = '<option value="">--</option>'; quartierSel.disabled = true; }
+                    if (this.value && quartierSel) {
+                        fetchAndFill(quartierSel, '/admin/api/geo/quartiers/' + this.value, null, quartierSel.dataset.currentText);
+                    }
+                });
+            }
+
+            if (cantonSel) {
+                cantonSel.addEventListener('change', function () {
+                    [regroupementSel, villageSel].forEach(function (s) {
+                        if (s) { s.innerHTML = '<option value="">--</option>'; s.disabled = true; }
+                    });
+                    if (this.value && regroupementSel) {
+                        fetchAndFill(regroupementSel, '/admin/api/geo/regroupements/' + this.value,
+                            regroupementSel.dataset.currentId, regroupementSel.dataset.currentText);
+                    }
+                });
+            }
+
+            if (regroupementSel) {
+                regroupementSel.addEventListener('change', function () {
+                    if (villageSel) { villageSel.innerHTML = '<option value="">--</option>'; villageSel.disabled = true; }
+                    if (this.value && villageSel) {
+                        fetchAndFill(villageSel, '/admin/api/geo/villages/' + this.value, null, villageSel.dataset.currentText);
+                    }
+                });
+            }
+
+            if (zoneTypeSel) zoneTypeSel.addEventListener('change', toggleZoneFields);
+
+            // Init : pré-remplir en cascade si déjà valeurs
+            toggleZoneFields();
+            if (provinceSel.value) {
+                fetchAndFill(departementSel, '/admin/api/geo/departements/' + provinceSel.value,
+                    departementSel.dataset.currentId, departementSel.dataset.currentText).then(function () {
+                    if (departementSel.value) {
+                        if (communeSel) fetchAndFill(communeSel, '/admin/api/geo/communes/' + departementSel.value,
+                            communeSel.dataset.currentId, communeSel.dataset.currentText).then(function () {
+                            if (communeSel && communeSel.value && arrondissementSel) {
+                                fetchAndFill(arrondissementSel, '/admin/api/geo/arrondissements/' + communeSel.value,
+                                    arrondissementSel.dataset.currentId, arrondissementSel.dataset.currentText).then(function () {
+                                    if (arrondissementSel.value && quartierSel) {
+                                        fetchAndFill(quartierSel, '/admin/api/geo/quartiers/' + arrondissementSel.value, null, quartierSel.dataset.currentText);
+                                    }
+                                });
+                            }
+                        });
+                        if (cantonSel) fetchAndFill(cantonSel, '/admin/api/geo/cantons/' + departementSel.value,
+                            cantonSel.dataset.currentId, cantonSel.dataset.currentText).then(function () {
+                            if (cantonSel && cantonSel.value && regroupementSel) {
+                                fetchAndFill(regroupementSel, '/admin/api/geo/regroupements/' + cantonSel.value,
+                                    regroupementSel.dataset.currentId, regroupementSel.dataset.currentText).then(function () {
+                                    if (regroupementSel.value && villageSel) {
+                                        fetchAndFill(villageSel, '/admin/api/geo/villages/' + regroupementSel.value, null, villageSel.dataset.currentText);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        })();
     </script>
 @endsection

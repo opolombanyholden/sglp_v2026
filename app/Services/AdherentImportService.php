@@ -243,9 +243,9 @@ class AdherentImportService
         
         // Règles de validation
         $rules = [
-            'nip' => 'required|string|max:20',
+            'string|max:255',
             'nom' => 'required|string|max:100',
-            'prenom' => 'nullable|string|max:200',
+            'string|max:2550',
             'date_naissance' => 'required|date|before:today',
             'lieu_naissance' => 'required|string|max:255',
             'sexe' => 'nullable|in:M,F',
@@ -254,7 +254,7 @@ class AdherentImportService
             'adresse' => 'required|string|max:255',
             'province' => 'required|string|max:100',
             'departement' => 'required|string|max:100',
-            'telephone' => 'required|string|max:20',
+            'telephone' => 'required|string|max:255',
             'email' => 'nullable|email|max:255'
         ];
         

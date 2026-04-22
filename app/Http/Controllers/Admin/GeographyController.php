@@ -260,7 +260,7 @@ class GeographyController extends Controller
             'commune_ville_id' => 'required|exists:communes_villes,id',
             'numero_arrondissement' => 'nullable|integer|min:1',
             'delegue' => 'nullable|string|max:255',
-            'telephone' => 'nullable|string|max:20',
+            'telephone' => 'nullable|string|max:255',
             'population_estimee' => 'nullable|integer|min:0',
             'description' => 'nullable|string',
         ]);
@@ -301,7 +301,7 @@ class GeographyController extends Controller
             'commune_ville_id' => 'required|exists:communes_villes,id',
             'numero_arrondissement' => 'nullable|integer|min:1',
             'delegue' => 'nullable|string|max:255',
-            'telephone' => 'nullable|string|max:20',
+            'telephone' => 'nullable|string|max:255',
             'population_estimee' => 'nullable|integer|min:0',
             'description' => 'nullable|string',
         ]);

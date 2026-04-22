@@ -128,7 +128,7 @@ class NipDatabaseController extends Controller
             'prenom' => 'required|string|max:255',
             'lieu_naissance' => 'nullable|string|max:255',
             'statut' => 'required|in:actif,inactif,decede,suspendu',
-            'telephone' => 'nullable|string|max:20',
+            'telephone' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
             'remarques' => 'nullable|string'
         ]);

@@ -87,7 +87,7 @@ class ProfileController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'telephone' => 'required|string|max:20',
+            'telephone' => 'required|string|max:255',
             'nip' => 'required|string|max:20|unique:users,nip,' . $user->id,
             'adresse' => 'nullable|string|max:255',
             'ville' => 'nullable|string|max:100',

@@ -116,7 +116,7 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label required-field">Téléphone</label>
-                                <input type="tel" class="form-control @error('telephone') is-invalid @enderror" 
+                                <input type="text" class="form-control @error('telephone') is-invalid @enderror" 
                                        name="telephone" value="{{ old('telephone', $user->telephone) }}" 
                                        placeholder="+241 01 23 45 67" required>
                                 @error('telephone')
