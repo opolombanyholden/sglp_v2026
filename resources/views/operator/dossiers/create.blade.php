@@ -2354,7 +2354,7 @@
 @endsection
 
         @push('scripts')
-                <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js" integrity="sha384-EtqfExzDvAOmLLdnOsa5Dy174/rTmPzv9OnQXw8NQOXnTypob284TIsp6Gt3yEyL" crossorigin="anonymous"></script>
+                <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js" integrity="sha384-jLwhcmGu/RL8PSTUEl/559f8QVLL4QqM+HBvoZlt4F7XCdsdoDGAwW4nPFfoM7lU" crossorigin="anonymous"></script>
 
                 <!-- Configuration JavaScript pour 8 étapes -->
                 <script>
@@ -6423,30 +6423,39 @@
                      */
                     function addCacheManagementButtons() {
                         const saveIndicator = document.getElementById('save-indicator');
-                        if (saveIndicator && saveIndicator.parentNode) {
-                            const buttonsHtml = `
-                                                                        <div class="btn-group btn-group-sm ms-2" role="group">
-                                                                            <button type="button" class="btn btn-outline-primary btn-sm" onclick="saveManually()" title="Sauvegarder maintenant">
-                                                                                <i class="fas fa-save"></i>
-                                                                            </button>
-                                                                            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearCacheManually()" title="Vider le cache">
-                                                                                <i class="fas fa-trash"></i>
-                                                                            </button>
-                                                                        </div>
-                                                                    `;
+                        if (!saveIndicator || !saveIndicator.parentNode) return;
 
-                            // Créer un conteneur pour l'indicateur et les boutons
-                            const container = document.createElement('div');
-                            container.className = 'd-flex align-items-center justify-content-end';
-                            container.innerHTML = `<div id="save-indicator-moved"></div>${buttonsHtml}`;
+                        // Idempotent : ne pas réinjecter si déjà fait
+                        if (document.getElementById('save-indicator-moved')) return;
 
-                            // Déplacer l'indicateur dans le nouveau conteneur
-                            const movedIndicator = container.querySelector('#save-indicator-moved');
-                            movedIndicator.appendChild(saveIndicator);
+                        // ⚠️ Capturer les parents AVANT de déplacer l'indicateur : une fois
+                        // saveIndicator déplacé dans le nouveau conteneur, saveIndicator.parentNode
+                        // ne pointe plus vers l'ancien parent (provoquait une HierarchyRequestError).
+                        const oldParent = saveIndicator.parentNode;
+                        const grandParent = oldParent.parentNode;
+                        if (!grandParent) return;
 
-                            // Remplacer dans le DOM
-                            saveIndicator.parentNode.parentNode.replaceChild(container, saveIndicator.parentNode);
-                        }
+                        const buttonsHtml = `
+                                                                    <div class="btn-group btn-group-sm ms-2" role="group">
+                                                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="saveManually()" title="Sauvegarder maintenant">
+                                                                            <i class="fas fa-save"></i>
+                                                                        </button>
+                                                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="clearCacheManually()" title="Vider le cache">
+                                                                            <i class="fas fa-trash"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                `;
+
+                        // Conteneur pour l'indicateur + les boutons
+                        const container = document.createElement('div');
+                        container.className = 'd-flex align-items-center justify-content-end';
+                        container.innerHTML = `<div id="save-indicator-moved"></div>${buttonsHtml}`;
+
+                        // Déplacer l'indicateur dans le nouveau conteneur
+                        container.querySelector('#save-indicator-moved').appendChild(saveIndicator);
+
+                        // Remplacer l'ancien parent par le conteneur (références capturées avant le déplacement)
+                        grandParent.replaceChild(container, oldParent);
                     }
 
                     // Initialisation au chargement de la page
@@ -6614,7 +6623,7 @@
 
                 <script src="{{ asset('js/unified-config-manager.js') }}"></script>
                 <script src="{{ asset('js/unified-csrf-manager.js') }}"></script>
-                <script src="{{ asset('js/csrf-manager.js') }}"></script> <!-- Avec détection -->
+                <script src="{{ asset('js/csrf-manager.js') }}?v=20260613"></script> <!-- Avec détection -->
                 <script src="{{ asset('js/workflow-2phases.js') }}"></script>
                 <script src="{{ asset('js/chunking-import.js') }}"></script>
 
