@@ -1653,7 +1653,7 @@
                                                         <label for="fondateur_nom" class="form-label fw-bold">Nom <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control" id="fondateur_nom"
                                                             placeholder="Nom de famille" maxlength="255">
-                                                        <div class="invalid-feedback">Le nom est obligatoire</div>
+                                                        <div class="invalid-feedback"></div>
                                                     </div>
 
                                                     <div class="col-md-3 mb-3">
@@ -1661,7 +1661,7 @@
                                                             class="form-label fw-bold">Prénom <span class="text-danger">*</span></label>
                                                         <input type="text" class="form-control" id="fondateur_prenom"
                                                             placeholder="Prénom(s)" maxlength="255">
-                                                        <div class="invalid-feedback">Le prénom est obligatoire</div>
+                                                        <div class="invalid-feedback"></div>
                                                     </div>
 
                                                     <div class="col-md-3 mb-3">
@@ -1670,7 +1670,7 @@
                                                             data-validate="nip" placeholder="A1-2345-19901225"
                                                             maxlength="16" pattern="[A-Z0-9]{2}-[0-9]{4}-[0-9]{8}">
                                                         <small class="form-text text-muted">Format obligatoire : XX-0000-AAAAMMJJ (ex: A1-2345-19901225)</small>
-                                                        <div class="invalid-feedback">NIP obligatoire au format XX-0000-AAAAMMJJ</div>
+                                                        <div class="invalid-feedback"></div>
                                                     </div>
 
                                                     <div class="col-md-4 mb-3">
@@ -1706,7 +1706,7 @@
                                                                 placeholder="01234567" pattern="[0-9]{8,9}">
                                                         </div>
                                                         <small class="form-text text-muted">8 ou 9 chiffres</small>
-                                                        <div class="invalid-feedback">Téléphone obligatoire (8-9 chiffres)</div>
+                                                        <div class="invalid-feedback"></div>
                                                     </div>
 
                                                     <div class="col-md-4 mb-3">
@@ -2979,6 +2979,12 @@
 
                             formData.append('submission_mode', 'traditional');
 
+                            // Transmettre le brouillon progressif pour réutilisation côté serveur
+                            // (évite le conflit d'unicité nom/sigle avec l'organisation brouillon)
+                            if (OrganisationApp.draftId) {
+                                formData.append('draft_id', OrganisationApp.draftId);
+                            }
+
                             // ══════ 4. Envoyer avec retry CSRF ══════
                             const submitUrl = document.getElementById('organisationForm').action;
                             console.log('🔍 submitTraditional - URL:', submitUrl);
@@ -3260,12 +3266,13 @@
                         const saveIndicator = document.getElementById('save-indicator');
                         if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sauvegarde...';
 
+                        console.log('[saveStepToServer] etape ' + frontendStep + ' -> backend step ' + backendStep, data);
+
                         try {
-                            let csrfToken;
-                            try {
-                                csrfToken = await window.UnifiedCSRFManager.getCurrentToken();
-                            } catch (e) {
-                                csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                            // CSRF token : toujours utiliser le meta tag (plus fiable)
+                            let csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                            if (!csrfToken && window.UnifiedCSRFManager) {
+                                try { csrfToken = await window.UnifiedCSRFManager.getCurrentToken(); } catch (e) {}
                             }
 
                             const url = '/operator/organisations/step/' + backendStep + '/save';
@@ -3320,6 +3327,18 @@
                     async function handleStepSaveResponse(response, frontendStep) {
                         const saveIndicator = document.getElementById('save-indicator');
 
+                        console.log('[handleStepSaveResponse] status=' + response.status + ' url=' + response.url);
+
+                        if (!response.ok) {
+                            console.warn('[saveStepToServer] HTTP ' + response.status);
+                            if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-times text-danger mr-1"></i> Erreur HTTP ' + response.status;
+                            try {
+                                var errBody = await response.text();
+                                console.warn('Corps erreur:', errBody.substring(0, 500));
+                            } catch (e) {}
+                            return { success: false, error: 'HTTP ' + response.status };
+                        }
+
                         try {
                             const result = await response.json();
 
@@ -3327,14 +3346,21 @@
                                 if (result.draft_id) {
                                     OrganisationApp.draftId = result.draft_id;
                                 }
+                                if (result.dossier_id) {
+                                    OrganisationApp.dossierId = result.dossier_id;
+                                }
                                 OrganisationApp.stepSaveErrors[frontendStep] = null;
-                                if (saveIndicator) saveIndicator.innerHTML = '<i class="fas fa-check text-success mr-1"></i> Brouillon sauvegarde';
-                                console.log('Etape ' + frontendStep + ' sauvegardee. Draft ID: ' + result.draft_id + ', completion: ' + result.completion_percentage + '%');
+                                var msg = '<i class="fas fa-check text-success mr-1"></i> Brouillon sauvegardé';
+                                if (result.numero_dossier) {
+                                    msg += ' <span class="badge bg-light text-dark ms-1">N° ' + result.numero_dossier + '</span>';
+                                }
+                                if (saveIndicator) saveIndicator.innerHTML = msg;
+                                console.log('Etape ' + frontendStep + ' sauvegardee. Draft ID: ' + result.draft_id + ', Dossier ID: ' + (result.dossier_id || '?') + ', completion: ' + result.completion_percentage + '%');
 
-                                // Effacer le message après 3s
+                                // Effacer le message après 4s
                                 setTimeout(() => {
                                     if (saveIndicator) saveIndicator.innerHTML = '';
-                                }, 3000);
+                                }, 4000);
 
                                 return result;
                             } else {
@@ -4388,7 +4414,7 @@
                                                                         </p>
                                                                         <small class="text-muted">
                                                                             <i class="fas fa-upload me-1"></i>
-                                                                            Formats acceptés : PDF, JPG, PNG (taille max : 5MB par fichier)
+                                                                            Formats acceptés : PDF, Word (DOC/DOCX), JPG, PNG (taille max : 5MB par fichier)
                                                                         </small>
                                                                     </div>
                                                                 `;
@@ -4412,12 +4438,12 @@
                                                            class="form-control"
                                                            id="doc_${doc}"
                                                            name="documents[${doc}]"
-                                                           accept=".pdf,.jpg,.jpeg,.png"
-                                                           onchange="handleDocumentUpload('${doc}', this)"
+                                                           accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                           onchange="handleDocumentUpload('${escapeJsArg(doc)}', this)"
                                                            ${isRequired ? 'required' : ''}>
                                                     <div class="form-text">
                                                         <i class="fas fa-info me-1"></i>
-                                                        ${isRequired ? 'Document obligatoire' : 'Document optionnel'} - PDF, JPG, PNG (max 5MB)
+                                                        ${isRequired ? 'Document obligatoire' : 'Document optionnel'} - PDF, Word, JPG, PNG (max 5MB)
                                                     </div>
                                                 </div>
                                             </div>
@@ -4467,7 +4493,7 @@
                                         '<img src="' + e.target.result + '" class="img-thumbnail" style="max-height: 80px;">' +
                                         '<div><small class="d-block text-muted">' + docData.name + '</small>' +
                                         '<small class="text-muted">(' + (docData.size / 1024).toFixed(1) + ' Ko)</small></div>' +
-                                        '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + docType + '\')">' +
+                                        '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + escapeJsArg(docType) + '\')">' +
                                         '<i class="fas fa-trash"></i></button></div>';
                                     previewEl.classList.remove('d-none');
                                 };
@@ -4477,7 +4503,7 @@
                                     '<i class="fas fa-file-pdf text-danger fa-2x"></i>' +
                                     '<div><small class="d-block text-muted">' + (docData.name || 'Document') + '</small>' +
                                     '<small class="text-muted">(' + (docData.size / 1024).toFixed(1) + ' Ko)</small></div>' +
-                                    '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + docType + '\')">' +
+                                    '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + escapeJsArg(docType) + '\')">' +
                                     '<i class="fas fa-trash"></i></button></div>';
                                 previewEl.classList.remove('d-none');
                             }
@@ -4505,12 +4531,18 @@
                         console.log('Document supprime:', docType);
                     }
 
-                        documentsContainer.innerHTML = documentsHtml;
-                    }
-
                     /**
                      * Obtenir le label d'un document
                      */
+                    /**
+                     * Échapper une valeur destinée à une chaîne JS entre guillemets simples
+                     * dans un attribut HTML (ex: noms de documents contenant une apostrophe
+                     * comme « Pièce d'identité » qui casseraient sinon le onchange/onclick).
+                     */
+                    function escapeJsArg(str) {
+                        return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+                    }
+
                     function getDocumentLabel(doc) {
                         const labels = {
                             'statuts': 'Statuts de l\'organisation',
@@ -4541,10 +4573,19 @@
                             return;
                         }
 
-                        // Validation du type
-                        const allowedTypes = ['application/pdf', 'image/jpeg', 'image/png'];
-                        if (!allowedTypes.includes(file.type)) {
-                            showNotification('Type de fichier non autorisé. Utilisez PDF, JPG ou PNG.', 'error');
+                        // Validation du type (PDF, Word DOC/DOCX, images)
+                        const allowedTypes = [
+                            'application/pdf',
+                            'application/msword',
+                            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                            'image/jpeg',
+                            'image/png'
+                        ];
+                        // Certains navigateurs renvoient un type MIME vide pour .doc : on tolère via l'extension
+                        const ext = (file.name.split('.').pop() || '').toLowerCase();
+                        const allowedExt = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+                        if (!allowedTypes.includes(file.type) && !allowedExt.includes(ext)) {
+                            showNotification('Type de fichier non autorisé. Utilisez PDF, Word, JPG ou PNG.', 'error');
                             fileInput.value = '';
                             return;
                         }
@@ -4583,7 +4624,7 @@
                                                     '<img src="' + e.target.result + '" class="img-thumbnail" style="max-height: 80px;">' +
                                                     '<div><small class="d-block text-muted">' + file.name + '</small>' +
                                                     '<small class="text-muted">(' + (file.size / 1024).toFixed(1) + ' Ko)</small></div>' +
-                                                    '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + docType + '\')">' +
+                                                    '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + escapeJsArg(docType) + '\')">' +
                                                     '<i class="fas fa-trash"></i></button></div>';
                                                 previewElement.classList.remove('d-none');
                                             };
@@ -4593,7 +4634,7 @@
                                                 '<i class="fas fa-file-pdf text-danger fa-2x"></i>' +
                                                 '<div><small class="d-block text-muted">' + file.name + '</small>' +
                                                 '<small class="text-muted">(' + (file.size / 1024).toFixed(1) + ' Ko)</small></div>' +
-                                                '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + docType + '\')">' +
+                                                '<button type="button" class="btn btn-sm btn-outline-danger ms-auto" onclick="removeDocument(\'' + escapeJsArg(docType) + '\')">' +
                                                 '<i class="fas fa-trash"></i></button></div>';
                                             previewElement.classList.remove('d-none');
                                         }
@@ -4867,12 +4908,13 @@
                             return;
                         }
 
-                        // Vérifier le maximum de 3 membres pour le récépissé
+                        // Plafond de 3 membres sur le récépissé : on n'empêche PAS l'ajout,
+                        // on ajoute simplement le membre sans l'afficher sur le récépissé.
                         if (formData.afficher_recepisse) {
                             const countRecepisse = OrganisationApp.membresBureau.filter(m => m.afficher_recepisse).length;
                             if (countRecepisse >= 3) {
-                                showNotification('Maximum 3 membres peuvent être affichés sur le récépissé. Décochez l\'option pour ce membre ou retirez un autre membre du récépissé.', 'warning');
-                                return;
+                                formData.afficher_recepisse = false;
+                                showNotification('Membre ajouté, mais non affiché sur le récépissé (maximum 3 déjà atteint). Décochez un autre membre pour l\'y faire figurer.', 'info');
                             }
                         }
 
@@ -5574,8 +5616,9 @@
                             });
                         });
 
-                        // Validation téléphone
-                        const phoneInputs = document.querySelectorAll('input[type="text"]');
+                        // Validation téléphone — uniquement les vrais champs téléphone
+                        // (PAS tous les input[type=text], sinon nom/prénom/NIP sont marqués invalides)
+                        const phoneInputs = document.querySelectorAll('input[name*="telephone"], input#membre_contact');
                         phoneInputs.forEach(input => {
                             input.addEventListener('blur', function () {
                                 if (this.value && !isValidGabonPhone(this.value)) {
@@ -5758,14 +5801,19 @@
                                 OrganisationApp.membresBureau = cacheData.membresBureau || [];
                                 OrganisationApp.uploadedDocuments = cacheData.uploadedDocuments || {};
 
-                                // Restaurer les champs du formulaire
-                                restoreFormFields();
-
-                                // Mettre à jour l'affichage
+                                // Mettre à jour l'affichage AVANT la restauration des champs :
+                                // ainsi les listes sont rendues même si restoreFormFields échoue.
                                 updateStepDisplay();
                                 updateNavigationButtons();
                                 updateFoundersList();
-                                updateMembresBureauList(); // ✅ FIX: Restaurer aussi la liste des membres du bureau
+                                updateMembresBureauList(); // ✅ Restaurer aussi la liste des membres du bureau
+
+                                // Restaurer les champs du formulaire (non bloquant)
+                                try {
+                                    restoreFormFields();
+                                } catch (e) {
+                                    console.warn('restoreFormFields a échoué (non bloquant):', e);
+                                }
 
                                 // Restaurer le type d'organisation si défini
                                 if (OrganisationApp.organisationType) {
@@ -5958,10 +6006,24 @@
                         if (!form || !OrganisationApp.formData) return;
 
                         Object.keys(OrganisationApp.formData).forEach(name => {
-                            const element = form.querySelector(`[name="${name}"], #${name}`);
-                            if (!element) return;
-
                             const value = OrganisationApp.formData[name];
+
+                            // Ignorer les structures complexes (fondateurs, membresBureau,
+                            // documents…) gérées séparément, et éviter de planter le rendu.
+                            if (value !== null && typeof value === 'object') return;
+
+                            // Recherche robuste : getElementById accepte n'importe quelle chaîne ;
+                            // querySelector peut lever une SyntaxError si le nom contient des
+                            // caractères spéciaux (crochets, apostrophes, espaces, accents).
+                            let element = document.getElementById(name);
+                            if (!element) {
+                                try {
+                                    element = form.querySelector('[name="' + name.replace(/(["\\])/g, '\\$1') + '"]');
+                                } catch (e) {
+                                    element = null;
+                                }
+                            }
+                            if (!element) return;
 
                             if (element.type === 'radio') {
                                 if (element.value === value) {

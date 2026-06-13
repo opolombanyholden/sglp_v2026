@@ -16,3 +16,11 @@
 conception/BD_NIP_FINALE.csv
 *.bak.*
 DESIGN V1/
+
+# Brainstorm mockups & Playwright artefacts (locaux)
+.superpowers/
+.playwright-mcp/
+
+# Dumps/scratch volumineux (local) & junk macOS
+/conception/
+.DS_Store

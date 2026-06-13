@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\PdfTemplateHelper;
 use App\Models\DocumentGeneration;
 use App\Models\DocumentTemplate;
 use App\Models\Organisation;
 use App\Models\DocumentVerification;
+use App\Services\DocumentGenerationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,9 +29,12 @@ use Illuminate\Support\Facades\Storage;
  */
 class GeneratedDocumentController extends Controller
 {
-    public function __construct()
+    protected DocumentGenerationService $documentService;
+
+    public function __construct(DocumentGenerationService $documentService)
     {
         $this->middleware(['auth', 'verified', 'admin']);
+        $this->documentService = $documentService;
     }
 
     /**
@@ -157,18 +162,23 @@ class GeneratedDocumentController extends Controller
     public function download(DocumentGeneration $generation)
     {
         try {
-            if (!$generation->pdf_path || !Storage::exists($generation->pdf_path)) {
-                return back()->with('error', 'Fichier PDF introuvable.');
+            if (!$generation->is_valid) {
+                return back()->with('error', 'Ce document a été invalidé et ne peut être téléchargé.');
             }
 
-            $filename = $generation->numero_document . '.pdf';
+            set_time_limit(120);
+            ini_set('memory_limit', '256M');
 
-            return Storage::download($generation->pdf_path, $filename);
+            $result = $this->documentService->regenerate($generation);
+
+            return PdfTemplateHelper::downloadPdf($result['pdf'], $result['filename']);
 
         } catch (\Exception $e) {
-            Log::error('Erreur téléchargement document admin: ' . $e->getMessage());
+            Log::error('Erreur téléchargement document admin: ' . $e->getMessage(), [
+                'generation_id' => $generation->id,
+            ]);
 
-            return back()->with('error', 'Erreur lors du téléchargement.');
+            return back()->with('error', 'Erreur lors du téléchargement : ' . $e->getMessage());
         }
     }
 

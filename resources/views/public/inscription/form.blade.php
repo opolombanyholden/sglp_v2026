@@ -84,7 +84,7 @@
         <div class="row align-items-center">
             <div class="col-lg-8">
                 <span class="badge-type mb-2 d-inline-block">
-                    <i class="fas fa-building mr-1"></i>
+                    <i class="fas fa-building me-1"></i>
                     {{ ucfirst(str_replace('_', ' ', $organisation->type ?? '')) }}
                 </span>
                 <h1 class="mb-2">{{ $organisation->nom ?? 'Organisation' }}</h1>
@@ -92,14 +92,14 @@
                     <h4 class="opacity-75 mb-2">({{ $organisation->sigle }})</h4>
                 @endif
                 <p class="mb-0 opacity-90">
-                    <i class="fas fa-map-marker-alt mr-1"></i>
+                    <i class="fas fa-map-marker-alt me-1"></i>
                     {{ $organisation->siege_social ?? $organisation->ville_commune ?? 'Gabon' }}
                     @if($organisation->province)
                         - {{ $organisation->province }}
                     @endif
                 </p>
             </div>
-            <div class="col-lg-4 text-lg-right text-center mt-3 mt-lg-0">
+            <div class="col-lg-4 text-lg-end text-center mt-3 mt-lg-0">
                 <div class="bg-white rounded-lg p-3 d-inline-block" style="opacity: 0.95;">
                     <i class="fas fa-user-plus fa-3x" style="color: var(--gabon-green);"></i>
                     <p class="mb-0 mt-1 font-weight-bold" style="color: var(--gabon-blue);">Formulaire d'adhésion</p>
@@ -113,20 +113,20 @@
     {{-- Messages d'erreur --}}
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-triangle mr-2"></i>{{ session('error') }}
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+            <i class="fas fa-exclamation-triangle me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
         </div>
     @endif
 
     @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <h5><i class="fas fa-exclamation-triangle mr-2"></i>Erreurs de validation</h5>
+            <h5><i class="fas fa-exclamation-triangle me-2"></i>Erreurs de validation</h5>
             <ul class="mb-0 mt-2">
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
         </div>
     @endif
 
@@ -138,7 +138,7 @@
                 <div class="card card-organisation mb-4">
                     <div class="card-body">
                         <h5 class="form-section-title">
-                            <i class="fas fa-info-circle mr-2"></i>À propos de l'organisation
+                            <i class="fas fa-info-circle me-2"></i>À propos de l'organisation
                         </h5>
                         <p class="text-muted mb-0">{{ $organisation->objet }}</p>
                     </div>
@@ -154,7 +154,7 @@
                 <div class="card card-organisation mb-4">
                     <div class="card-body">
                         <h5 class="form-section-title">
-                            <i class="fas fa-id-card mr-2"></i>Identification
+                            <i class="fas fa-id-card me-2"></i>Identification
                         </h5>
                         <div class="row">
                             <div class="col-md-3">
@@ -239,7 +239,7 @@
                 <div class="card card-organisation mb-4">
                     <div class="card-body">
                         <h5 class="form-section-title">
-                            <i class="fas fa-phone-alt mr-2"></i>Coordonnées
+                            <i class="fas fa-phone-alt me-2"></i>Coordonnées
                         </h5>
                         <div class="row">
                             <div class="col-md-6">
@@ -296,7 +296,7 @@
                 <div class="card card-organisation mb-4">
                     <div class="card-body">
                         <h5 class="form-section-title">
-                            <i class="fas fa-briefcase mr-2"></i>Informations professionnelles
+                            <i class="fas fa-briefcase me-2"></i>Informations professionnelles
                         </h5>
                         <div class="row">
                             <div class="col-md-6">
@@ -321,7 +321,7 @@
 
                         @if($organisation->type === 'parti_politique')
                             <div class="info-alert p-3 mt-2">
-                                <i class="fas fa-info-circle mr-2" style="color: var(--gabon-blue);"></i>
+                                <i class="fas fa-info-circle me-2" style="color: var(--gabon-blue);"></i>
                                 <strong>Information importante :</strong> Conformément à la loi, un citoyen ne peut être membre de deux partis politiques simultanément. Votre NIP sera vérifié lors de la validation.
                             </div>
                         @endif
@@ -332,7 +332,7 @@
                 <div class="card card-organisation mb-4">
                     <div class="card-body">
                         <h5 class="form-section-title">
-                            <i class="fas fa-file-upload mr-2"></i>Pièce d'identité <span class="required-star">*</span>
+                            <i class="fas fa-file-upload me-2"></i>Pièce d'identité <span class="required-star">*</span>
                         </h5>
                         <p class="text-muted mb-3">
                             Veuillez joindre un scan ou une photo de votre pièce d'identité (CNI, passeport ou titre de séjour).
@@ -361,7 +361,7 @@
                 {{-- Bouton de soumission --}}
                 <div class="text-center mb-5">
                     <button type="submit" class="btn btn-inscription" id="btn-submit">
-                        <i class="fas fa-paper-plane mr-2"></i>
+                        <i class="fas fa-paper-plane me-2"></i>
                         Soumettre ma demande d'adhésion
                     </button>
                     <p class="text-muted mt-2 small">
@@ -376,20 +376,20 @@
             <div class="card card-organisation mb-4" style="border-top: 4px solid var(--gabon-green);">
                 <div class="card-body">
                     <h6 class="font-weight-bold mb-3" style="color: var(--gabon-blue);">
-                        <i class="fas fa-shield-alt mr-2"></i>Organisation vérifiée
+                        <i class="fas fa-shield-alt me-2"></i>Organisation vérifiée
                     </h6>
                     <p class="small text-muted mb-2">
-                        <i class="fas fa-check-circle text-success mr-1"></i>
+                        <i class="fas fa-check-circle text-success me-1"></i>
                         Organisation approuvée par les autorités
                     </p>
                     @if($organisation->numero_recepisse)
                         <p class="small text-muted mb-2">
-                            <i class="fas fa-file-alt mr-1" style="color: var(--gabon-blue);"></i>
+                            <i class="fas fa-file-alt me-1" style="color: var(--gabon-blue);"></i>
                             Récépissé : {{ $organisation->numero_recepisse }}
                         </p>
                     @endif
                     <p class="small text-muted mb-0">
-                        <i class="fas fa-calendar mr-1" style="color: var(--gabon-blue);"></i>
+                        <i class="fas fa-calendar me-1" style="color: var(--gabon-blue);"></i>
                         Créée le {{ $organisation->created_at ? $organisation->created_at->format('d/m/Y') : 'N/A' }}
                     </p>
                 </div>
@@ -398,9 +398,9 @@
             <div class="card card-organisation mb-4">
                 <div class="card-body">
                     <h6 class="font-weight-bold mb-3" style="color: var(--gabon-blue);">
-                        <i class="fas fa-list-check mr-2"></i>Processus d'adhésion
+                        <i class="fas fa-list-check me-2"></i>Processus d'adhésion
                     </h6>
-                    <ol class="small text-muted pl-3 mb-0">
+                    <ol class="small text-muted ps-3 mb-0">
                         <li class="mb-2">Remplissez le formulaire ci-contre</li>
                         <li class="mb-2">Joignez votre pièce d'identité</li>
                         <li class="mb-2">Soumettez votre demande</li>
@@ -413,20 +413,20 @@
             <div class="card card-organisation">
                 <div class="card-body">
                     <h6 class="font-weight-bold mb-3" style="color: var(--gabon-blue);">
-                        <i class="fas fa-question-circle mr-2"></i>Besoin d'aide ?
+                        <i class="fas fa-question-circle me-2"></i>Besoin d'aide ?
                     </h6>
                     <p class="small text-muted mb-2">
                         Pour toute question, contactez l'administration de l'organisation :
                     </p>
                     @if($organisation->email)
                         <p class="small mb-1">
-                            <i class="fas fa-envelope mr-1"></i>
+                            <i class="fas fa-envelope me-1"></i>
                             <a href="mailto:{{ $organisation->email }}">{{ $organisation->email }}</a>
                         </p>
                     @endif
                     @if($organisation->telephone)
                         <p class="small mb-0">
-                            <i class="fas fa-phone mr-1"></i> {{ $organisation->telephone }}
+                            <i class="fas fa-phone me-1"></i> {{ $organisation->telephone }}
                         </p>
                     @endif
                 </div>
@@ -470,7 +470,7 @@ document.getElementById('inscription-form').addEventListener('submit', function(
         return;
     }
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Envoi en cours...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Envoi en cours...';
 });
 
 // Drag & drop sur la zone d'upload

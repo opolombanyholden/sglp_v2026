@@ -108,6 +108,10 @@ class WorkflowController extends Controller
                 ->whereNotNull('assigned_to')
                 ->orderBy('updated_at', 'desc');
 
+            if ($request->filled('type_operation')) {
+                $query->where('type_operation', $request->type_operation);
+            }
+
             // Filtres
             if ($request->filled('search')) {
                 $search = $request->search;
@@ -169,8 +173,12 @@ class WorkflowController extends Controller
         try {
             // Récupérer les dossiers terminés
             $query = Dossier::with(['organisation'])
-                ->whereIn('statut', ['approuve', 'rejete'])
+                ->whereIn('statut', ['approuve', 'rejete', 'accepte'])
                 ->orderBy('validated_at', 'desc');
+
+            if ($request->filled('type_operation')) {
+                $query->where('type_operation', $request->type_operation);
+            }
 
             // Filtres
             if ($request->filled('search')) {

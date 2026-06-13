@@ -163,15 +163,15 @@
                     <h4>Services Centraux</h4>
                     <ul class="list-unstyled text-start mt-3">
                         <li class="mb-2">
-                            <i class="fas fa-chevron-right text-primary mr-2"></i>
+                            <i class="fas fa-chevron-right text-primary me-2"></i>
                             Direction des Élections
                         </li>
                         <li class="mb-2">
-                            <i class="fas fa-chevron-right text-primary mr-2"></i>
+                            <i class="fas fa-chevron-right text-primary me-2"></i>
                             Direction des Partis Politiques, des Associations et des Libertés de Culte
                         </li>
                         <li class="mb-2">
-                            <i class="fas fa-chevron-right text-primary mr-2"></i>
+                            <i class="fas fa-chevron-right text-primary me-2"></i>
                             Direction de la Formation et Action Citoyenne
                         </li>
                     </ul>

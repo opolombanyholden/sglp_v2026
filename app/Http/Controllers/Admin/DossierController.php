@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Dossier;
+use App\Models\DocumentGeneration;
 use App\Models\Organisation;
 use App\Models\User;
 use App\Models\DossierValidation;
@@ -223,12 +224,13 @@ class DossierController extends Controller
      * ========================================
      * Route: GET /admin/dossiers/create
      */
-    public function create()
+    public function create(\Illuminate\Http\Request $request)
     {
         try {
             \Log::info('Admin accède au formulaire de création d\'organisation', [
                 'user_id' => auth()->id(),
-                'user_name' => auth()->user()->name ?? 'Unknown'
+                'user_name' => auth()->user()->name ?? 'Unknown',
+                'resume_dossier' => $request->input('dossier_id'),
             ]);
 
             // Types d'organisations avec leurs configurations
@@ -246,10 +248,78 @@ class DossierController extends Controller
                 ->ordered()
                 ->get();
 
+            // Reprise d'un brouillon : charger l'état précédent
+            $resumeDossier = null;
+            $resumeData = null;
+            $resumeStep = null;
+            $resumeDepartements = collect();
+            $resumeCommunes = collect();
+            $resumeArrondissements = collect();
+            $resumeQuartiers = collect();
+
+            if ($request->filled('dossier_id')) {
+                $resumeDossier = Dossier::with('organisation')->find($request->input('dossier_id'));
+                if ($resumeDossier && $resumeDossier->statut === 'brouillon') {
+                    $supp = is_array($resumeDossier->donnees_supplementaires)
+                        ? $resumeDossier->donnees_supplementaires
+                        : (json_decode($resumeDossier->donnees_supplementaires ?? '[]', true) ?: []);
+                    $resumeData = $supp['data'] ?? [];
+                    $resumeStep = $supp['step'] ?? 2;
+                    if ($resumeDossier->organisation) {
+                        $org = $resumeDossier->organisation;
+                        $resumeData = array_merge([
+                            'nom_organisation' => $org->nom,
+                            'sigle' => $org->sigle,
+                            'objet' => $org->objet,
+                            'siege_social' => $org->siege_social,
+                            'province' => $org->province,
+                            'departement' => $org->departement,
+                            'telephone' => $org->telephone,
+                            'email' => $org->email,
+                            'date_creation' => $org->date_creation ? (is_string($org->date_creation) ? $org->date_creation : $org->date_creation->format('Y-m-d')) : null,
+                            // IDs depuis l'organisation pour cohérence si saveStep n'a pas tout capté
+                            'org_province_id' => $org->province_ref_id ?? ($resumeData['org_province_id'] ?? null),
+                            'org_departement_id' => $org->departement_ref_id ?? ($resumeData['org_departement_id'] ?? null),
+                            'org_commune_id' => $org->commune_ville_ref_id ?? ($resumeData['org_commune_id'] ?? null),
+                            'org_arrondissement_id' => $org->arrondissement_ref_id ?? ($resumeData['org_arrondissement_id'] ?? null),
+                        ], $resumeData);
+                    }
+
+                    // Charger les listes géographiques en cascade selon les IDs sauvegardés.
+                    // Permet de pré-sélectionner directement en HTML, sans dépendre du JS AJAX.
+                    if (!empty($resumeData['org_province_id'])) {
+                        $resumeDepartements = Departement::where('province_id', $resumeData['org_province_id'])
+                            ->orderBy('nom')->get(['id', 'nom']);
+                    }
+                    if (!empty($resumeData['org_departement_id'])) {
+                        $resumeCommunes = CommuneVille::where('departement_id', $resumeData['org_departement_id'])
+                            ->orderBy('nom')->get(['id', 'nom']);
+                    }
+                    if (!empty($resumeData['org_commune_id'])) {
+                        $resumeArrondissements = Arrondissement::where('commune_ville_id', $resumeData['org_commune_id'])
+                            ->orderBy('nom')->get(['id', 'nom']);
+                    }
+                    if (!empty($resumeData['org_arrondissement_id'])) {
+                        $resumeQuartiers = \App\Models\Localite::where('arrondissement_id', $resumeData['org_arrondissement_id'])
+                            ->where('type', 'quartier')
+                            ->orderBy('nom')->get(['id', 'nom']);
+                    }
+                } else {
+                    $resumeDossier = null;
+                }
+            }
+
             return view('admin.dossiers.create', compact(
                 'typesOrganisation',
                 'provinces',
-                'domainesActivite'
+                'domainesActivite',
+                'resumeDossier',
+                'resumeData',
+                'resumeStep',
+                'resumeDepartements',
+                'resumeCommunes',
+                'resumeArrondissements',
+                'resumeQuartiers'
             ));
 
         } catch (\Exception $e) {
@@ -274,7 +344,9 @@ class DossierController extends Controller
             'dossier_id' => 'nullable|integer|exists:dossiers,id',
             'organisation_type_id' => 'required|integer|exists:organisation_types,id',
             'data' => 'nullable|array',
-            'data.*' => 'nullable|string|max:5000',
+            // valeurs : on accepte string OU numérique, sans limite stricte de
+            // taille (les __*_json peuvent être volumineux pour de longues listes)
+            'data.*' => 'nullable',
         ]);
 
         \DB::beginTransaction();
@@ -296,6 +368,12 @@ class DossierController extends Controller
                     'organisation_type_id' => $request->organisation_type_id,
                     'type' => optional(OrganisationType::find($request->organisation_type_id))->code ?? 'association',
                     'nom' => $data['nom_organisation'] ?? ('Brouillon admin #' . now()->timestamp),
+                    // Champs NOT NULL en BDD : placeholders vides en attendant les vraies valeurs
+                    'objet' => $data['objet'] ?? '',
+                    'siege_social' => $data['siege_social'] ?? '',
+                    'province' => $data['province'] ?? '',
+                    'telephone' => $data['telephone'] ?? '',
+                    'date_creation' => $data['date_creation'] ?? now()->format('Y-m-d'),
                     'statut' => 'brouillon',
                     'is_active' => false,
                 ]);
@@ -314,8 +392,10 @@ class DossierController extends Controller
             }
 
             if (!$dossier) {
+                $orgCode = optional(OrganisationType::find($request->organisation_type_id))->code ?? 'ORG';
                 $dossier = Dossier::create([
                     'organisation_id' => $organisation->id,
+                    'numero_dossier' => 'BR-' . strtoupper(substr($orgCode, 0, 3)) . '-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6)),
                     'type_operation' => 'creation',
                     'statut' => 'brouillon',
                     'current_step_id' => null,
@@ -472,7 +552,7 @@ class DossierController extends Controller
             // Validation des données
             $validated = $request->validate([
                 // Déclarant
-                'string|max:255',
+                'demandeur_nip' => 'required|string|max:255',
                 'demandeur_nom' => 'required|string|max:100',
                 'demandeur_prenom' => 'required|string|max:100',
                 'demandeur_telephone' => 'required|string|max:255',
@@ -675,16 +755,17 @@ class DossierController extends Controller
                 'organisation_type_id' => 'required|exists:organisation_types,id',
 
                 // Déclarant
-                'string|max:255',
+                'demandeur_nip' => 'required|string|max:255',
                 'demandeur_nom' => 'required|string|max:100',
                 'demandeur_prenom' => 'required|string|max:100',
                 'demandeur_email' => 'nullable|email|max:255',
                 'demandeur_telephone' => 'required|string|max:255',
                 'demandeur_role' => 'nullable|string|max:100',
+                'demandeur_civilite' => 'nullable|string|in:M,Mme,Mlle,M.',
 
                 // Organisation
                 'org_nom' => 'required|string|max:255',
-                'string|max:255',
+                'org_sigle' => 'nullable|string|max:255',
                 'org_objet' => 'required|string',
                 'org_domaine_activite_id' => 'required|exists:domaines_activite,id',
                 'org_date_creation' => 'required|date',
@@ -704,7 +785,7 @@ class DossierController extends Controller
 
                 // Fondateurs
                 'fondateurs' => 'required|array|min:1',
-                'string|max:255',
+                'fondateurs.*.nip' => 'required|string|max:255',
                 'fondateurs.*.civilite' => 'required|in:M,Mme,Mlle',
                 'fondateurs.*.nom' => 'required|string|max:100',
                 'fondateurs.*.prenom' => 'required|string|max:100',
@@ -714,7 +795,7 @@ class DossierController extends Controller
 
                 // Adhérents (optionnels selon config)
                 'adherents' => 'nullable|array',
-                'string|max:255',
+                'adherents.*.nip' => 'required_with:adherents|string|max:255',
                 'adherents.*.nom' => 'required_with:adherents|string|max:100',
                 'adherents.*.prenom' => 'required_with:adherents|string|max:100',
                 'adherents.*.telephone' => 'nullable|string|max:255',
@@ -723,6 +804,30 @@ class DossierController extends Controller
                 // Documents
                 'documents' => 'nullable|array',
                 'documents.*' => 'file|max:10240',
+            ], [
+                'organisation_type_id.required' => 'Le type d\'organisation est obligatoire.',
+                'organisation_type_id.exists' => 'Le type d\'organisation est invalide.',
+                'demandeur_nip.required' => 'Le NIP du déclarant est obligatoire.',
+                'demandeur_nom.required' => 'Le nom du déclarant est obligatoire.',
+                'demandeur_prenom.required' => 'Le prénom du déclarant est obligatoire.',
+                'demandeur_telephone.required' => 'Le téléphone du déclarant est obligatoire.',
+                'org_nom.required' => 'La dénomination de l\'organisation est obligatoire.',
+                'org_objet.required' => 'L\'objet est obligatoire.',
+                'org_domaine_activite_id.required' => 'Le domaine d\'activité est obligatoire.',
+                'org_date_creation.required' => 'La date de création est obligatoire.',
+                'org_date_creation.date' => 'La date de création est invalide.',
+                'org_telephone.required' => 'Le téléphone de l\'organisation est obligatoire.',
+                'org_province_id.required' => 'La province est obligatoire.',
+                'org_departement_id.required' => 'Le département est obligatoire.',
+                'org_adresse.required' => 'Le siège social est obligatoire.',
+                'fondateurs.required' => 'Au moins un fondateur est obligatoire.',
+                'fondateurs.min' => 'Au moins un fondateur est obligatoire.',
+                'fondateurs.*.nip.required' => 'Le NIP de chaque fondateur est obligatoire.',
+                'fondateurs.*.civilite.required' => 'La civilité de chaque fondateur est obligatoire.',
+                'fondateurs.*.nom.required' => 'Le nom de chaque fondateur est obligatoire.',
+                'fondateurs.*.prenom.required' => 'Le prénom de chaque fondateur est obligatoire.',
+                'fondateurs.*.fonction.required' => 'La fonction de chaque fondateur est obligatoire.',
+                'adherents.*.nip.required_with' => 'Le NIP de chaque adhérent est obligatoire.',
             ]);
 
             DB::beginTransaction();
@@ -740,8 +845,65 @@ class DossierController extends Controller
             $actionRequest = $request->input('action', 'brouillon');
             $orgStatut = ($actionRequest === 'soumettre') ? 'soumis' : 'brouillon';
 
-            // Créer l'organisation
-            $organisation = Organisation::create([
+            // Si un brouillon a été créé via saveDraftStep, le réutiliser plutôt
+            // que d'insérer un nouveau couple Organisation/Dossier (sinon on a
+            // une violation de la contrainte unique organisations.nom).
+            $existingDossier = null;
+            if ($request->filled('dossier_id')) {
+                $existingDossier = Dossier::with('organisation')->find($request->input('dossier_id'));
+                if ($existingDossier && $existingDossier->statut !== 'brouillon') {
+                    // Brouillon déjà soumis : on n'écrase pas
+                    $existingDossier = null;
+                }
+            }
+
+            $organisation = $existingDossier?->organisation;
+
+            // ============================================================
+            // Détection préventive de la collision sur le nom de l'organisation.
+            // La contrainte UNIQUE sur `organisations.nom` peut bloquer si :
+            //  - une autre organisation porte déjà ce nom (tentative précédente
+            //    laissée comme brouillon orphelin, ou homonyme légitime)
+            // Stratégie :
+            //  - si l'autre est un brouillon SANS dossier actif → cleanup auto
+            //  - si l'autre est active → on bascule sur elle (réutilisation)
+            //  - si l'autre est en validation/approuve → erreur explicite
+            // ============================================================
+            $conflict = Organisation::where('nom', $validated['org_nom'])
+                ->when($organisation, fn($q) => $q->where('id', '!=', $organisation->id))
+                ->first();
+
+            if ($conflict) {
+                $conflictDossier = Dossier::where('organisation_id', $conflict->id)->orderByDesc('id')->first();
+
+                if ($conflict->statut === 'brouillon' && (!$conflictDossier || $conflictDossier->statut === 'brouillon')) {
+                    // Brouillon orphelin / abandonné → on le supprime pour libérer le nom
+                    \Log::info('Brouillon orphelin supprimé pour libérer le nom', [
+                        'orphan_org_id' => $conflict->id,
+                        'orphan_dossier_id' => $conflictDossier?->id,
+                        'nom' => $validated['org_nom'],
+                    ]);
+                    if ($conflictDossier) {
+                        $conflictDossier->delete();
+                    }
+                    // ORDRE : adhérents avant fondateurs (FK adherents.fondateur_id → fondateurs.id)
+                    $conflict->adherents()->delete();
+                    if (class_exists('App\\Models\\MembreBureau')) {
+                        \App\Models\MembreBureau::where('organisation_id', $conflict->id)->delete();
+                    }
+                    $conflict->fondateurs()->delete();
+                    $conflict->delete();
+                } else {
+                    DB::rollBack();
+                    return back()->withInput()->with(
+                        'error',
+                        "Une organisation portant le nom « {$validated['org_nom']} » existe déjà (statut : {$conflict->statut}). " .
+                        "Choisissez un autre nom ou contactez l'administrateur pour fusionner avec l'existant."
+                    );
+                }
+            }
+
+            $orgPayload = [
                 'user_id' => auth()->id(),
                 'organisation_type_id' => $orgType->id,
                 'type' => $orgType->code,
@@ -749,16 +911,15 @@ class DossierController extends Controller
                 'sigle' => $validated['org_sigle'] ?? null,
                 'objet' => $validated['org_objet'],
                 'domaine_activite_id' => $validated['org_domaine_activite_id'],
-                'siege_social' => $validated['org_adresse'], // Mapping correct vers siege_social
+                'siege_social' => $validated['org_adresse'],
                 'province' => $province->nom ?? null,
                 'departement' => $departement->nom ?? null,
-                'prefecture' => $departement->nom ?? 'Non défini', // Champ obligatoire
+                'prefecture' => $departement->nom ?? 'Non défini',
                 'ville_commune' => $commune->nom ?? null,
                 'arrondissement' => $arrondissement->nom ?? null,
                 'quartier' => $validated['org_quartier'] ?? null,
                 'latitude' => $validated['org_latitude'] ?? null,
                 'longitude' => $validated['org_longitude'] ?? null,
-                // Références ID pour les jointures
                 'province_ref_id' => $validated['org_province_id'],
                 'departement_ref_id' => $validated['org_departement_id'],
                 'commune_ville_ref_id' => $validated['org_commune_id'] ?? null,
@@ -769,19 +930,26 @@ class DossierController extends Controller
                 'date_creation' => $validated['org_date_creation'],
                 'statut' => $orgStatut,
                 'is_active' => true,
-            ]);
+            ];
 
-            // Générer numéro de récépissé provisoire
-            $numeroRecepisse = $this->generateRecepisseNumberAdmin($orgType->code);
+            if ($organisation) {
+                // Mise à jour de l'organisation brouillon existante
+                $organisation->fill($orgPayload)->save();
+            } else {
+                $organisation = Organisation::create($orgPayload);
+            }
+
+            // Générer numéro de récépissé provisoire (seulement si pas déjà attribué)
+            $numeroRecepisse = $organisation->numero_recepisse
+                ?: $this->generateRecepisseNumberAdmin($orgType->code);
             $organisation->update(['numero_recepisse' => $numeroRecepisse]);
 
-            // Créer le dossier avec le statut basé sur l'action
+            // Créer / mettre à jour le dossier avec le statut basé sur l'action
             $dossierStatut = ($actionRequest === 'soumettre') ? Dossier::STATUT_SOUMIS : Dossier::STATUT_BROUILLON;
 
-            // Créer le dossier
-            $dossier = Dossier::create([
+            $dossierPayload = [
                 'organisation_id' => $organisation->id,
-                'numero_dossier' => $this->generateNumeroDossierAdmin(),
+                'numero_dossier' => $existingDossier?->numero_dossier ?: $this->generateNumeroDossierAdmin(),
                 'numero_recepisse' => $numeroRecepisse,
                 'type_operation' => 'creation',
                 'statut' => $dossierStatut,
@@ -808,10 +976,27 @@ class DossierController extends Controller
                     'admin_name' => auth()->user()->name,
                 ]),
                 'is_active' => true,
-            ]);
+            ];
 
-            // Créer les fondateurs
-            foreach ($validated['fondateurs'] as $fondateurData) {
+            if ($existingDossier) {
+                $existingDossier->fill($dossierPayload)->save();
+                $dossier = $existingDossier;
+            } else {
+                $dossier = Dossier::create($dossierPayload);
+            }
+
+            // Recréer les fondateurs (purger l'existant pour idempotence).
+            // ORDRE IMPORTANT : adhérents d'abord (FK adherents.fondateur_id → fondateurs.id),
+            // puis fondateurs ensuite.
+            if ($existingDossier) {
+                $organisation->adherents()->delete();          // doit être supprimé en 1er
+                if (class_exists('App\\Models\\MembreBureau')) {
+                    \App\Models\MembreBureau::where('organisation_id', $organisation->id)->delete();
+                }
+                $organisation->fondateurs()->delete();         // après les adhérents
+            }
+
+            foreach (($validated['fondateurs'] ?? []) as $fondateurData) {
                 Fondateur::create([
                     'organisation_id' => $organisation->id,
                     'nip' => $fondateurData['nip'],
@@ -842,7 +1027,7 @@ class DossierController extends Controller
             }
 
             // Créer les adhérents si fournis
-            if (!empty($validated['adherents'])) {
+            if (!empty($validated['adherents'] ?? null)) {
                 foreach ($validated['adherents'] as $adherentData) {
                     Adherent::create([
                         'organisation_id' => $organisation->id,
@@ -1013,6 +1198,10 @@ class DossierController extends Controller
                 })
                 ->orderBy('created_at', 'desc');
 
+            if ($request->filled('type_operation')) {
+                $query->where('type_operation', $request->type_operation);
+            }
+
             // Application des filtres de recherche
             if ($request->filled('search')) {
                 $search = trim($request->search);
@@ -1177,6 +1366,12 @@ class DossierController extends Controller
             // ========== ACTIONS DISPONIBLES POUR LES PDF ==========
             $documentsDisponibles = $this->getAvailableActionsUpdated($dossier);
 
+            // ========== RÉCÉPISSÉS / DOCUMENTS OFFICIELS ÉMIS ==========
+            $recepisses = DocumentGeneration::with('generatedBy')
+                ->where('dossier_id', $dossier->id)
+                ->orderByDesc('generated_at')
+                ->get();
+
             // ========== LOG AVEC BACKSLASH (comme ancien code) ==========
             \Log::info("Consultation dossier #{$dossier->id}", [
                 'user_id' => auth()->id(),
@@ -1191,7 +1386,8 @@ class DossierController extends Controller
                 'stats',
                 'historique',
                 'declarant',
-                'documentsDisponibles'
+                'documentsDisponibles',
+                'recepisses'
             ));
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
@@ -2788,6 +2984,10 @@ class DossierController extends Controller
                 ->where('statut', 'brouillon')
                 ->orderBy('updated_at', 'desc');
 
+            if ($request->filled('type_operation')) {
+                $query->where('type_operation', $request->type_operation);
+            }
+
             // Filtres optionnels
             if ($request->filled('search')) {
                 $search = $request->search;
@@ -2800,7 +3000,7 @@ class DossierController extends Controller
                 });
             }
 
-            $dossiers = $query->paginate(15);
+            $dossiers = $query->paginate(15)->withQueryString();
 
             // Enrichir les dossiers avec des données supplémentaires
             $dossiers->getCollection()->transform(function ($dossier) {
@@ -2834,6 +3034,10 @@ class DossierController extends Controller
             $query = Dossier::with(['organisation', 'assignedAgent'])
                 ->where('statut', Dossier::STATUT_ANNULE)
                 ->orderBy('updated_at', 'desc');
+
+            if ($request->filled('type_operation')) {
+                $query->where('type_operation', $request->type_operation);
+            }
 
             // Filtres optionnels
             if ($request->filled('search')) {
@@ -2926,6 +3130,86 @@ class DossierController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
             return back()->with('error', 'Erreur lors de l\'annulation du dossier: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Liste les dossiers rejetés.
+     * Route: GET /admin/dossiers/rejetes
+     */
+    public function rejetes(Request $request)
+    {
+        try {
+            $query = Dossier::with(['organisation', 'assignedAgent'])
+                ->where('statut', 'rejete')
+                ->orderBy('updated_at', 'desc');
+
+            if ($request->filled('type_operation')) {
+                $query->where('type_operation', $request->type_operation);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('numero_dossier', 'like', "%{$search}%")
+                        ->orWhereHas('organisation', function ($org) use ($search) {
+                            $org->where('nom', 'like', "%{$search}%")
+                                ->orWhere('sigle', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            $dossiers = $query->paginate(15)->withQueryString();
+            $dossiers->getCollection()->transform(fn($d) => $this->enrichDossierData($d));
+
+            $stats = [
+                'total_rejetes' => Dossier::where('statut', 'rejete')->count(),
+            ];
+
+            return view('admin.dossiers.rejetes', compact('dossiers', 'stats'));
+        } catch (\Exception $e) {
+            \Log::error('Erreur DossierController@rejetes: ' . $e->getMessage());
+            return back()->with('error', 'Erreur lors du chargement des dossiers rejetés.');
+        }
+    }
+
+    /**
+     * Liste tous les dossiers, optionnellement filtrés par type d'opération.
+     * Route: GET /admin/dossiers/tous
+     */
+    public function tous(Request $request)
+    {
+        try {
+            $query = Dossier::with(['organisation', 'assignedAgent'])
+                ->orderBy('created_at', 'desc');
+
+            if ($request->filled('type_operation')) {
+                $query->where('type_operation', $request->type_operation);
+            }
+
+            if ($request->filled('search')) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('numero_dossier', 'like', "%{$search}%")
+                        ->orWhereHas('organisation', function ($org) use ($search) {
+                            $org->where('nom', 'like', "%{$search}%")
+                                ->orWhere('sigle', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            $dossiers = $query->paginate(20)->withQueryString();
+            $dossiers->getCollection()->transform(fn($d) => $this->enrichDossierData($d));
+
+            $stats = [
+                'total' => Dossier::count(),
+                'par_statut' => Dossier::selectRaw('statut, COUNT(*) as total')->groupBy('statut')->pluck('total', 'statut')->all(),
+            ];
+
+            return view('admin.dossiers.tous', compact('dossiers', 'stats'));
+        } catch (\Exception $e) {
+            \Log::error('Erreur DossierController@tous: ' . $e->getMessage());
+            return back()->with('error', 'Erreur lors du chargement des dossiers.');
         }
     }
 

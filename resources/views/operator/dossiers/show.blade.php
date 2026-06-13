@@ -343,6 +343,82 @@
                 </div>
             </div>
 
+            {{-- Récépissés émis pour ce dossier (1 par opération) --}}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white d-flex align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-stamp mr-2 text-success"></i>Récépissés & documents officiels émis
+                        @if(isset($recepisses))
+                            <span class="badge badge-success ml-2">{{ $recepisses->count() }}</span>
+                        @endif
+                    </h5>
+                    <small class="text-muted ml-auto">
+                        Opération : <strong>{{ ucfirst(str_replace('_', ' ', $dossier->type_operation ?? 'N/A')) }}</strong>
+                    </small>
+                </div>
+                <div class="card-body p-0">
+                    @if(isset($recepisses) && $recepisses->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table mb-0">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th>Document</th>
+                                        <th>Numéro</th>
+                                        <th>Émis le</th>
+                                        <th>Statut</th>
+                                        <th class="text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($recepisses as $recepisse)
+                                        <tr>
+                                            <td>
+                                                <i class="fas fa-file-pdf text-danger mr-1"></i>
+                                                <strong>{{ $recepisse->type_document_label }}</strong>
+                                            </td>
+                                            <td><code>{{ $recepisse->numero_document }}</code></td>
+                                            <td>
+                                                <small>
+                                                    {{ \Carbon\Carbon::parse($recepisse->generated_at)->format('d/m/Y H:i') }}
+                                                    @if($recepisse->generatedBy)
+                                                        <br><span class="text-muted">par {{ $recepisse->generatedBy->name }}</span>
+                                                    @endif
+                                                </small>
+                                            </td>
+                                            <td>
+                                                @if($recepisse->is_valid)
+                                                    <span class="badge badge-success">Valide</span>
+                                                @else
+                                                    <span class="badge badge-danger" title="{{ $recepisse->invalidation_reason }}">Invalidé</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-right">
+                                                @if($recepisse->is_valid)
+                                                    <a href="{{ route('operator.dossiers.recepisses.download', [$dossier->id, $recepisse->id]) }}"
+                                                       class="btn btn-sm btn-success"
+                                                       target="_blank">
+                                                        <i class="fas fa-print mr-1"></i>Imprimer
+                                                    </a>
+                                                @else
+                                                    <button class="btn btn-sm btn-outline-secondary" disabled>
+                                                        <i class="fas fa-ban"></i>
+                                                    </button>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @else
+                        <div class="alert alert-info mb-0 m-3">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Aucun récépissé n'a encore été émis pour ce dossier. Les récépissés sont générés une fois le dossier validé par l'administration.
+                        </div>
+                    @endif
+                </div>
+            </div>
+
             {{-- Historique --}}
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-header bg-white">

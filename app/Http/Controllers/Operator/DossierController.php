@@ -3,11 +3,14 @@
 namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
+use App\Helpers\PdfTemplateHelper;
 use App\Models\Dossier;
+use App\Models\DocumentGeneration;
 use App\Models\Organisation;
 use App\Models\Document;
 use App\Models\DocumentType;
 use App\Models\QrCode;
+use App\Services\DocumentGenerationService;
 use App\Services\DossierService;
 use App\Services\FileUploadService;
 use App\Services\NotificationService;
@@ -263,6 +266,12 @@ class DossierController extends Controller
             abort(403);
         }
 
+        // Récépissés / documents officiels générés pour ce dossier
+        $recepisses = DocumentGeneration::with('generatedBy')
+            ->where('dossier_id', $dossier->id)
+            ->orderByDesc('generated_at')
+            ->get();
+
         // Statistiques
         $stats = [
             'documents_count' => $dossier->documents ? $dossier->documents->count() : 0,
@@ -270,7 +279,45 @@ class DossierController extends Controller
             'delai_attente' => Carbon::parse($dossier->created_at)->diffInDays(now()),
         ];
 
-        return view('operator.dossiers.show', compact('dossier', 'stats'));
+        return view('operator.dossiers.show', compact('dossier', 'stats', 'recepisses'));
+    }
+
+    /**
+     * Télécharger un document/récépissé généré spécifique (régénère le PDF
+     * à partir du snapshot conservé dans document_generations).
+     */
+    public function downloadGeneration($dossier, DocumentGeneration $generation, DocumentGenerationService $documentService)
+    {
+        $dossier = Dossier::with('organisation')->findOrFail($dossier);
+
+        if ($dossier->organisation->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ((int) $generation->dossier_id !== (int) $dossier->id) {
+            abort(404);
+        }
+
+        if (!$generation->is_valid) {
+            return back()->with('error', 'Ce récépissé a été invalidé.');
+        }
+
+        try {
+            set_time_limit(120);
+            ini_set('memory_limit', '256M');
+
+            $result = $documentService->regenerate($generation);
+
+            return PdfTemplateHelper::downloadPdf($result['pdf'], $result['filename']);
+        } catch (\Exception $e) {
+            Log::error('Erreur téléchargement récépissé opérateur', [
+                'generation_id' => $generation->id,
+                'dossier_id' => $dossier->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->with('error', 'Erreur lors du téléchargement : ' . $e->getMessage());
+        }
     }
 
     /**
@@ -1666,36 +1713,7 @@ class DossierController extends Controller
                 ], 404);
             }
 
-            // ✅ VÉRIFICATION VOLUME EXISTANT
-            $adherentsExistants = Adherent::where('organisation_id', $dossier->organisation->id)->count();
-
-            if ($adherentsExistants > 0) {
-                Log::info('⚠️ ADHÉRENTS DÉJÀ EXISTANTS - FINALISATION DIRECTE', [
-                    'organisation_id' => $dossier->organisation->id,
-                    'count' => $adherentsExistants
-                ]);
-
-                $dossier->update([
-                    'statut' => 'soumis',
-                    'donnees_supplementaires' => json_encode([
-                        'solution' => 'EXISTING_DATA_FINALIZED',
-                        'total_existing' => $adherentsExistants,
-                        'processed_at' => now()->toISOString()
-                    ])
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Dossier finalisé avec succès',
-                    'data' => [
-                        'total_existing' => $adherentsExistants,
-                        'solution' => 'EXISTING_DATA'
-                    ],
-                    'redirect_url' => route('operator.dossiers.confirmation', $dossier->id)
-                ]);
-            }
-
-            // ✅ TRAITEMENT NOUVEAU VOLUME
+            // ✅ LIRE D'ABORD LES ADHÉRENTS SOUMIS DANS CETTE REQUÊTE
             $adherentsData = $request->input('adherents');
 
             if (is_string($adherentsData)) {
@@ -1704,12 +1722,50 @@ class DossierController extends Controller
                 $adherentsArray = is_array($adherentsData) ? $adherentsData : [];
             }
 
+            // ✅ VÉRIFICATION VOLUME EXISTANT
+            $adherentsExistants = Adherent::where('organisation_id', $dossier->organisation->id)->count();
+
+            // Court-circuit « finalisation directe » UNIQUEMENT lorsqu'aucun nouvel
+            // adhérent n'est fourni. Sinon, un adhérent résiduel de la Phase 1
+            // (ex: fondateur enregistré comme adhérent) faisait sauter tout l'import.
             if (empty($adherentsArray)) {
+                if ($adherentsExistants > 0) {
+                    Log::info('⚠️ AUCUNE NOUVELLE DONNÉE - FINALISATION DES ADHÉRENTS EXISTANTS', [
+                        'organisation_id' => $dossier->organisation->id,
+                        'count' => $adherentsExistants
+                    ]);
+
+                    $dossier->update([
+                        'statut' => 'soumis',
+                        'donnees_supplementaires' => json_encode([
+                            'solution' => 'EXISTING_DATA_FINALIZED',
+                            'total_existing' => $adherentsExistants,
+                            'processed_at' => now()->toISOString()
+                        ])
+                    ]);
+
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Dossier finalisé avec succès',
+                        'data' => [
+                            'total_existing' => $adherentsExistants,
+                            'solution' => 'EXISTING_DATA'
+                        ],
+                        'redirect_url' => route('operator.dossiers.confirmation', $dossier->id)
+                    ]);
+                }
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Aucune donnée d\'adhérents fournie'
                 ], 422);
             }
+
+            Log::info('📥 IMPORT ADHÉRENTS PHASE 2', [
+                'organisation_id' => $dossier->organisation->id,
+                'nouveaux_adherents' => count($adherentsArray),
+                'adherents_deja_presents' => $adherentsExistants
+            ]);
 
             $totalAdherents = count($adherentsArray);
 

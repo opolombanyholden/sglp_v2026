@@ -18,26 +18,61 @@
             rel="stylesheet" crossorigin="anonymous">
 
         <style>
-            /* Variables CSS - Couleurs Gabonaises */
+            /* =========================================================
+               PALETTE PROFESSIONNELLE — desaturée, soft, contraste maîtrisé
+               ========================================================= */
             :root {
-                --gabon-green: #009e3f;
-                --gabon-yellow: #ffcd00;
-                --gabon-blue: #003f7f;
-                --gabon-red: #8b1538;
-                --sidebar-width: 280px;
-                --header-height: 70px;
+                /* Couleurs originales conservées pour rétro-compat */
+                --gabon-green:  #2f7a4f;       /* vert sourd (au lieu de #009e3f flashy) */
+                --gabon-yellow: #d4a72c;       /* jaune ocre (au lieu de #ffcd00) */
+                --gabon-blue:   #1f3a5f;       /* bleu profond doux */
+                --gabon-red:    #8c4351;       /* bordeaux feutré */
+
+                /* Système de couleurs neutres (slate) */
+                --slate-50:  #f8fafc;
+                --slate-100: #f1f5f9;
+                --slate-200: #e2e8f0;
+                --slate-300: #cbd5e1;
+                --slate-400: #94a3b8;
+                --slate-500: #64748b;
+                --slate-600: #475569;
+                --slate-700: #334155;
+                --slate-800: #1e293b;
+                --slate-900: #0f172a;
+
+                /* Accent principal — vert sourd, lisible mais discret */
+                --accent:        #2f7a4f;
+                --accent-soft:   rgba(47, 122, 79, 0.12);
+                --accent-hover:  #265e3d;
+
+                /* Sidebar — bleu nuit doux plutôt que navy saturé */
+                --sidebar-bg:    #1e293b;       /* slate-800 */
+                --sidebar-text:  #cbd5e1;       /* slate-300 */
+                --sidebar-muted: #94a3b8;       /* slate-400 */
+                --sidebar-hover: rgba(255, 255, 255, 0.05);
+
+                --sidebar-width: 270px;
+                --header-height: 64px;
+
+                --radius-sm: 6px;
+                --radius:    8px;
+                --radius-lg: 10px;
+
+                --shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
+                --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
             }
 
             /* Reset et base */
-            * {
-                box-sizing: border-box;
-            }
+            * { box-sizing: border-box; }
 
             body {
                 margin: 0;
-                font-family: 'Inter', sans-serif;
-                background: #f8f9fa;
+                font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+                background: var(--slate-50);
+                color: var(--slate-700);
                 font-size: 14px;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
             }
 
             /* Layout principal */
@@ -46,44 +81,45 @@
                 min-height: 100vh;
             }
 
-            /* Sidebar exacte selon capture */
+            /* Sidebar — fond slate-800 sobre */
             .sidebar {
                 position: fixed;
                 top: 0;
                 left: 0;
                 width: var(--sidebar-width);
                 height: 100vh;
-                background: #0e2f5b;
+                background: var(--sidebar-bg);
                 overflow-y: auto;
                 z-index: 1000;
+                border-right: 1px solid rgba(255, 255, 255, 0.04);
             }
 
             /* Header sidebar avec logos */
             .sidebar-header {
-                padding: 1.5rem 1rem;
-                text-align: left;
+                padding: 1.25rem 1rem;
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.06);
             }
 
             .logo-section {
                 display: flex;
                 align-items: center;
-                gap: 1rem;
+                gap: 0.75rem;
             }
 
             .main-logo {
-                background: var(--gabon-green);
-                color: white;
-                width: 50px;
-                height: 50px;
-                border-radius: 12px;
+                background: var(--accent);
+                color: #fff;
+                width: 40px;
+                height: 40px;
+                border-radius: var(--radius);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 1.2rem;
-                font-weight: bold;
+                font-size: 0.95rem;
+                font-weight: 600;
             }
 
             .logo-text-group {
@@ -92,182 +128,186 @@
             }
 
             .sidebar-title {
-                color: var(--gabon-yellow);
-                font-size: 1.3rem;
-                font-weight: 700;
-                margin: 0;
-                line-height: 1.2;
-            }
-
-            .sidebar-subtitle {
-                color: var(--gabon-yellow);
-                font-size: 1.1rem;
+                color: #f1f5f9;
+                font-size: 1rem;
                 font-weight: 600;
                 margin: 0;
                 line-height: 1.2;
+                letter-spacing: -0.01em;
+            }
+
+            .sidebar-subtitle {
+                color: var(--sidebar-muted);
+                font-size: 0.78rem;
+                font-weight: 500;
+                margin: 0;
+                line-height: 1.2;
+                letter-spacing: 0.02em;
             }
 
             .settings-icon {
-                background: rgba(255, 255, 255, 0.1);
-                color: white;
-                width: 40px;
-                height: 40px;
-                border-radius: 10px;
+                background: transparent;
+                color: var(--sidebar-muted);
+                width: 32px;
+                height: 32px;
+                border-radius: var(--radius-sm);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 1rem;
+                font-size: 0.85rem;
+                border: 1px solid rgba(255, 255, 255, 0.06);
+                transition: all .15s ease;
             }
 
-            /* Profil utilisateur selon capture */
+            /* Profil utilisateur — bloc sobre */
             .sidebar-profile {
-                padding: 1rem;
-                margin: 0 1rem 1.5rem 1rem;
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 16px;
+                padding: 0.75rem;
+                margin: 1rem 1rem 1.25rem 1rem;
+                background: rgba(255, 255, 255, 0.04);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: var(--radius);
                 display: flex;
                 align-items: center;
-                gap: 12px;
+                gap: 10px;
             }
 
             .profile-avatar {
-                width: 45px;
-                height: 45px;
-                background: var(--gabon-green);
+                width: 36px;
+                height: 36px;
+                background: var(--accent);
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 color: white;
-                font-weight: 700;
-                font-size: 1rem;
+                font-weight: 600;
+                font-size: 0.85rem;
                 position: relative;
             }
 
             .profile-avatar::after {
                 content: '';
                 position: absolute;
-                bottom: 2px;
-                right: 2px;
-                width: 12px;
-                height: 12px;
-                background: var(--gabon-green);
-                border: 2px solid #1e40af;
+                bottom: 0;
+                right: 0;
+                width: 10px;
+                height: 10px;
+                background: #4ade80;
+                border: 2px solid var(--sidebar-bg);
                 border-radius: 50%;
             }
 
             .profile-info h6 {
-                color: white;
+                color: #f1f5f9;
                 margin: 0;
-                font-size: 0.9rem;
-                font-weight: 600;
+                font-size: 0.85rem;
+                font-weight: 500;
             }
 
             .profile-info small {
-                color: var(--gabon-yellow);
-                font-size: 0.75rem;
-                font-weight: 500;
+                color: var(--sidebar-muted);
+                font-size: 0.72rem;
+                font-weight: 400;
                 display: flex;
                 align-items: center;
                 gap: 4px;
             }
 
-            /* ✅ SYSTÈME D'ACCORDÉON UNIFIÉ - NOUVEAU DESIGN */
+            /* Navigation — sections sobres */
             .nav-section {
-                margin-bottom: 0.5rem;
+                margin-bottom: 0.125rem;
             }
 
             .nav-section-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 0.85rem 1rem;
-                margin: 0 1rem 0.25rem 1rem;
-                border-radius: 12px;
-                background: rgba(255, 255, 255, 0.05);
+                padding: 0.55rem 0.75rem;
+                margin: 0 0.75rem 0.125rem 0.75rem;
+                border-radius: var(--radius-sm);
+                background: transparent;
                 cursor: pointer;
-                transition: all 0.3s ease;
-                border: 1px solid transparent;
+                transition: background-color .15s ease;
+                border: none;
             }
 
             .nav-section-header:hover {
-                background: rgba(255, 255, 255, 0.1);
-                border-color: rgba(255, 205, 0, 0.3);
-                transform: translateX(2px);
+                background: var(--sidebar-hover);
             }
 
             .nav-section-header.active {
-                background: linear-gradient(135deg, var(--gabon-green) 0%, #00b347 100%);
-                border-color: var(--gabon-yellow);
-                box-shadow: 0 4px 15px rgba(0, 158, 63, 0.3);
+                background: rgba(255, 255, 255, 0.06);
             }
 
             .nav-section-title-content {
                 display: flex;
                 align-items: center;
-                color: rgba(255, 255, 255, 0.9);
+                color: var(--sidebar-text);
+                gap: 10px;
             }
 
             .nav-section-icon {
-                width: 35px;
-                height: 35px;
-                margin-right: 12px;
+                width: 22px;
+                height: 22px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 8px;
-                font-size: 1rem;
-                transition: all 0.3s ease;
+                background: transparent;
+                color: var(--sidebar-muted);
+                border-radius: var(--radius-sm);
+                font-size: 0.85rem;
+                transition: color .15s ease;
             }
 
-            .nav-section-header.active .nav-section-icon {
-                background: rgba(255, 255, 255, 0.2);
-                transform: scale(1.1);
+            .nav-section-header.active .nav-section-icon,
+            .nav-section-header:hover .nav-section-icon {
+                color: #f1f5f9;
             }
 
             .nav-section-title {
-                font-size: 0.85rem;
-                font-weight: 600;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
+                font-size: 0.78rem;
+                font-weight: 500;
+                text-transform: none;
+                letter-spacing: 0;
+                color: var(--sidebar-text);
             }
 
             .nav-section-toggle {
-                color: rgba(255, 255, 255, 0.6);
-                font-size: 0.8rem;
-                transition: transform 0.3s ease;
+                color: var(--sidebar-muted);
+                font-size: 0.7rem;
+                transition: transform .2s ease;
             }
 
             .nav-section-header.active .nav-section-toggle {
                 transform: rotate(180deg);
-                color: var(--gabon-yellow);
+                color: var(--sidebar-text);
             }
 
             .nav-section-badge {
-                background: var(--gabon-yellow);
-                color: #1e3a8a;
-                padding: 2px 8px;
-                border-radius: 12px;
-                font-size: 0.7rem;
-                font-weight: 700;
+                background: rgba(255, 255, 255, 0.07);
+                color: var(--sidebar-muted);
+                padding: 1px 7px;
+                border-radius: 10px;
+                font-size: 0.68rem;
+                font-weight: 500;
                 margin-left: 8px;
+                font-variant-numeric: tabular-nums;
             }
 
-            /* ✅ SOUS-SECTIONS D'ACCORDÉON */
+            /* Sous-sections (accordéon) */
             .nav-subsection {
                 max-height: 0;
                 overflow: hidden;
-                transition: max-height 0.4s ease, padding 0.3s ease;
-                padding: 0 1rem;
-                border-left: 3px solid transparent;
-                margin-left: 1.5rem;
+                transition: max-height .3s ease, padding .2s ease;
+                padding: 0 0.5rem;
+                margin-left: 1.75rem;
+                border-left: 1px solid rgba(255, 255, 255, 0.05);
             }
 
-            .nav-subsection.active {
-                max-height: 1000px;
-                padding: 0.5rem 1rem;
-                border-left-color: rgba(255, 205, 0, 0.4);
+            .nav-subsection.active,
+            .nav-subsection.open {
+                max-height: 1200px;
+                padding: 0.25rem 0.5rem 0.5rem;
             }
 
             .nav-list {
@@ -278,107 +318,91 @@
 
             .nav-item {
                 position: relative;
-                margin-bottom: 0.25rem;
+                margin-bottom: 1px;
             }
 
-            /* ✅ LIENS DE NAVIGATION OPTIMISÉS */
+            /* Liens de navigation — sobres et compacts */
             .nav-link-custom {
                 display: flex;
                 align-items: center;
-                padding: 0.7rem 0.75rem;
-                color: rgba(255, 255, 255, 0.8);
+                padding: 0.45rem 0.6rem;
+                color: var(--sidebar-text);
                 text-decoration: none;
-                transition: all 0.3s ease;
+                transition: background-color .15s ease, color .15s ease;
                 position: relative;
-                border-radius: 8px;
-                border: 1px solid transparent;
+                border-radius: var(--radius-sm);
+                border: none;
+                font-size: 0.82rem;
             }
 
             .nav-link-custom:hover {
-                color: white;
-                background: rgba(255, 255, 255, 0.1);
+                color: #f1f5f9;
+                background: var(--sidebar-hover);
                 text-decoration: none;
-                transform: translateX(3px);
-                border-color: rgba(255, 255, 255, 0.2);
+                transform: none;
             }
 
             .nav-link-custom.active {
-                background: linear-gradient(135deg, var(--gabon-green) 0%, #00b347 100%);
-                color: white;
-                box-shadow: 0 4px 15px rgba(0, 158, 63, 0.3);
-                border-color: var(--gabon-yellow);
+                background: var(--accent-soft);
+                color: #f1f5f9;
+                box-shadow: none;
             }
 
             .nav-link-custom.active::before {
                 content: '';
                 position: absolute;
-                left: 0;
-                top: 0;
-                bottom: 0;
-                width: 3px;
-                background: var(--gabon-yellow);
-                border-radius: 0 3px 3px 0;
+                left: -10px;
+                top: 6px;
+                bottom: 6px;
+                width: 2px;
+                background: var(--accent);
+                border-radius: 2px;
             }
 
             .nav-icon {
-                width: 32px;
-                height: 32px;
+                width: 22px;
+                height: 22px;
                 margin-right: 10px;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: rgba(255, 255, 255, 0.1);
-                border-radius: 6px;
-                font-size: 0.9rem;
-                transition: all 0.3s ease;
+                background: transparent;
+                color: var(--sidebar-muted);
+                border-radius: var(--radius-sm);
+                font-size: 0.78rem;
+                transition: color .15s ease;
             }
 
+            .nav-link-custom:hover .nav-icon,
             .nav-link-custom.active .nav-icon {
-                background: rgba(255, 255, 255, 0.2);
-                transform: scale(1.05);
+                color: #f1f5f9;
+                transform: none;
             }
 
             .nav-text {
                 flex: 1;
-                font-size: 0.85rem;
-                font-weight: 500;
+                font-size: 0.82rem;
+                font-weight: 400;
             }
 
             .nav-badge {
-                background: rgba(255, 255, 255, 0.2);
-                color: white;
-                padding: 3px 8px;
-                border-radius: 12px;
-                font-size: 0.7rem;
-                font-weight: 700;
-                min-width: 20px;
+                background: rgba(255, 255, 255, 0.07);
+                color: var(--sidebar-muted);
+                padding: 1px 6px;
+                border-radius: 10px;
+                font-size: 0.68rem;
+                font-weight: 500;
+                min-width: 18px;
                 text-align: center;
+                font-variant-numeric: tabular-nums;
             }
 
-            .nav-badge.warning {
-                background: var(--gabon-yellow);
-                color: #1e3a8a;
-            }
-
-            .nav-badge.info {
-                background: #3b82f6;
-                color: white;
-            }
-
-            .nav-badge.success {
-                background: var(--gabon-green);
-                color: white;
-            }
-
-            .nav-badge.users {
-                background: var(--gabon-red);
-                color: white;
-            }
-
-            .nav-badge.roles {
-                background: var(--gabon-blue);
-                color: white;
-            }
+            /* Variantes de badges atténuées (couleurs juste suggérées) */
+            .nav-badge.warning { background: rgba(212, 167, 44, 0.15); color: #fcd34d; }
+            .nav-badge.info    { background: rgba(59, 130, 246, 0.15); color: #93c5fd; }
+            .nav-badge.success { background: rgba(47, 122, 79, 0.18); color: #86efac; }
+            .nav-badge.users   { background: rgba(140, 67, 81, 0.18); color: #fca5a5; }
+            .nav-badge.roles   { background: rgba(31, 58, 95, 0.30); color: #93c5fd; }
 
             .nav-badge.permissions {
                 background: #ff6b35;
@@ -477,61 +501,54 @@
 
             /* Header principal */
             .main-header {
-                background: white;
+                background: #fff;
                 height: var(--header-height);
-                border-bottom: 1px solid #e5e7eb;
+                border-bottom: 1px solid var(--slate-200);
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                padding: 0 2rem;
+                padding: 0 1.5rem;
                 position: sticky;
                 top: 0;
                 z-index: 100;
             }
 
-            .header-left {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-            }
+            .header-left { display: flex; align-items: center; gap: 1rem; }
 
             .header-title {
                 margin: 0;
-                font-size: 1.5rem;
-                font-weight: 700;
-                color: #1f2937;
+                font-size: 1.05rem;
+                font-weight: 600;
+                color: var(--slate-800);
                 display: flex;
                 align-items: center;
                 gap: 0.5rem;
+                letter-spacing: -0.01em;
             }
 
-            .header-right {
-                display: flex;
-                align-items: center;
-                gap: 1rem;
-            }
+            .header-right { display: flex; align-items: center; gap: 0.75rem; }
 
-            /* Barre de recherche */
-            .search-container {
-                position: relative;
-                width: 300px;
-            }
+            /* Barre de recherche — discrète */
+            .search-container { position: relative; width: 280px; }
 
             .search-input {
                 width: 100%;
-                padding: 0.5rem 1rem 0.5rem 2.5rem;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
-                font-size: 0.85rem;
-                background: #f9fafb;
-                transition: all 0.2s ease;
+                padding: 0.45rem 0.875rem 0.45rem 2.25rem;
+                border: 1px solid var(--slate-200);
+                border-radius: var(--radius);
+                font-size: 0.82rem;
+                background: var(--slate-50);
+                transition: border-color .15s, background-color .15s;
+                color: var(--slate-700);
             }
+
+            .search-input::placeholder { color: var(--slate-400); }
 
             .search-input:focus {
                 outline: none;
-                border-color: var(--gabon-green);
-                box-shadow: 0 0 0 3px rgba(0, 158, 63, 0.1);
-                background: white;
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px var(--accent-soft);
+                background: #fff;
             }
 
             .search-icon {
@@ -539,126 +556,256 @@
                 left: 0.75rem;
                 top: 50%;
                 transform: translateY(-50%);
-                color: #6b7280;
-                font-size: 0.9rem;
+                color: var(--slate-400);
+                font-size: 0.82rem;
             }
 
-            /* Actions header */
-            .header-actions {
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-            }
+            .header-actions { display: flex; align-items: center; gap: 0.5rem; }
 
             .action-btn {
                 position: relative;
-                width: 36px;
-                height: 36px;
-                border: 1px solid #d1d5db;
-                background: white;
-                border-radius: 8px;
+                width: 34px;
+                height: 34px;
+                border: 1px solid var(--slate-200);
+                background: #fff;
+                border-radius: var(--radius);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 cursor: pointer;
-                transition: all 0.2s ease;
-                color: #6b7280;
-                font-size: 0.9rem;
+                transition: border-color .15s, background-color .15s, color .15s;
+                color: var(--slate-500);
+                font-size: 0.85rem;
             }
 
             .action-btn:hover {
-                border-color: var(--gabon-green);
-                color: var(--gabon-green);
-                background: rgba(0, 158, 63, 0.05);
+                border-color: var(--slate-300);
+                color: var(--slate-700);
+                background: var(--slate-50);
             }
 
             .notification-badge {
                 position: absolute;
-                top: -4px;
-                right: -4px;
-                background: var(--gabon-red);
-                color: white;
-                font-size: 0.65rem;
+                top: -3px;
+                right: -3px;
+                background: var(--accent);
+                color: #fff;
+                font-size: 0.62rem;
                 font-weight: 600;
-                padding: 2px 5px;
-                border-radius: 8px;
+                padding: 1px 5px;
+                border-radius: 9px;
                 min-width: 16px;
                 text-align: center;
+                font-variant-numeric: tabular-nums;
             }
 
-            /* Menu utilisateur */
+            /* Menu utilisateur (header) */
             .user-menu {
                 display: flex;
                 align-items: center;
-                gap: 0.75rem;
-                padding: 0.5rem;
-                border: 1px solid #d1d5db;
-                border-radius: 8px;
+                gap: 0.625rem;
+                padding: 0.375rem 0.625rem;
+                border: 1px solid var(--slate-200);
+                border-radius: var(--radius);
                 cursor: pointer;
-                transition: all 0.2s ease;
-                background: white;
+                transition: border-color .15s, background-color .15s;
+                background: #fff;
             }
 
             .user-menu:hover {
-                border-color: var(--gabon-green);
-                background: rgba(0, 158, 63, 0.05);
+                border-color: var(--slate-300);
+                background: var(--slate-50);
             }
 
             .user-avatar-header {
-                width: 32px;
-                height: 32px;
-                background: var(--gabon-green);
-                border-radius: 6px;
+                width: 28px;
+                height: 28px;
+                background: var(--accent);
+                border-radius: var(--radius-sm);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                color: white;
+                color: #fff;
                 font-weight: 600;
-                font-size: 0.8rem;
+                font-size: 0.72rem;
             }
 
-            .user-info-header {
-                display: flex;
-                flex-direction: column;
-            }
+            .user-info-header { display: flex; flex-direction: column; line-height: 1.25; }
 
             .user-name {
-                font-size: 0.85rem;
-                font-weight: 600;
-                color: #1f2937;
+                font-size: 0.82rem;
+                font-weight: 500;
+                color: var(--slate-800);
                 margin: 0;
             }
 
             .user-role {
-                font-size: 0.75rem;
-                color: #6b7280;
+                font-size: 0.7rem;
+                color: var(--slate-500);
             }
 
             /* Zone de contenu */
             .content-area {
                 flex: 1;
-                padding: 2rem;
+                padding: 1.5rem;
                 overflow-y: auto;
+                background: var(--slate-50);
             }
 
-            /* Messages d'alerte */
+            /* Cartes Bootstrap — bordure subtile, ombre minimale */
+            .content-area .card {
+                border: 1px solid var(--slate-200);
+                box-shadow: var(--shadow-xs);
+                border-radius: var(--radius);
+            }
+
+            .content-area .card-header {
+                background: #fff;
+                border-bottom: 1px solid var(--slate-200);
+                font-weight: 500;
+                color: var(--slate-700);
+            }
+
+            .content-area .card-header.bg-primary,
+            .content-area .card-header[style*="009e3f"],
+            .content-area .card-header[style*="003f7f"],
+            .content-area .card-header.bg-warning,
+            .content-area .card-header.bg-danger,
+            .content-area .card-header.bg-info,
+            .content-area .card-header.bg-success,
+            .content-area .card-header.bg-secondary {
+                background: var(--slate-50) !important;
+                color: var(--slate-700) !important;
+                border-bottom-color: var(--slate-200);
+            }
+
+            /* Boutons Bootstrap — atténuation des couleurs vives */
+            .btn-primary {
+                background-color: var(--accent);
+                border-color: var(--accent);
+            }
+            .btn-primary:hover, .btn-primary:focus {
+                background-color: var(--accent-hover);
+                border-color: var(--accent-hover);
+                box-shadow: 0 0 0 3px var(--accent-soft);
+            }
+            .btn-outline-primary {
+                color: var(--accent);
+                border-color: var(--accent);
+            }
+            .btn-outline-primary:hover, .btn-outline-primary:focus {
+                background-color: var(--accent);
+                border-color: var(--accent);
+                color: #fff;
+            }
+
+            /* Messages d'alerte — versions soft */
             .alert {
-                border: none;
-                border-radius: 8px;
-                border-left: 4px solid;
+                border: 1px solid transparent;
+                border-radius: var(--radius);
+                border-left: 3px solid;
                 margin-bottom: 1rem;
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
             }
 
             .alert-success {
-                background: rgba(0, 158, 63, 0.1);
-                border-left-color: var(--gabon-green);
-                color: var(--gabon-green);
+                background: rgba(47, 122, 79, 0.06);
+                border-color: rgba(47, 122, 79, 0.18);
+                border-left-color: var(--accent);
+                color: #1e5435;
             }
 
             .alert-danger {
-                background: rgba(139, 21, 56, 0.1);
+                background: rgba(140, 67, 81, 0.06);
+                border-color: rgba(140, 67, 81, 0.18);
                 border-left-color: var(--gabon-red);
-                color: var(--gabon-red);
+                color: #6b3340;
+            }
+
+            .alert-warning {
+                background: rgba(212, 167, 44, 0.07);
+                border-color: rgba(212, 167, 44, 0.20);
+                border-left-color: var(--gabon-yellow);
+                color: #7a5a17;
+            }
+
+            .alert-info {
+                background: rgba(31, 58, 95, 0.06);
+                border-color: rgba(31, 58, 95, 0.18);
+                border-left-color: var(--gabon-blue);
+                color: #1f3a5f;
+            }
+
+            /* Badges Bootstrap — atténués */
+            .badge {
+                font-weight: 500;
+                font-size: 0.72rem;
+                padding: 0.3em 0.6em;
+                border-radius: 6px;
+                letter-spacing: 0;
+            }
+
+            .badge.bg-success, .badge.badge-success {
+                background-color: rgba(47, 122, 79, 0.12) !important;
+                color: #1e5435 !important;
+            }
+            .badge.bg-danger, .badge.badge-danger {
+                background-color: rgba(140, 67, 81, 0.12) !important;
+                color: #6b3340 !important;
+            }
+            .badge.bg-warning, .badge.badge-warning {
+                background-color: rgba(212, 167, 44, 0.15) !important;
+                color: #7a5a17 !important;
+            }
+            .badge.bg-info, .badge.badge-info {
+                background-color: rgba(31, 58, 95, 0.10) !important;
+                color: #1f3a5f !important;
+            }
+            .badge.bg-primary, .badge.badge-primary {
+                background-color: var(--accent-soft) !important;
+                color: var(--accent-hover) !important;
+            }
+            .badge.bg-secondary, .badge.badge-secondary {
+                background-color: var(--slate-100) !important;
+                color: var(--slate-600) !important;
+            }
+            .badge.bg-dark {
+                background-color: var(--slate-700) !important;
+            }
+            .badge.bg-light {
+                background-color: var(--slate-100) !important;
+                color: var(--slate-700) !important;
+            }
+
+            /* Tables Bootstrap — séparateurs légers */
+            .table { color: var(--slate-700); }
+            .table > :not(caption) > * > * { border-bottom-color: var(--slate-200); }
+            .table thead th {
+                font-weight: 500;
+                color: var(--slate-500);
+                font-size: 0.78rem;
+                text-transform: none;
+                letter-spacing: 0;
+                background: var(--slate-50);
+                border-bottom: 1px solid var(--slate-200);
+            }
+            .table-hover tbody tr:hover { background-color: var(--slate-50); }
+
+            /* Forms */
+            .form-control, .form-select {
+                border-color: var(--slate-200);
+                color: var(--slate-700);
+                font-size: 0.875rem;
+            }
+            .form-control:focus, .form-select:focus {
+                border-color: var(--accent);
+                box-shadow: 0 0 0 3px var(--accent-soft);
+            }
+
+            /* Suppression des dégradés Gabon partout (rétro-compat) */
+            .bg-gabon, [class*="bg-gabon"] {
+                background: var(--accent) !important;
             }
 
             /* Responsive */
@@ -801,16 +948,48 @@
                         </div>
                     </div>
 
-                    <!-- ✅ SECTION OPÉRATIONS - Toutes les opérations -->
+                    @php
+                        // ============================================================
+                        // OPÉRATIONS REGROUPÉES PAR TYPE — chaque type d'opération
+                        // expose ses sous-statuts (brouillon, en attente, en cours,
+                        // terminé, rejeté, annulé, tous).
+                        // ============================================================
+                        $operationsMenu = [
+                            ['code' => 'creation',             'libelle' => 'Création',              'icon' => 'fas fa-plus-circle text-success'],
+                            ['code' => 'modification',         'libelle' => 'Modification',          'icon' => 'fas fa-edit text-info'],
+                            ['code' => 'cessation',            'libelle' => 'Cessation',             'icon' => 'fas fa-ban text-danger'],
+                            ['code' => 'ajout_adherent',       'libelle' => 'Ajout Adhérent',        'icon' => 'fas fa-user-plus text-success'],
+                            ['code' => 'retrait_adherent',     'libelle' => 'Retrait Adhérent',      'icon' => 'fas fa-user-minus text-warning'],
+                            ['code' => 'declaration_activite', 'libelle' => 'Déclaration Activité',  'icon' => 'fas fa-file-alt text-primary'],
+                            ['code' => 'changement_statutaire','libelle' => 'Changement Statutaire', 'icon' => 'fas fa-clipboard-check text-info'],
+                            ['code' => 'correction',           'libelle' => 'Correction',            'icon' => 'fas fa-pen-fancy text-warning'],
+                        ];
+
+                        // Pré-calcul des compteurs par (type_operation, statut)
+                        $opCounts = [];
+                        if (class_exists('App\\Models\\Dossier')) {
+                            $rows = \App\Models\Dossier::selectRaw('type_operation, statut, COUNT(*) as total')
+                                ->groupBy('type_operation', 'statut')
+                                ->get();
+                            foreach ($rows as $row) {
+                                $opCounts[$row->type_operation][$row->statut] = $row->total;
+                                $opCounts[$row->type_operation]['_total'] = ($opCounts[$row->type_operation]['_total'] ?? 0) + $row->total;
+                            }
+                        }
+
+                        $currentTypeOp = request()->input('type_operation');
+                    @endphp
+
+                    {{-- ====== ACTIONS RAPIDES ====== --}}
                     <div class="nav-section">
-                        <div class="nav-section-header" onclick="toggleSection('operations')">
+                        <div class="nav-section-header" onclick="toggleSection('quick-actions')">
                             <div class="nav-section-title-content">
-                                <i class="nav-section-icon fas fa-tools"></i>
-                                <span class="nav-section-title">Opérations</span>
+                                <i class="nav-section-icon fas fa-bolt"></i>
+                                <span class="nav-section-title">Actions rapides</span>
                             </div>
                             <i class="nav-section-toggle fas fa-chevron-down"></i>
                         </div>
-                        <div class="nav-subsection" id="section-operations">
+                        <div class="nav-subsection" id="section-quick-actions">
                             <ul class="nav-list">
                                 @if(Route::has('admin.organisations.create'))
                                     <li class="nav-item">
@@ -821,184 +1000,28 @@
                                         </a>
                                     </li>
                                 @endif
-
                                 @if(Route::has('admin.operations.select-organisation'))
                                     <li class="nav-item">
                                         <a href="{{ route('admin.operations.select-organisation') }}"
-                                            class="nav-link-custom {{ request()->routeIs('admin.operations.select-organisation') && !request()->has('operation') ? 'active' : '' }}">
+                                            class="nav-link-custom {{ request()->routeIs('admin.operations.select-organisation') ? 'active' : '' }}">
                                             <i class="nav-icon fas fa-list-alt"></i>
-                                            <span class="nav-text">Toutes les Opérations</span>
+                                            <span class="nav-text">Lancer une opération</span>
                                         </a>
                                     </li>
+                                @endif
+                                @if(Route::has('admin.dossiers.tous'))
                                     <li class="nav-item">
-                                        <a href="{{ route('admin.operations.select-organisation', ['operation' => 'modification']) }}"
-                                            class="nav-link-custom {{ request()->input('operation') == 'modification' || request()->is('admin/operations/*/modification/*') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-edit text-info"></i>
-                                            <span class="nav-text">Modification</span>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.operations.select-organisation', ['operation' => 'cessation']) }}"
-                                            class="nav-link-custom {{ request()->input('operation') == 'cessation' || request()->is('admin/operations/*/cessation/*') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-ban text-danger"></i>
-                                            <span class="nav-text">Cessation</span>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.operations.select-organisation', ['operation' => 'ajout_adherent']) }}"
-                                            class="nav-link-custom {{ request()->input('operation') == 'ajout_adherent' || request()->is('admin/operations/*/ajout_adherent/*') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-user-plus text-success"></i>
-                                            <span class="nav-text">Ajout Adhérent</span>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.operations.select-organisation', ['operation' => 'retrait_adherent']) }}"
-                                            class="nav-link-custom {{ request()->input('operation') == 'retrait_adherent' || request()->is('admin/operations/*/retrait_adherent/*') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-user-minus text-warning"></i>
-                                            <span class="nav-text">Retrait Adhérent</span>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.operations.select-organisation', ['operation' => 'declaration_activite']) }}"
-                                            class="nav-link-custom {{ request()->input('operation') == 'declaration_activite' || request()->is('admin/operations/*/declaration_activite/*') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-file-alt text-primary"></i>
-                                            <span class="nav-text">Déclaration Activité</span>
-                                        </a>
-                                    </li>
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.corrections.index') }}"
-                                            class="nav-link-custom {{ request()->routeIs('admin.corrections.*') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-pen-fancy text-warning"></i>
-                                            <span class="nav-text">Corrections</span>
-                                            @php
-                                                $correctionsPending = class_exists('App\Models\Dossier')
-                                                    ? \App\Models\Dossier::where('type_operation', 'correction')->where('statut', 'soumis')->count()
-                                                    : 0;
-                                            @endphp
-                                            @if($correctionsPending > 0)
-                                                <span class="badge bg-warning text-dark ms-auto">{{ $correctionsPending }}</span>
+                                        <a href="{{ route('admin.dossiers.tous') }}"
+                                            class="nav-link-custom {{ request()->routeIs('admin.dossiers.tous') && !$currentTypeOp ? 'active' : '' }}">
+                                            <i class="nav-icon fas fa-folder-open text-primary"></i>
+                                            <span class="nav-text">Tous les dossiers</span>
+                                            @php $totalAll = class_exists('App\\Models\\Dossier') ? \App\Models\Dossier::count() : 0; @endphp
+                                            @if($totalAll > 0)
+                                                <span class="nav-badge">{{ $totalAll }}</span>
                                             @endif
                                         </a>
                                     </li>
                                 @endif
-                            </ul>
-                        </div>
-                    </div>
-
-                    <!-- ✅ SECTION DOSSIERS PAR STATUT -->
-                    <div class="nav-section">
-                        <div class="nav-section-header" onclick="toggleSection('dossiers')">
-                            <div class="nav-section-title-content">
-                                <i class="nav-section-icon fas fa-folder-open"></i>
-                                <span class="nav-section-title">Dossiers par Statut</span>
-                                @php
-                                    $totalDossiers = class_exists('App\Models\Dossier') ? \App\Models\Dossier::count() : 0;
-                                @endphp
-                                @if($totalDossiers > 0)
-                                    <span class="nav-section-badge">{{ $totalDossiers }}</span>
-                                @endif
-                            </div>
-                            <i class="nav-section-toggle fas fa-chevron-down"></i>
-                        </div>
-                        <div class="nav-subsection" id="section-dossiers">
-                            <ul class="nav-list">
-                                @if(Route::has('admin.dossiers.brouillons'))
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.dossiers.brouillons') }}"
-                                            class="nav-link-custom {{ request()->routeIs('admin.dossiers.brouillons') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-edit"></i>
-                                            <span class="nav-text">Brouillons (Non soumis)</span>
-                                            @php
-                                                $totalBrouillons = class_exists('App\Models\Dossier') ? \App\Models\Dossier::where('statut', 'brouillon')->count() : 0;
-                                            @endphp
-                                            @if($totalBrouillons > 0)
-                                                <span class="nav-badge"
-                                                    style="background: #6b7280;">{{ $totalBrouillons }}</span>
-                                            @endif
-                                        </a>
-                                    </li>
-                                @endif
-
-                                @if(Route::has('admin.dossiers.en-attente'))
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.dossiers.en-attente') }}"
-                                            class="nav-link-custom {{ request()->routeIs('admin.dossiers.en-attente') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-clock"></i>
-                                            <span class="nav-text">En Attente (Soumis)</span>
-                                            @php
-                                                $totalEnAttente = class_exists('App\\Models\\Dossier') ? \App\Models\Dossier::where('statut', 'soumis')->count() : 0;
-                                            @endphp
-                                            @if($totalEnAttente > 0)
-                                                <span class="nav-badge warning">{{ $totalEnAttente }}</span>
-                                            @endif
-                                        </a>
-                                    </li>
-                                @endif
-
-                                @if(Route::has('admin.workflow.en-cours'))
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.workflow.en-cours') }}"
-                                            class="nav-link-custom {{ request()->routeIs('admin.workflow.en-cours') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-cogs"></i>
-                                            <span class="nav-text">En Cours de Traitement</span>
-                                            @php
-                                                $totalEnCours = class_exists('App\\Models\\Dossier') ? \App\Models\Dossier::where('statut', 'en_cours')->count() : 0;
-                                            @endphp
-                                            @if($totalEnCours > 0)
-                                                <span class="nav-badge info">{{ $totalEnCours }}</span>
-                                            @endif
-                                        </a>
-                                    </li>
-                                @endif
-
-                                @if(Route::has('admin.workflow.termines'))
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.workflow.termines') }}"
-                                            class="nav-link-custom {{ request()->routeIs('admin.workflow.termines') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-check-circle"></i>
-                                            <span class="nav-text">Terminés (Acceptés)</span>
-                                            @php
-                                                $totalTermines = class_exists('App\\Models\\Dossier') ? \App\Models\Dossier::where('statut', 'accepte')->count() : 0;
-                                            @endphp
-                                            @if($totalTermines > 0)
-                                                <span class="nav-badge success">{{ $totalTermines }}</span>
-                                            @endif
-                                        </a>
-                                    </li>
-                                @endif
-
-                                @if(Route::has('admin.dossiers.rejetes'))
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.dossiers.rejetes') }}"
-                                            class="nav-link-custom {{ request()->routeIs('admin.dossiers.rejetes') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-times-circle"></i>
-                                            <span class="nav-text">Rejetés</span>
-                                            @php
-                                                $totalRejetes = class_exists('App\Models\Dossier') ? \App\Models\Dossier::where('statut', 'rejete')->count() : 0;
-                                            @endphp
-                                            @if($totalRejetes > 0)
-                                                <span class="nav-badge" style="background: #dc2626;">{{ $totalRejetes }}</span>
-                                            @endif
-                                        </a>
-                                    </li>
-                                @endif
-
-                                @if(Route::has('admin.dossiers.annules'))
-                                    <li class="nav-item">
-                                        <a href="{{ route('admin.dossiers.annules') }}"
-                                            class="nav-link-custom {{ request()->routeIs('admin.dossiers.annules') ? 'active' : '' }}">
-                                            <i class="nav-icon fas fa-ban"></i>
-                                            <span class="nav-text">Annulés</span>
-                                            @php
-                                                $totalAnnules = class_exists('App\Models\Dossier') ? \App\Models\Dossier::where('statut', 'annule')->count() : 0;
-                                            @endphp
-                                            @if($totalAnnules > 0)
-                                                <span class="nav-badge" style="background: #991b1b;">{{ $totalAnnules }}</span>
-                                            @endif
-                                        </a>
-                                    </li>
-                                @endif
-
                                 @if(Route::has('admin.organisations.index'))
                                     <li class="nav-item">
                                         <a href="{{ route('admin.organisations.index') }}"
@@ -1011,6 +1034,81 @@
                             </ul>
                         </div>
                     </div>
+
+                    {{-- ====== OPÉRATIONS — chaque type a ses sous-statuts ====== --}}
+                    @foreach($operationsMenu as $op)
+                        @php
+                            $opTotal = $opCounts[$op['code']]['_total'] ?? 0;
+                            $sectionId = 'op-' . str_replace('_', '-', $op['code']);
+                            $isCurrent = $currentTypeOp === $op['code'];
+
+                            $statusItems = [
+                                ['key' => 'brouillon', 'label' => 'Brouillons',    'route' => 'admin.dossiers.brouillons',   'icon' => 'fas fa-edit',         'badge' => '#6b7280'],
+                                ['key' => 'soumis',    'label' => 'En attente',    'route' => 'admin.dossiers.en-attente',   'icon' => 'fas fa-clock',        'badge' => '#f59e0b'],
+                                ['key' => 'en_cours',  'label' => 'En cours',      'route' => 'admin.workflow.en-cours',     'icon' => 'fas fa-cogs',         'badge' => '#3b82f6'],
+                                ['key' => 'accepte',   'label' => 'Terminés',      'route' => 'admin.workflow.termines',     'icon' => 'fas fa-check-circle', 'badge' => '#10b981'],
+                                ['key' => 'rejete',    'label' => 'Rejetés',       'route' => 'admin.dossiers.rejetes',      'icon' => 'fas fa-times-circle', 'badge' => '#dc2626'],
+                                ['key' => 'annule',    'label' => 'Annulés',       'route' => 'admin.dossiers.annules',      'icon' => 'fas fa-ban',          'badge' => '#991b1b'],
+                                ['key' => null,        'label' => 'Tous',          'route' => 'admin.dossiers.tous',         'icon' => 'fas fa-list',         'badge' => '#0d6efd'],
+                            ];
+                        @endphp
+                        <div class="nav-section">
+                            <div class="nav-section-header" onclick="toggleSection('{{ $sectionId }}')">
+                                <div class="nav-section-title-content">
+                                    <i class="nav-section-icon {{ $op['icon'] }}"></i>
+                                    <span class="nav-section-title">{{ $op['libelle'] }}</span>
+                                    @if($opTotal > 0)
+                                        <span class="nav-section-badge">{{ $opTotal }}</span>
+                                    @endif
+                                </div>
+                                <i class="nav-section-toggle fas fa-chevron-down"></i>
+                            </div>
+                            <div class="nav-subsection {{ $isCurrent ? 'open' : '' }}" id="section-{{ $sectionId }}">
+                                <ul class="nav-list">
+                                    {{-- Lien "Nouveau" pour lancer une opération de ce type --}}
+                                    @php
+                                        if ($op['code'] === 'creation') {
+                                            // Création = nouvelle organisation
+                                            $newRoute = Route::has('admin.organisations.create') ? route('admin.organisations.create') : null;
+                                        } elseif (Route::has('admin.operations.select-organisation')) {
+                                            $newRoute = route('admin.operations.select-organisation', ['operation' => $op['code']]);
+                                        } else {
+                                            $newRoute = null;
+                                        }
+                                    @endphp
+                                    @if($newRoute)
+                                        <li class="nav-item">
+                                            <a href="{{ $newRoute }}" class="nav-link-custom">
+                                                <i class="nav-icon fas fa-plus-circle text-success"></i>
+                                                <span class="nav-text"><strong>Nouveau</strong></span>
+                                            </a>
+                                        </li>
+                                    @endif
+
+                                    @foreach($statusItems as $item)
+                                        @if(Route::has($item['route']))
+                                            @php
+                                                $count = $item['key']
+                                                    ? ($opCounts[$op['code']][$item['key']] ?? 0)
+                                                    : $opTotal;
+                                                $isActive = $currentTypeOp === $op['code'] && request()->routeIs($item['route']);
+                                            @endphp
+                                            <li class="nav-item">
+                                                <a href="{{ route($item['route'], ['type_operation' => $op['code']]) }}"
+                                                   class="nav-link-custom {{ $isActive ? 'active' : '' }}">
+                                                    <i class="nav-icon {{ $item['icon'] }}"></i>
+                                                    <span class="nav-text">{{ $item['label'] }}</span>
+                                                    @if($count > 0)
+                                                        <span class="nav-badge" style="background: {{ $item['badge'] }};">{{ $count }}</span>
+                                                    @endif
+                                                </a>
+                                            </li>
+                                        @endif
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    @endforeach
 
                     <!-- ✅ BASE DE DONNÉES NIP - ACCORDÉON -->
                     <div class="nav-section">
@@ -2090,6 +2188,9 @@
         <script src="{{ asset('js/other-suggestion.js') }}"></script>
 
         @stack('scripts')
+
+        <!-- Formatage automatique des champs à la saisie (NIP, téléphone, nom/sigle, email) -->
+        <script src="{{ asset('js/input-formatter.js') }}"></script>
     </body>
 
 </html>

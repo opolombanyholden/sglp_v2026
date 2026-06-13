@@ -12,11 +12,20 @@ use Mpdf\Output\Destination;
 class PdfTemplateHelper
 {
     /**
-     * Chemin vers le logo du ministère
+     * Chemin vers le logo du ministère.
+     * Cherche dans plusieurs emplacements pour être robuste local/prod.
      */
     private static function getLogoPath()
     {
-        return storage_path('app/public/images/logo-ministere.png');
+        $candidates = [
+            public_path('images/logo-ministere.png'),
+            storage_path('app/public/images/logo-ministere.png'),
+            public_path('storage/images/logo-ministere.png'),
+        ];
+        foreach ($candidates as $p) {
+            if (file_exists($p)) return $p;
+        }
+        return $candidates[0];
     }
 
     /**
@@ -128,36 +137,48 @@ class PdfTemplateHelper
             $mpdf->SetAuthor('PNGDI - Ministère de l\'Intérieur');
             $mpdf->SetCreator('PNGDI Platform');
 
-            // ===== HEADER FIXE (répété sur TOUTES les pages) =====
+            // ===== HEADER FIXE =====
+            // Logo institutionnel en haut à droite — affiché sur TOUS les types
+            // de récépissés (provisoire, définitif, accusé). Le bg-pied-page
+            // contient un sceau différent en BAS de page : pas de doublon.
+            // On évite l'ajout uniquement si le header_text inclut déjà un <img>.
             $headerText = $options['header_text'] ?? '';
             $logoBase64 = self::getLogoBase64();
 
-            // DEBUG
+            $headerTextHasImage = $headerText !== '' && stripos($headerText, '<img') !== false;
+            $shouldInjectLogo = $logoBase64 && !$headerTextHasImage;
+
             \Log::info('PdfTemplateHelper Header Debug', [
                 'header_text_length' => strlen($headerText),
+                'header_text_has_image' => $headerTextHasImage,
                 'logo_base64_length' => strlen($logoBase64),
-                'header_preview' => substr(strip_tags($headerText), 0, 50),
+                'header_first_page_only' => !empty($options['header_first_page_only']),
+                'will_inject_logo' => $shouldInjectLogo,
             ]);
 
             $headerHtml = '
             <div>
                 <table width="100%" style="font-family: Arial, sans-serif; font-size: 10px;">
                     <tr>
-                        <td width="70%" style="vertical-align: top; padding: 3px;">
+                        <td ' . ($shouldInjectLogo ? 'width="70%"' : 'width="100%"') . ' style="vertical-align: top; padding: 3px;">
                             ' . $headerText . '
                         </td>
-                        <td width="30%" style="text-align: right; vertical-align: top; padding: 3px;">
-                            ' . ($logoBase64 ? '<img src="' . $logoBase64 . '" style="height: 80px; width: auto;" />' : '') . '
-                        </td>
+                        ' . ($shouldInjectLogo
+                            ? '<td width="30%" style="text-align: right; vertical-align: top; padding: 3px;">
+                                  <img src="' . $logoBase64 . '" style="height: 80px; width: auto;" />
+                               </td>'
+                            : ''
+                        ) . '
                     </tr>
                 </table>
             </div>
             ';
 
-            // Si header uniquement sur première page
+            // Si header uniquement sur première page (récépissé définitif)
             if (!empty($options['header_first_page_only'])) {
-                // Ne pas utiliser SetHTMLHeader, on intègrera le header directement dans le HTML
-                // et on désactivera le header après la première page
+                // Le header sera écrit UNE SEULE FOIS via $mpdf->WriteHTML($headerHtml)
+                // plus bas dans le flux (avant l'écriture du contenu principal).
+                // Pas de SetHTMLHeader, pas d'injection dans le HTML : éviterait le doublon.
             } else {
                 $mpdf->SetHTMLHeader($headerHtml);
             }
@@ -176,6 +197,12 @@ class PdfTemplateHelper
 
             // Footer avec QR Code en bas à gauche
             $footerHtml = '';
+            $internalDocNumber = trim($options['internal_doc_number'] ?? '');
+
+            // Bloc "Réf. doc" sous le QR (à gauche). Style discret en gris.
+            $internalDocBlock = $internalDocNumber !== ''
+                ? '<div style="font-family: Arial, sans-serif; font-size: 6.5pt; color: #777; margin-top: 1px; max-width: 80px; word-break: break-all; line-height: 1.1;">Réf. ' . htmlspecialchars($internalDocNumber, ENT_QUOTES, 'UTF-8') . '</div>'
+                : '';
 
             // Charger l'image de fond
             $bgImageBase64 = '';
@@ -187,26 +214,42 @@ class PdfTemplateHelper
 
             // FOOTER avec image de fond (pour récépissé définitif)
             if (!empty($options['bg_in_footer']) && $bgImageBase64) {
-                // QR code par-dessus l'image de fond avec la structure spéciale
                 if ($qrCodeBase64) {
                     $qrCodeBase64 = trim($qrCodeBase64);
+                    // QR code + numéro doc dans un même bloc flottant par-dessus l'image de fond
                     $footerHtml = '
                     <table style="width: 80px; margin-left: -20px; margin-bottom: -740px; background-color: white; padding: 5px; position: relative; z-index: 999;">
-                        <tr><td style="width: 70px;"><img src="' . $qrCodeBase64 . '" style="width: 60px; height: 60px;" /></td></tr>
+                        <tr><td style="width: 70px;"><img src="' . $qrCodeBase64 . '" style="width: 60px; height: 60px;" />'
+                        . $internalDocBlock .
+                        '</td></tr>
                     </table>
                     <div style="margin-left: -15mm; margin-right: -15mm;">
                         <img src="' . $bgImageBase64 . '" style="width: 100%; height: auto; display: block;" />
                     </div>';
                 } else {
-                    // Juste l'image de fond sans QR code
-                    $footerHtml = '<div style="margin-left: -15mm; margin-right: -15mm; margin-bottom: -20mm;"><img src="' . $bgImageBase64 . '" style="width: 100%; height: auto; display: block; position: relative; z-index: 1;" /></div>';
+                    // Image de fond + numéro doc seul, en flottant à gauche
+                    $footerHtml =
+                        ($internalDocNumber !== ''
+                            ? '<table style="width: 80px; margin-left: -20px; margin-bottom: -740px; background-color: white; padding: 5px; position: relative; z-index: 999;">
+                                  <tr><td>' . $internalDocBlock . '</td></tr>
+                               </table>'
+                            : ''
+                        ) .
+                        '<div style="margin-left: -15mm; margin-right: -15mm; margin-bottom: -20mm;">
+                            <img src="' . $bgImageBase64 . '" style="width: 100%; height: auto; display: block; position: relative; z-index: 1;" />
+                        </div>';
                 }
             } else {
                 // FOOTER simple pour autres documents (récépissé provisoire, accusé, etc.)
                 if ($qrCodeBase64) {
                     $qrCodeBase64 = trim($qrCodeBase64);
-                    // QR code simple en bas à gauche
-                    $footerHtml = '<div style="text-align: left; padding: 5px;"><img src="' . $qrCodeBase64 . '" style="width: 60px; height: 60px;" /></div>';
+                    // QR code en bas à gauche, avec le numéro doc juste en dessous
+                    $footerHtml = '<div style="text-align: left; padding: 5px; max-width: 80px;">
+                        <img src="' . $qrCodeBase64 . '" style="width: 60px; height: 60px; display: block;" />'
+                        . $internalDocBlock .
+                    '</div>';
+                } elseif ($internalDocNumber !== '') {
+                    $footerHtml = '<div style="text-align: left; padding: 5px;">' . $internalDocBlock . '</div>';
                 }
             }
 

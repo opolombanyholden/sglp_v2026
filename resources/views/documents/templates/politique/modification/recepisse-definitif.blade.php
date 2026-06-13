@@ -28,16 +28,8 @@
         </p>
 
         <p class="mb-20" style="text-align: justify;">
-
-            En application des dispositions de l'article 11 de la Loi n° 35/62 du 10 Décembre 1962 relative aux
-            @if(($organisation['type_code'] ?? $organisation['type'] ?? '') === 'parti_politique')
-                partis politiques
-            @else
-                associations
-            @endif,
-            délivre
-            {{ ($organisation['type_code'] ?? $organisation['type'] ?? '') === 'parti_politique' ? 'au Parti politique' : 'à l\'Association' }}
-            dénommé{{ ($organisation['type_code'] ?? $organisation['type'] ?? '') === 'parti_politique' ? '' : 'e' }}
+            En application des dispositions de l'article 41 de la Loi n° 016/2025
+            du 30 Juin 2025 relative aux partis politiques, délivre au parti politique dénommé
             @php
                 $nomCorps = !empty($organisation['nom_precedent']) ? $organisation['nom_precedent'] : ($organisation['nom'] ?? '');
                 $sigleCorps = array_key_exists('sigle_precedent', $organisation) ? $organisation['sigle_precedent'] : ($organisation['sigle'] ?? null);
@@ -48,30 +40,22 @@
             @endif
             »,
             @if(!empty($organisation['numero_recepisse']))
-                légalisé{{ ($organisation['type_code'] ?? $organisation['type'] ?? '') === 'parti_politique' ? '' : 'e' }} sous
-                le récépissé définitif
+                légalisé sous le récépissé définitif
                 n° {{ $organisation['numero_recepisse'] }}
-                @if(!empty($organisation['date_recepisse']))
-                    daté du {{ \Carbon\Carbon::parse($organisation['date_recepisse'])->translatedFormat('d F Y') }}
-                @endif,
             @endif
             le présent récépissé de déclaration de modification.
         </p>
 
         <p class="mb-20" style="text-align: justify;">
-            Les modifications intervenues au sein
-            {{ ($organisation['type_code'] ?? $organisation['type'] ?? '') === 'parti_politique' ? 'dudit parti politique' : 'de ladite association' }}
-            concernent :
-       
-
-        {{-- Justification de la modification (remplace la liste à puces) --}}
-        @if(!empty($justification))
-            <strong>
-                {!! nl2br(e($justification)) !!}
-            </strong>
-        @endif
- </p>
-        <p class="mb-20" style="margin-top: 20px;">
+            Les modifications intervenues au sein dudit parti politique concernent :
+            {{-- Justification de la modification (remplace la liste à puces) --}}
+            @if(!empty($justification))
+                <strong>
+                    {!! nl2br(e($justification)) !!}
+                </strong>
+            @endif
+        </p>
+        <p class="mb-20" style="margin-top: 10px;">
             <strong><u>Nouvelles informations :</u></strong>
         </p>
 
@@ -97,7 +81,7 @@
         {{-- Bureau : affiché uniquement si le bureau a été modifié --}}
         @if(isset($typesModifies['bureau']))
             <p class="mb-10">
-                <strong><u>Bureau :</u></strong>
+                <strong><u>Nouveau Directoire :</u></strong>
             </p>
             <div style="margin-left: 20px; margin-bottom: 10px;">
                 @foreach($bureauModifications as $membre)
@@ -145,7 +129,7 @@
         @endif
 
         {{-- Pièces Annexées --}}
-        <p class="mb-10" style="margin-top: 20px;">
+        <p class="mb-10" style="margin-top: 10px;">
             <strong><u>Pièces Annexées :</u></strong>
         </p>
 
@@ -153,7 +137,7 @@
             <li>Procès-verbal d'Assemblée Générale Extraordinaire ;</li>
             <li>Récépissé définitif de déclaration ;</li>
             @if(!empty($bureauModifications))
-                <li>La liste actualisée des membres du comité directeur ;</li>
+                <li>La liste actualisée du directoire ;</li>
             @endif
             @if(isset($typesModifies['denomination']) || isset($typesModifies['objet']))
                 <li>Statuts modifiés.</li>

@@ -45,6 +45,13 @@ class OrganisationController extends Controller
     public function saveStep(Request $request, int $step)
     {
         try {
+            \Log::info('saveStep reçu', [
+                'step' => $step,
+                'user_id' => auth()->id(),
+                'has_data' => $request->has('data'),
+                'data_keys' => $request->has('data') ? array_keys((array) $request->input('data')) : [],
+            ]);
+
             $stepService = app(OrganisationStepService::class);
 
             $request->validate([
@@ -58,6 +65,8 @@ class OrganisationController extends Controller
                 auth()->id(),
                 $request->input('session_id', session()->getId())
             );
+
+            \Log::info('saveStep résultat', ['step' => $step, 'success' => $result['success'] ?? false]);
 
             return response()->json($result);
 
@@ -777,8 +786,30 @@ class OrganisationController extends Controller
             ];
             $type = $typeMapping[$type] ?? $type;
 
-            // Limitation par utilisateur
-            $canCreate = $this->checkOrganisationLimits($type);
+            // ✅ BROUILLON PROGRESSIF : retrouver l'organisation/dossier déjà créés
+            // pendant le wizard (sauvegarde par étape) pour les réutiliser plutôt que
+            // de créer des doublons, et pour les ignorer dans la validation d'unicité.
+            $brouillonOrg = null;
+            $brouillonDossier = null;
+            $draft = null;
+            $draftId = $request->input('draft_id');
+            if ($draftId) {
+                $draft = \App\Models\OrganizationDraft::find($draftId);
+                if ($draft && (int) $draft->user_id === (int) auth()->id()) {
+                    $meta = ($draft->form_data ?? [])['_meta'] ?? [];
+                    if (!empty($meta['organisation_id'])) {
+                        $brouillonOrg = Organisation::where('id', $meta['organisation_id'])
+                            ->where('user_id', auth()->id())
+                            ->first();
+                    }
+                    if (!empty($meta['dossier_id'])) {
+                        $brouillonDossier = Dossier::find($meta['dossier_id']);
+                    }
+                }
+            }
+
+            // Limitation par utilisateur (en ignorant le brouillon en cours)
+            $canCreate = $this->checkOrganisationLimits($type, $brouillonOrg?->id);
             if (!$canCreate['success']) {
                 \Log::warning('❌ Limite organisation atteinte - Standard', $canCreate);
 
@@ -797,7 +828,7 @@ class OrganisationController extends Controller
 
             // Validation complète
             try {
-                $validatedData = $this->validateCompleteOrganisationData($request, $type);
+                $validatedData = $this->validateCompleteOrganisationData($request, $type, $brouillonOrg?->id);
             } catch (\Illuminate\Validation\ValidationException $e) {
                 \Log::error('❌ Erreur validation standard', [
                     'errors' => $e->errors(),
@@ -823,8 +854,8 @@ class OrganisationController extends Controller
 
             DB::beginTransaction();
 
-            // ✅ CRÉATION ORGANISATION (même logique que storePhase1)
-            $organisation = Organisation::create([
+            // ✅ ORGANISATION : réutiliser le brouillon progressif s'il existe, sinon créer
+            $organisationData = [
                 'user_id' => auth()->id(),
                 'type' => $type,
                 'nom' => $validatedData['org_nom'],
@@ -842,9 +873,24 @@ class OrganisationController extends Controller
                 'site_web' => $validatedData['org_site_web'] ?? null,
                 'date_creation' => $validatedData['org_date_creation'],
                 'statut' => 'soumis',
+                'is_active' => true,
                 'nombre_adherents_min' => $this->getMinAdherents($type)
-            ]);
-            \Log::info('Organisation créée', ['organisation_id' => $organisation->id]);
+            ];
+
+            if ($brouillonOrg) {
+                $brouillonOrg->update($organisationData);
+                $organisation = $brouillonOrg;
+                // Repartir d'un état propre pour les entités liées (rien n'est créé
+                // pendant le wizard, mais on sécurise une éventuelle re-soumission).
+                // Ordre : adhérents avant fondateurs (FK adherents.fondateur_id).
+                $organisation->adherents()->delete();
+                $organisation->fondateurs()->delete();
+                $organisation->membresBureau()->delete();
+                \Log::info('Organisation brouillon réutilisée', ['organisation_id' => $organisation->id]);
+            } else {
+                $organisation = Organisation::create($organisationData);
+                \Log::info('Organisation créée', ['organisation_id' => $organisation->id]);
+            }
 
             // Générer et assigner le numéro de récépissé
             $numeroRecepisse = $this->generateRecepisseNumber($type);
@@ -890,16 +936,32 @@ class OrganisationController extends Controller
             ];
 
             $donneesSupplementairesCleaned = $this->sanitizeJsonData($donneesSupplementaires);
+            $donneesSupplementairesJson = json_encode($donneesSupplementairesCleaned, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
 
-            $dossier = Dossier::create([
-                'organisation_id' => $organisation->id,
-                'type_operation' => 'creation',
-                'numero_dossier' => $this->generateDossierNumber($type),
-                'statut' => 'soumis',
-                'submitted_at' => now(),
-                'donnees_supplementaires' => json_encode($donneesSupplementairesCleaned, JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION)
-            ]);
-            \Log::info('Dossier créé', ['dossier_id' => $dossier->id]);
+            // ✅ DOSSIER : réutiliser le dossier brouillon progressif s'il existe.
+            // Le brouillon porte un numéro provisoire (BR-...) : on attribue le numéro définitif.
+            if ($brouillonDossier) {
+                $brouillonDossier->update([
+                    'organisation_id' => $organisation->id,
+                    'type_operation' => 'creation',
+                    'numero_dossier' => $this->generateDossierNumber($type),
+                    'statut' => 'soumis',
+                    'submitted_at' => now(),
+                    'donnees_supplementaires' => $donneesSupplementairesJson
+                ]);
+                $dossier = $brouillonDossier;
+                \Log::info('Dossier brouillon réutilisé', ['dossier_id' => $dossier->id]);
+            } else {
+                $dossier = Dossier::create([
+                    'organisation_id' => $organisation->id,
+                    'type_operation' => 'creation',
+                    'numero_dossier' => $this->generateDossierNumber($type),
+                    'statut' => 'soumis',
+                    'submitted_at' => now(),
+                    'donnees_supplementaires' => $donneesSupplementairesJson
+                ]);
+                \Log::info('Dossier créé', ['dossier_id' => $dossier->id]);
+            }
 
             // ✅ TRAITEMENT DOCUMENTS
             if ($request->hasFile('documents')) {
@@ -922,6 +984,15 @@ class OrganisationController extends Controller
                     'error' => $e->getMessage()
                 ]);
                 $qrCode = null;
+            }
+
+            // Marquer le brouillon comme finalisé pour qu'il ne soit plus « reprenable »
+            if ($draft && (int) $draft->user_id === (int) auth()->id()) {
+                $draft->update([
+                    'completion_percentage' => 100,
+                    'current_step' => 9,
+                    'expires_at' => now()->addDays(30),
+                ]);
             }
 
             DB::commit();
@@ -2407,7 +2478,7 @@ class OrganisationController extends Controller
     /**
      * Vérifier les limites d'organisations par opérateur
      */
-    private function checkOrganisationLimits($type)
+    private function checkOrganisationLimits($type, $ignoreOrgId = null)
     {
         $userId = auth()->id();
 
@@ -2417,6 +2488,7 @@ class OrganisationController extends Controller
                 $existingCount = Organisation::where('user_id', $userId)
                     ->where('type', 'parti_politique')
                     ->whereIn('statut', ['brouillon', 'soumis', 'en_cours', 'approuve', 'actif'])
+                    ->when($ignoreOrgId, fn($q) => $q->where('id', '!=', $ignoreOrgId))
                     ->count();
 
                 if ($existingCount >= 1) {
@@ -2432,6 +2504,7 @@ class OrganisationController extends Controller
                 $existingCount = Organisation::where('user_id', $userId)
                     ->where('type', 'confession_religieuse')
                     ->whereIn('statut', ['brouillon', 'soumis', 'en_cours', 'approuve', 'actif'])
+                    ->when($ignoreOrgId, fn($q) => $q->where('id', '!=', $ignoreOrgId))
                     ->count();
 
                 if ($existingCount >= 1) {
@@ -2463,7 +2536,7 @@ class OrganisationController extends Controller
      * ✅ Enregistre TOUS les adhérents, même avec des NIP invalides
      * ✅ Marque les anomalies sans bloquer le processus
      */
-    private function validateCompleteOrganisationData(Request $request, $type)
+    private function validateCompleteOrganisationData(Request $request, $type, $ignoreOrgId = null)
     {
         // ✅ NORMALISATION DES NOMS DE CHAMPS (formulaire → validation)
         // Le formulaire Blade envoie des noms différents de ceux attendus par la validation
@@ -2630,8 +2703,10 @@ class OrganisationController extends Controller
             'demandeur_profession' => 'nullable|string|max:255',
 
             // ÉTAPE 4 : Organisation - COLONNES CONFORMES À ORGANISATIONS TABLE
-            'org_nom' => 'required|string|max:255|unique:organisations,nom',
-            'org_sigle' => 'nullable|string|max:255|unique:organisations,sigle',
+            // unique en ignorant l'organisation brouillon créée pendant le wizard
+            // (sauvegarde progressive par étape), sinon elle entre en conflit avec elle-même.
+            'org_nom' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('organisations', 'nom')->ignore($ignoreOrgId)],
+            'org_sigle' => ['nullable', 'string', 'max:255', \Illuminate\Validation\Rule::unique('organisations', 'sigle')->ignore($ignoreOrgId)],
             'org_objet' => 'required|string|min:50',
             'org_date_creation' => 'required|date',
             'org_telephone' => 'required|string|max:255',
@@ -3656,12 +3731,25 @@ class OrganisationController extends Controller
         $timestamp = time();
         $filename = $timestamp . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '_', $file->getClientOriginalName());
 
+        $documentTypeId = $this->getDocumentTypeId($documentType);
+        if (!$documentTypeId) {
+            \Log::warning('Document ignoré : type de document introuvable', [
+                'document_type' => $documentType,
+                'dossier_id' => $dossier->id,
+            ]);
+            return [
+                'nom_original' => $file->getClientOriginalName(),
+                'type' => $documentType,
+                'skipped' => true,
+            ];
+        }
+
         $path = $file->storeAs('documents/organisations', $filename, 'public');
         $hashFichier = hash_file('sha256', $file->getPathname());
 
         \App\Models\Document::create([
             'dossier_id' => $dossier->id,
-            'document_type_id' => $this->getDocumentTypeId($documentType),
+            'document_type_id' => $documentTypeId,
             'nom_fichier' => $filename,
             'nom_original' => $file->getClientOriginalName(),
             'chemin_fichier' => $path,
@@ -3823,20 +3911,44 @@ class OrganisationController extends Controller
     /**
      * Obtenir l'ID du type de document
      */
+    /**
+     * Résoudre l'id réel d'un type de document à partir de la clé envoyée par le
+     * formulaire. Le frontend indexe les documents par LIBELLÉ (accesseur nom → libelle
+     * du modèle DocumentType), mais la clé peut aussi être un code ou un id numérique.
+     * Renvoie null si aucun type ne peut être résolu (l'appelant doit alors ignorer le
+     * document plutôt que de provoquer une violation de clé étrangère).
+     */
     private function getDocumentTypeId($documentType)
     {
-        $documentTypeMapping = [
-            'statuts' => 1,
-            'pv_ag' => 2,
-            'liste_fondateurs' => 3,
-            'justificatif_siege' => 4,
-            'programme_politique' => 5,
-            'doctrine_religieuse' => 6,
-            'cv_dirigeants' => 7,
-            'budget_previsionnel' => 8
-        ];
+        // 1) id numérique direct
+        if (is_numeric($documentType) && \App\Models\DocumentType::whereKey($documentType)->exists()) {
+            return (int) $documentType;
+        }
 
-        return $documentTypeMapping[$documentType] ?? 1;
+        $key = trim((string) $documentType);
+
+        if ($key !== '') {
+            // 2) correspondance exacte par libellé (ce que le formulaire envoie) ou par code
+            $type = \App\Models\DocumentType::where('libelle', $key)
+                ->orWhere('code', $key)
+                ->first();
+
+            // 3) repli insensible à la casse
+            if (!$type) {
+                $type = \App\Models\DocumentType::whereRaw('LOWER(libelle) = ?', [mb_strtolower($key)])->first();
+            }
+
+            if ($type) {
+                return $type->id;
+            }
+        }
+
+        // 4) repli sûr : type générique connu, sinon premier type existant (évite la
+        //    violation FK). Renvoie null seulement si la table est vide.
+        $fallback = \App\Models\DocumentType::where('code', 'piece_identite')->first()
+            ?? \App\Models\DocumentType::orderBy('id')->first();
+
+        return $fallback ? $fallback->id : null;
     }
 
     /**

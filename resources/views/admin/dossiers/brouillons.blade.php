@@ -183,9 +183,9 @@
                                                     class="btn btn-outline-primary btn-sm" title="Voir détails">
                                                     <i class="fas fa-eye"></i>
                                                 </a>
-                                                <a href="{{ route('admin.dossiers.edit', $dossier->id) }}"
-                                                    class="btn btn-outline-warning btn-sm" title="Modifier">
-                                                    <i class="fas fa-edit"></i>
+                                                <a href="{{ route('admin.dossiers.create', ['dossier_id' => $dossier->id]) }}"
+                                                    class="btn btn-outline-success btn-sm" title="Reprendre la saisie">
+                                                    <i class="fas fa-play"></i> Reprendre
                                                 </a>
                                             </div>
                                         </td>

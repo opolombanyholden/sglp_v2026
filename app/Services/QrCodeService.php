@@ -195,13 +195,20 @@ class QrCodeService
             // Générer token (pour référence interne uniquement)
             $code = $this->generateToken();
 
-            // ✅ CORRECTION : URL utilise le domaine de production + numéro de document
-            // Format : https://www.sglp.ga/annuaire/verify/{numero_document}
+            // L'URL de vérification cible en priorité le numero_recepisse de
+            // l'organisation (préfixé "ASS/2026/00003" par ex.) — c'est ce qui
+            // identifie l'organisation publiquement. À défaut (récépissé provisoire
+            // sans numéro encore attribué), on retombe sur le numero_document.
             $baseUrl = rtrim(config('app.qr_verification_base_url', 'https://www.sglp.ga'), '/');
-            $verificationUrl = $baseUrl . "/annuaire/verify/{$documentNumero}";
+            $numeroForUrl = !empty($data['numero_recepisse'])
+                ? $data['numero_recepisse']
+                : $documentNumero;
+            $verificationUrl = $baseUrl . "/annuaire/verify/" . rawurlencode($numeroForUrl);
 
             Log::info('URL de vérification générée', [
                 'document_numero' => $documentNumero,
+                'numero_recepisse' => $data['numero_recepisse'] ?? null,
+                'numero_for_url' => $numeroForUrl,
                 'url' => $verificationUrl,
                 'token' => $code
             ]);

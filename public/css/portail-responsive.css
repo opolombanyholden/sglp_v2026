@@ -1,0 +1,119 @@
+/* ============================================================
+   portail-responsive.css
+   Couche responsive globale du portail public DGELP (mobile & tablette).
+   Direction A : même identité visuelle (#002B7F / #FFD700), agencement adapté.
+   Chargée EN DERNIER dans le <head> pour primer sur les styles inline.
+   Breakpoints (Bootstrap 5) :
+     - mobile   : ≤ 575.98px
+     - tablette : 576px – 991.98px
+     - desktop  : ≥ 992px (inchangé)
+   ============================================================ */
+
+/* --- Compat / base --- */
+html { -webkit-text-size-adjust: 100%; }
+
+/* form-group n'a plus de style en BS5 : on rétablit l'espacement attendu */
+.form-group { margin-bottom: 1rem; }
+
+/* Médias toujours fluides (évite les débordements horizontaux) */
+img, svg, video, iframe, canvas { max-width: 100%; height: auto; }
+
+/* Longues chaînes (URLs, codes, NIP) : on casse au lieu de déborder */
+pre, code { white-space: pre-wrap; }
+pre, code, .text-break-anywhere { overflow-wrap: anywhere; word-break: break-word; }
+
+/* Tableaux résiduels : scroll horizontal fluide sur tactile */
+.table-responsive { -webkit-overflow-scrolling: touch; }
+
+/* ============================================================
+   TABLETTE & MOBILE  (≤ 991.98px)
+   ============================================================ */
+@media (max-width: 991.98px) {
+
+    /* ---- Navbar repliée : fond plein et menu lisible ---- */
+    nav.navbar-main,
+    nav.navbar-main.scrolled {
+        background: var(--primary-blue, #002B7F) !important;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, .15);
+    }
+    nav.navbar-main .navbar-collapse {
+        background: var(--primary-blue, #002B7F);
+        border-radius: 0 0 12px 12px;
+        padding: .5rem 1rem 1rem;
+        margin-top: .5rem;
+    }
+    /* Cibles tactiles confortables dans le menu */
+    .navbar-nav .nav-link {
+        padding: .75rem .25rem;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    /* Lisibilité des liens sur le fond bleu du menu replié */
+    nav.navbar-main .navbar-collapse .nav-link,
+    nav.navbar-main .navbar-collapse .nav-link:focus {
+        color: rgba(255, 255, 255, .92) !important;
+    }
+    nav.navbar-main .navbar-collapse .nav-link:hover,
+    nav.navbar-main .navbar-collapse .nav-link.active {
+        color: var(--secondary-gold, #FFD700) !important;
+    }
+    /* Sous-menu « Ressources » : en flux (pas en absolu) une fois replié */
+    .navbar-nav .dropdown-menu,
+    #servicesMenu {
+        position: static !important;
+        box-shadow: none;
+        width: 100%;
+    }
+
+    /* ---- Hero : typographie fluide, CTA pleine largeur ---- */
+    .hero { padding-left: 1rem; padding-right: 1rem; }
+    .hero h1 { font-size: clamp(1.8rem, 6vw, 2.8rem); line-height: 1.15; }
+    .hero-subtitle { font-size: clamp(1rem, 3.5vw, 1.3rem); }
+    .hero .btn,
+    .hero a.btn { width: 100%; max-width: 360px; }
+
+    /* ---- Chiffres clés ---- */
+    .stat-number { font-size: clamp(1.6rem, 6vw, 2.2rem); }
+
+    /* ---- Cibles tactiles génériques ---- */
+    .btn { min-height: 44px; }
+    .page-link {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* ============================================================
+   MOBILE  (≤ 575.98px)
+   ============================================================ */
+@media (max-width: 575.98px) {
+
+    /* Titres de section plus sobres */
+    h1 { font-size: clamp(1.6rem, 7vw, 2.2rem); }
+    h2 { font-size: clamp(1.4rem, 6vw, 1.9rem); }
+    h3 { font-size: clamp(1.2rem, 5vw, 1.6rem); }
+
+    /* Conteneurs : padding latéral confortable */
+    .container, .container-fluid { padding-left: 16px; padding-right: 16px; }
+
+    /* Boutons d'action empilés et pleine largeur */
+    .hero .btn,
+    .hero a.btn,
+    .cta .btn { display: block; width: 100%; max-width: none; margin: .35rem 0; }
+
+    /* Cartes : padding interne réduit */
+    .card-body { padding: 1rem; }
+
+    /* Groupes de boutons qui débordent → empilés */
+    .btn-group:not(.btn-group-sm):not(.btn-group-vertical) {
+        flex-wrap: wrap;
+        gap: .5rem;
+    }
+
+    /* Menu utilisateur (connexion/inscription) déjà en colonne via le layout */
+    .user-menu { gap: .5rem; }
+}

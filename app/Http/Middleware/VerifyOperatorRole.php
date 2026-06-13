@@ -79,6 +79,21 @@ class VerifyOperatorRole
      */
     private function handleOperatorAccess(Request $request, Closure $next, $user): Response
     {
+        $currentRoute = optional($request->route())->getName();
+
+        // Routes toujours accessibles à un opérateur authentifié, même si email non vérifié
+        // ou profil incomplet — sinon boucle de redirection.
+        $alwaysAllowed = [
+            'verification.notice',
+            'verification.send',
+            'verification.verify',
+            'logout',
+            'operator.logout',
+        ];
+        if (in_array($currentRoute, $alwaysAllowed, true)) {
+            return $next($request);
+        }
+
         // Vérifier que l'email est vérifié
         if (!$user->hasVerifiedEmail()) {
             return redirect()->route('verification.notice')
@@ -90,6 +105,18 @@ class VerifyOperatorRole
             Auth::logout();
             return redirect()->route('home')
                 ->with('error', 'Votre compte a été suspendu. Contactez l\'administration.');
+        }
+
+        // Routes liées à la complétion de profil — laisser passer.
+        $profileCompletionRoutes = [
+            'operator.profile.complete',
+            'operator.profile.complete.store',
+            'operator.profile.index',
+            'operator.profile.update',
+            'operator.profile.edit',
+        ];
+        if (in_array($currentRoute, $profileCompletionRoutes, true)) {
+            return $next($request);
         }
 
         // Vérifier que le profil est complet

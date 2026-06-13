@@ -1,0 +1,134 @@
+/* ============================================================
+   operator-responsive.css
+   Responsive des formulaires de l'espace opérateur (mobile & tablette).
+   L'espace opérateur reste en Bootstrap 4 + jQuery (API modale jQuery utilisée).
+   Or le markup contient des classes d'espacement Bootstrap 5 (me-/ms-/ps-/pe-/gap-)
+   inopérantes en BS4 : ce fichier fournit un SHIM de compatibilité + les règles
+   responsive ciblées (wizard de création, import adhérents).
+   Chargé EN DERNIER dans le <head> du layout opérateur.
+   ============================================================ */
+
+/* ============================================================
+   1) SHIM compat Bootstrap 5 (utilitaires absents de BS4.6)
+   ============================================================ */
+.ms-0{margin-left:0!important}.ms-1{margin-left:.25rem!important}.ms-2{margin-left:.5rem!important}
+.ms-3{margin-left:1rem!important}.ms-4{margin-left:1.5rem!important}.ms-5{margin-left:3rem!important}.ms-auto{margin-left:auto!important}
+.me-0{margin-right:0!important}.me-1{margin-right:.25rem!important}.me-2{margin-right:.5rem!important}
+.me-3{margin-right:1rem!important}.me-4{margin-right:1.5rem!important}.me-5{margin-right:3rem!important}.me-auto{margin-right:auto!important}
+.ps-0{padding-left:0!important}.ps-1{padding-left:.25rem!important}.ps-2{padding-left:.5rem!important}
+.ps-3{padding-left:1rem!important}.ps-4{padding-left:1.5rem!important}.ps-5{padding-left:3rem!important}
+.pe-0{padding-right:0!important}.pe-1{padding-right:.25rem!important}.pe-2{padding-right:.5rem!important}
+.pe-3{padding-right:1rem!important}.pe-4{padding-right:1.5rem!important}.pe-5{padding-right:3rem!important}
+.gap-0{gap:0!important}.gap-1{gap:.25rem!important}.gap-2{gap:.5rem!important}
+.gap-3{gap:1rem!important}.gap-4{gap:1.5rem!important}.gap-5{gap:3rem!important}
+.text-start{text-align:left!important}.text-end{text-align:right!important}
+
+/* ============================================================
+   2) Base fluide
+   ============================================================ */
+img, svg, video, canvas { max-width: 100%; height: auto; }
+.table-responsive { -webkit-overflow-scrolling: touch; }
+/* Les listes dynamiques (fondateurs / membres / adhérents) sont rendues en tableau :
+   on garantit un scroll horizontal plutôt qu'un débordement de page. */
+#fondateurs_list, #membres_bureau_list, #adherents_list,
+#traditional-adherents-list, .dynamic-table-wrap { overflow-x: auto; }
+
+/* ============================================================
+   3) TABLETTE & MOBILE (≤ 991.98px)
+   ============================================================ */
+@media (max-width: 991.98px) {
+
+    /* ---- Garde-fou anti-débordement horizontal de la coquille ----
+       .main-content est un flex item de .operator-wrapper : sans min-width:0,
+       il ne peut pas rétrécir sous la largeur min-content de son contenu. */
+    .operator-wrapper { max-width: 100%; overflow-x: hidden; }
+    .main-content { min-width: 0; max-width: 100%; overflow-x: hidden; }
+
+    /* ---- Barre supérieure : on autorise le retour à la ligne et on retire les
+            largeurs minimales qui la faisaient déborder ---- */
+    .content-header { flex-wrap: wrap; gap: .5rem; }
+    .content-header .header-search,
+    .content-header .header-right,
+    .content-header .header-left { min-width: 0 !important; }
+    .content-header .header-search { flex: 1 1 auto; }
+
+    /* ---- Indicateur d'étapes : bande compacte à défilement horizontal ---- */
+    .step-indicators {
+        display: flex;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: .25rem;
+        margin: 0;
+        padding-bottom: .25rem;
+    }
+    .step-indicators .step-indicator {
+        flex: 0 0 auto !important;
+        width: 72px !important;
+        min-width: 72px !important;
+        max-width: 72px !important;
+        padding: .4rem .15rem !important;
+    }
+    .step-indicators .step-indicator .step-icon { font-size: 1rem; }
+    .step-indicators .step-indicator small {
+        display: block;
+        white-space: normal;
+        font-size: .6rem;
+        line-height: 1.05;
+    }
+
+    /* ---- Cibles tactiles ---- */
+    .btn { min-height: 44px; }
+    .form-control, .custom-select, select.form-control { min-height: 44px; }
+}
+
+/* ============================================================
+   4) MOBILE (≤ 575.98px)
+   ============================================================ */
+@media (max-width: 575.98px) {
+
+    /* Recherche globale masquée sur mobile (peu utile, source de débordement) */
+    .content-header .header-search { display: none; }
+
+    /* ---- Boutons de navigation du wizard : empilés, pleine largeur, collés en bas ---- */
+    .card-footer .d-flex.justify-content-between {
+        flex-direction: column;
+        align-items: stretch !important;
+        gap: .5rem;
+    }
+    .card-footer .d-flex.justify-content-between .ms-auto {
+        margin-left: 0 !important;
+        flex-direction: column;
+        width: 100%;
+    }
+    .card-footer .btn { width: 100%; }
+    #save-indicator { text-align: center; margin: 0 0 .25rem !important; }
+
+    /* La barre d'actions du wizard reste accessible en bas de l'écran */
+    .card-footer.bg-light {
+        position: sticky;
+        bottom: 0;
+        z-index: 1020;
+        background: #fff !important;
+        box-shadow: 0 -2px 10px rgba(0, 0, 0, .08);
+    }
+
+    /* ---- Conteneurs / cartes ---- */
+    .container, .container-fluid { padding-left: 14px; padding-right: 14px; }
+    .card-body { padding: 1rem; }
+
+    /* ---- Lignes de formulaire : empilage garanti même sans col-12 explicite ---- */
+    .form-row > [class*="col-"],
+    .row > [class*="col-md-"]:not([class*="col-12"]) { /* BS4 col-md s'empile déjà <768 ; on borne juste les paddings */
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+
+    /* ---- Indicateur d'étapes encore plus compact ---- */
+    .step-indicators .step-indicator { min-width: 56px; }
+    .step-indicators .step-indicator small { font-size: .62rem; }
+
+    /* ---- Tableaux dynamiques : police légèrement réduite pour limiter le scroll ---- */
+    #fondateurs_list table, #membres_bureau_list table,
+    #adherents_list table, #traditional-adherents-list table { font-size: .85rem; }
+}

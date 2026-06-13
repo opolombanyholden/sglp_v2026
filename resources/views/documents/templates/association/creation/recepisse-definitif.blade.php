@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="document-number" style="padding-left:40px; font-size:8pt; margin-top:0pt; padding-top:0pt;">
-        N° {{ $document['numero_document'] }}/MISD/SG/DGELP/DPPALC
+        N° {{ $document['numero_affiche'] ?? $document['numero_document'] }}/MISD/SG/DGELP/DPPALC
     </div>
 
     <div class="document-title" style="font-size:20px; margin-top:45px;">
@@ -10,7 +10,7 @@
         <div class="document-title-bar-vert"></div>
     </div>
 
-    <div class="content" style="font-size:12pt">
+    <div class="content" style="font-size:14px; line-height: normal; text-align: justify;">
         <p class="mb-20">
             <strong>Le Ministre de l'Intérieur, de la Sécurité et de la Décentralisation,</strong>
             <br />
@@ -59,7 +59,7 @@
             @endif
         </p>
 
-        <div style="page-break-before: always;"></div>
+      
 
         <p class="mb-20">
             <strong>Pièces annexées à la déclaration et autres prescriptions :</strong>
@@ -68,19 +68,21 @@
         <div>
             <strong>1- Pièces annexées :</strong>
         </div>
-        <ul style="margin-left: 30px; margin-bottom:6px; font-size:12pt; line-height: normal;">
+        <ul style="margin-left: 30px; margin-bottom:6px; font-size:14px; line-height: normal;">
             <li>Statuts ;</li>
             <li>Procès-verbal ;</li>
             <li>La liste de tous les membres du comité directeur ;</li>
             <li>La demande adressée au Ministre de l'Intérieur ;</li>
             <li>Le reçu de 10.000 frs CFA délivré par la Direction du Journal Officiel.</li>
         </ul>
+        
+        <div style="page-break-before: always;"></div>
 
         <p class="mb-4">
             <strong>2- Prescriptions :</strong>
         </p>
 
-        <div style="text-align: justify; font-size:12pt; line-height: normal;">
+        <div style="text-align: justify; font-size:14px; line-height: normal;">
             Toutes modifications apportées aux statuts de l'association et tous les changements survenus dans son
             administration ou sa direction devront être déclarés dans un délai d'un mois et mentionnés en outre dans
             le registre spécial tenu aussi bien au secrétariat de la préfecture qu'au siège de l'association,
@@ -94,7 +96,7 @@
             même ordonnance qui stipule que :
         </div>
 
-        <div style="text-align: justify; font-size:12pt; line-height: normal; margin-top:4pt">
+        <div style="text-align: justify; font-size:14px; line-height: normal; margin-top:4pt">
             <strong>Premièrement :</strong> « Toute association fondée sur une cause en vue d'un objet illicite
             contrairement
             aux lois, aux bonnes mœurs ou qui aurait pour but de porter atteinte à l'intégrité du territoire national et à
@@ -104,7 +106,7 @@
             est nulle et de nul effet ».
         </div>
 
-        <div style="text-align: justify; font-size:12pt; line-height: normal; margin-top:4pt">
+        <div style="text-align: justify; font-size:14px; line-height: normal; margin-top:4pt">
             <strong>Deuxièmement :</strong> « Sous peine de nullité de l'association, les membres chargés de son
             administration
             ou de sa direction doivent être majeurs, jouir de leurs droits civiques et ne pas avoir encouru de condamnation

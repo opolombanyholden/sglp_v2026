@@ -403,6 +403,15 @@
                                         </div>
 
                                         <div class="form-grid">
+                                            @php
+                                                $rd = $resumeData ?? [];
+                                                $selProv = $rd['org_province_id'] ?? old('org_province_id');
+                                                $selDept = $rd['org_departement_id'] ?? old('org_departement_id');
+                                                $selComm = $rd['org_commune_id'] ?? old('org_commune_id');
+                                                $selArr  = $rd['org_arrondissement_id'] ?? old('org_arrondissement_id');
+                                                $selQuar = $rd['org_quartier_id'] ?? old('org_quartier_id');
+                                            @endphp
+
                                             <!-- Province (commun) -->
                                             <div class="form-group">
                                                 <label class="form-label-modern">Province <span
@@ -412,7 +421,7 @@
                                                     <option value="">Sélectionner une province...</option>
                                                     @foreach($provinces as $province)
                                                         <option value="{{ $province->id }}" data-nom="{{ $province->nom }}"
-                                                            {{ old('org_province_id') == $province->id ? 'selected' : '' }}>
+                                                            {{ $selProv == $province->id ? 'selected' : '' }}>
                                                             {{ $province->nom }}
                                                         </option>
                                                     @endforeach
@@ -424,8 +433,14 @@
                                                 <label class="form-label-modern">Département <span
                                                         class="required">*</span></label>
                                                 <select class="form-select-modern" name="org_departement_id"
-                                                    id="org_departement_id" required disabled>
+                                                    id="org_departement_id" required {{ ($resumeDepartements ?? collect())->isEmpty() ? 'disabled' : '' }}>
                                                     <option value="">Sélectionner province d'abord...</option>
+                                                    @foreach(($resumeDepartements ?? []) as $dept)
+                                                        <option value="{{ $dept->id }}" data-nom="{{ $dept->nom }}"
+                                                            {{ $selDept == $dept->id ? 'selected' : '' }}>
+                                                            {{ $dept->nom }}
+                                                        </option>
+                                                    @endforeach
                                                 </select>
                                             </div>
 
@@ -433,24 +448,42 @@
                                             <div class="form-group zone-urbaine-field">
                                                 <label class="form-label-modern">Commune / Ville</label>
                                                 <select class="form-select-modern" name="org_commune_id" id="org_commune_id"
-                                                    disabled>
+                                                    {{ ($resumeCommunes ?? collect())->isEmpty() ? 'disabled' : '' }}>
                                                     <option value="">Sélectionner département...</option>
+                                                    @foreach(($resumeCommunes ?? []) as $com)
+                                                        <option value="{{ $com->id }}" data-nom="{{ $com->nom }}"
+                                                            {{ $selComm == $com->id ? 'selected' : '' }}>
+                                                            {{ $com->nom }}
+                                                        </option>
+                                                    @endforeach
                                                 </select>
                                             </div>
 
                                             <div class="form-group zone-urbaine-field">
                                                 <label class="form-label-modern">Arrondissement</label>
                                                 <select class="form-select-modern" name="org_arrondissement_id"
-                                                    id="org_arrondissement_id" disabled>
+                                                    id="org_arrondissement_id" {{ ($resumeArrondissements ?? collect())->isEmpty() ? 'disabled' : '' }}>
                                                     <option value="">Sélectionner commune...</option>
+                                                    @foreach(($resumeArrondissements ?? []) as $arr)
+                                                        <option value="{{ $arr->id }}" data-nom="{{ $arr->nom }}"
+                                                            {{ $selArr == $arr->id ? 'selected' : '' }}>
+                                                            {{ $arr->nom }}
+                                                        </option>
+                                                    @endforeach
                                                 </select>
                                             </div>
 
                                             <div class="form-group zone-urbaine-field">
                                                 <label class="form-label-modern">Quartier</label>
                                                 <select class="form-select-modern" name="org_quartier_id"
-                                                    id="org_quartier_id" disabled>
+                                                    id="org_quartier_id" {{ ($resumeQuartiers ?? collect())->isEmpty() ? 'disabled' : '' }}>
                                                     <option value="">Sélectionner arrondissement...</option>
+                                                    @foreach(($resumeQuartiers ?? []) as $qu)
+                                                        <option value="{{ $qu->id }}" data-nom="{{ $qu->nom }}"
+                                                            {{ $selQuar == $qu->id ? 'selected' : '' }}>
+                                                            {{ $qu->nom }}
+                                                        </option>
+                                                    @endforeach
                                                 </select>
                                             </div>
 
@@ -851,6 +884,8 @@
 
                                         <!-- Champ caché pour l'action -->
                                         <input type="hidden" name="action" id="formAction" value="brouillon">
+                                        <!-- ID du dossier brouillon pour la finalisation (réutilisation côté serveur) -->
+                                        <input type="hidden" name="dossier_id" id="formDossierId" value="{{ $resumeDossier->id ?? '' }}">
 
                                         <div class="section-footer final">
                                             <button type="button" class="btn-nav btn-nav-prev"
@@ -1929,6 +1964,10 @@
             var fondateurs = [];
             var adherents = [];
             var membresBureau = [];
+            // Exposés pour la reprise de brouillon
+            window.__fondateurs = fondateurs;
+            window.__adherents = adherents;
+            window.__membresBureau = membresBureau;
             var typeConfig = null;
             var currentStep = 1;
 
@@ -2015,6 +2054,9 @@
                     }, 400);
                 });
             });
+
+            // (le pré-remplissage est déclenché plus bas, après la déclaration
+            //  de window.AdminDossierDraft)
 
             // Retirer le highlight d'erreur dès que l'utilisateur saisit une valeur
             document.addEventListener('input', function (e) {
@@ -2135,8 +2177,10 @@
              * Gestionnaire de sauvegarde progressive (brouillon admin)
              */
             window.AdminDossierDraft = {
-                dossierId: null,
-                organisationTypeId: null,
+                dossierId: @json($resumeDossier->id ?? null),
+                organisationTypeId: @json($resumeDossier->organisation->organisation_type_id ?? null),
+                resumeStep: @json($resumeStep ?? null),
+                resumeData: @json($resumeData ?? null),
                 sectionToStep: { 'collapseDeclarant': 2, 'collapseOrganisation': 3, 'collapseLocalisation': 4, 'collapseFondateurs': 5, 'collapseMembresBureau': 6, 'collapseAdherents': 7, 'collapseDocuments': 8 },
 
                 collectData: function (sectionId) {
@@ -2155,6 +2199,18 @@
                             data[el.name] = el.value;
                         }
                     });
+                    // ============================================================
+                    // Listes (arrays JS) — sérialisées en JSON pour le serveur
+                    // ============================================================
+                    if (sectionId === 'collapseFondateurs' && Array.isArray(window.__fondateurs)) {
+                        data['__fondateurs_json'] = JSON.stringify(window.__fondateurs);
+                    }
+                    if (sectionId === 'collapseMembresBureau' && Array.isArray(window.__membresBureau)) {
+                        data['__membresBureau_json'] = JSON.stringify(window.__membresBureau);
+                    }
+                    if (sectionId === 'collapseAdherents' && Array.isArray(window.__adherents)) {
+                        data['__adherents_json'] = JSON.stringify(window.__adherents);
+                    }
                     return data;
                 },
 
@@ -2194,6 +2250,9 @@
                     .then(function (res) {
                         if (res.success) {
                             window.AdminDossierDraft.dossierId = res.dossier_id;
+                            // Synchroniser le champ caché du formulaire de soumission finale
+                            var hiddenDossierId = document.getElementById('formDossierId');
+                            if (hiddenDossierId) hiddenDossierId.value = res.dossier_id;
                             if (indicator) indicator.innerHTML = '<i class="fas fa-check text-success mr-1"></i> Brouillon sauvegardé (N° ' + (res.numero_dossier || '—') + ')';
                             setTimeout(function () { if (indicator) indicator.innerHTML = ''; }, 3000);
                         } else {
@@ -2206,6 +2265,145 @@
                     });
                 }
             };
+
+            // ============================================================
+            // REPRISE BROUILLON — pré-remplissage des champs
+            // (placé APRÈS la déclaration de window.AdminDossierDraft)
+            // ============================================================
+            (function applyResumeData() {
+                var draft = window.AdminDossierDraft;
+                if (!draft || !draft.dossierId || !draft.resumeData) {
+                    console.log('[Reprise brouillon] aucun brouillon à reprendre');
+                    return;
+                }
+
+                console.log('[Reprise brouillon] init — dossier_id=' + draft.dossierId + ', step=' + draft.resumeStep + ', data keys=', Object.keys(draft.resumeData));
+
+                // Indicateur visuel
+                var banner = document.createElement('div');
+                banner.className = 'alert alert-info d-flex align-items-center gap-2 mb-3';
+                banner.style.margin = '1rem';
+                banner.innerHTML = '<i class="fas fa-play-circle me-2"></i> Reprise du brouillon <strong class="mx-1">n°' + draft.dossierId + '</strong>. Les informations précédemment saisies ont été restaurées.';
+                var contentArea = document.querySelector('.content-area, .container-fluid, main') || document.body;
+                if (contentArea && contentArea.firstChild) {
+                    contentArea.insertBefore(banner, contentArea.firstChild);
+                }
+
+                // 1) Sélectionner le type d'organisation
+                if (draft.organisationTypeId) {
+                    var typeRadio = document.querySelector('input[name="organisation_type_id"][value="' + draft.organisationTypeId + '"]');
+                    if (typeRadio) {
+                        typeRadio.checked = true;
+                        try { if (typeof loadTypeConfiguration === 'function') loadTypeConfiguration(draft.organisationTypeId); } catch (e) {}
+                        console.log('[Reprise brouillon] type d\'organisation pré-sélectionné: ' + draft.organisationTypeId);
+                    }
+                }
+
+                // 2) Pré-remplir tous les champs simples par leur attribut `name`
+                var aliasMap = {
+                    'nom_organisation': 'org_nom',
+                    'sigle': 'org_sigle',
+                    'objet': 'org_objet',
+                    'siege_social': 'org_adresse',
+                    'province': 'org_province_id',
+                    'departement': 'org_departement_id',
+                    'telephone': 'org_telephone',
+                    'email': 'org_email',
+                    'date_creation': 'org_date_creation',
+                };
+                var restored = 0;
+                Object.keys(draft.resumeData).forEach(function (key) {
+                    var val = draft.resumeData[key];
+                    if (val === null || val === undefined || val === '') return;
+
+                    var aliases = [key];
+                    if (aliasMap[key]) aliases.push(aliasMap[key]);
+
+                    aliases.forEach(function (name) {
+                        var inputs = document.querySelectorAll('[name="' + name + '"]');
+                        inputs.forEach(function (el) {
+                            if (el.tagName === 'SELECT') {
+                                var matched = false;
+                                Array.from(el.options).forEach(function (opt) {
+                                    if (opt.value == val || opt.text.trim().toLowerCase() === String(val).trim().toLowerCase()) {
+                                        el.value = opt.value;
+                                        matched = true;
+                                    }
+                                });
+                                if (matched) {
+                                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                                    restored++;
+                                }
+                            } else if (el.type === 'radio' || el.type === 'checkbox') {
+                                if (el.value == val) {
+                                    el.checked = true;
+                                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                                    restored++;
+                                }
+                            } else {
+                                el.value = val;
+                                el.dispatchEvent(new Event('input', { bubbles: true }));
+                                restored++;
+                            }
+                        });
+                    });
+                });
+                console.log('[Reprise brouillon] champs restaurés: ' + restored);
+
+                // 3) Géolocalisation : pré-sélectionnée côté serveur via attribut HTML "selected".
+                //    On synchronise juste les inputs miroirs (province_nom, departement_nom, etc.)
+                //    pour cohérence. Pas besoin de fetch AJAX.
+                var rd = draft.resumeData;
+                ['org_province_id','org_departement_id','org_commune_id','org_arrondissement_id','org_quartier_id'].forEach(function (id) {
+                    var el = document.getElementById(id);
+                    if (el && el.value) {
+                        // Déclencher change pour réveiller les listeners (zone urbaine/rurale, indicateurs)
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+
+                // Helper : restaurer les listes JS (fondateurs / membres bureau / adhérents)
+                var rehydrateList = function (sourceKey, targetWindowKey, renderFn) {
+                    if (!rd[sourceKey]) return 0;
+                    try {
+                        var arr = typeof rd[sourceKey] === 'string' ? JSON.parse(rd[sourceKey]) : rd[sourceKey];
+                        if (!Array.isArray(arr)) return 0;
+                        if (window[targetWindowKey] && Array.isArray(window[targetWindowKey])) {
+                            window[targetWindowKey].length = 0;
+                            arr.forEach(function (item) { window[targetWindowKey].push(item); });
+                        }
+                        if (typeof renderFn === 'function') renderFn();
+                        return arr.length;
+                    } catch (e) {
+                        console.warn('[Reprise] échec rehydrate ' + sourceKey + ':', e);
+                        return 0;
+                    }
+                };
+
+                (function fullRestore() {
+                    // Listes (fondateurs / membres bureau / adhérents) — sync, pas d'AJAX
+                    var fonds = rehydrateList('__fondateurs_json', '__fondateurs', typeof updateFondateursList === 'function' ? updateFondateursList : null);
+                    var mems  = rehydrateList('__membresBureau_json', '__membresBureau', typeof updateMembresBureauList === 'function' ? updateMembresBureauList : null);
+                    var adhs  = rehydrateList('__adherents_json', '__adherents', typeof updateAdherentsList === 'function' ? updateAdherentsList : null);
+                    console.log('[Reprise brouillon] fondateurs=' + fonds + ', membres bureau=' + mems + ', adhérents=' + adhs);
+
+                    // Saut à la dernière étape complétée (après que tout soit en place)
+                    if (draft.resumeStep) {
+                        var stepToSection = {
+                            2: 'collapseDeclarant', 3: 'collapseOrganisation', 4: 'collapseLocalisation',
+                            5: 'collapseFondateurs', 6: 'collapseMembresBureau', 7: 'collapseAdherents',
+                            8: 'collapseDocuments',
+                        };
+                        var target = stepToSection[draft.resumeStep] || 'collapseDeclarant';
+                        try {
+                            if (typeof goToSection === 'function') {
+                                goToSection(target);
+                                console.log('[Reprise brouillon] saut à ' + target);
+                            }
+                        } catch (e) { console.warn('Saut étape échoué:', e); }
+                    }
+                })();
+            })();
 
             function loadTypeConfiguration(typeId) {
                 fetch('{{ url("admin/api/geo/organisation-types") }}/' + typeId + '/rules')

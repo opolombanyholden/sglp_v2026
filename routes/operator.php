@@ -50,6 +50,10 @@ Route::prefix('operator')->name('operator.')->middleware(['web', 'auth', 'verifi
             ->name('docs.download');
         Route::get('/{dossier}/docs/{document}/preview', [DossierController::class, 'previewDocument'])
             ->name('docs.preview');
+
+        // Récépissés / documents générés (téléchargement par génération)
+        Route::get('/{dossier}/recepisses/{generation}/download', [DossierController::class, 'downloadGeneration'])
+            ->name('recepisses.download');
         
         // Commentaires et notes
         Route::post('/{dossier}/commentaires', [DossierController::class, 'addComment'])->name('commentaires.store');

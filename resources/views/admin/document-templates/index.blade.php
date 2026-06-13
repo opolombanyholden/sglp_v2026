@@ -14,6 +14,9 @@
             <p class="text-muted">Gérer les modèles de documents officiels</p>
         </div>
         <div class="col-md-4 text-end">
+            <a href="{{ route('admin.document-templates.scan') }}" class="btn btn-outline-secondary me-1" title="Détecter les fichiers .blade.php non encore enregistrés">
+                <i class="fas fa-search-plus"></i> Importer existants
+            </a>
             <a href="{{ route('admin.document-templates.create') }}" class="btn btn-primary">
                 <i class="fas fa-plus"></i> Nouveau Template
             </a>
@@ -149,6 +152,12 @@
                                         <br>
                                         <small class="text-muted">{{ Str::limit($template->description, 50) }}</small>
                                     @endif
+                                    <br>
+                                    @if($template->templateExists())
+                                        <small class="text-success"><i class="fas fa-file-code"></i> {{ $template->template_path }}</small>
+                                    @else
+                                        <small class="text-danger" title="Fichier .blade.php introuvable"><i class="fas fa-exclamation-triangle"></i> {{ $template->template_path }} (fichier manquant)</small>
+                                    @endif
                                 </td>
                                 <td>
                                     @if($template->organisationType)
@@ -192,13 +201,13 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('admin.document-templates.show', $template) }}" 
-                                           class="btn btn-outline-info" 
+                                        <a href="{{ route('admin.document-templates.show', $template) }}"
+                                           class="btn btn-outline-info"
                                            title="Voir les détails">
                                             <i class="fas fa-eye"></i>
                                         </a>
-                                        <a href="{{ route('admin.document-templates.preview', $template) }}" 
-                                           class="btn btn-outline-secondary" 
+                                        <a href="{{ route('admin.document-templates.preview', $template) }}"
+                                           class="btn btn-outline-secondary"
                                            title="Prévisualiser"
                                            target="_blank">
                                             <i class="fas fa-search"></i>
@@ -210,24 +219,120 @@
                                         </a>
                                         <a href="{{ route('admin.document-templates.edit', $template) }}"
                                            class="btn btn-outline-primary"
-                                           title="Modifier">
+                                           title="Modifier les métadonnées">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button type="button" 
-                                                class="btn btn-outline-danger" 
+                                        <a href="{{ route('admin.document-templates.edit-source', $template) }}"
+                                           class="btn btn-outline-dark"
+                                           title="Éditer le code Blade">
+                                            <i class="fas fa-code"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-outline-success"
+                                                title="Dupliquer"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#duplicateModal-{{ $template->id }}">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                        <form action="{{ route('admin.document-templates.toggle-status', $template) }}"
+                                              method="POST"
+                                              class="d-inline">
+                                            @csrf
+                                            <button type="submit"
+                                                    class="btn {{ $template->is_active ? 'btn-outline-secondary' : 'btn-outline-success' }}"
+                                                    title="{{ $template->is_active ? 'Désactiver' : 'Activer' }}">
+                                                <i class="fas {{ $template->is_active ? 'fa-toggle-off' : 'fa-toggle-on' }}"></i>
+                                            </button>
+                                        </form>
+                                        <button type="button"
+                                                class="btn btn-outline-danger"
                                                 title="Supprimer"
                                                 onclick="confirmDelete('{{ $template->id }}', '{{ $template->nom }}')">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
 
-                                    <form id="delete-form-{{ $template->id }}" 
-                                          action="{{ route('admin.document-templates.destroy', $template) }}" 
-                                          method="POST" 
+                                    <form id="delete-form-{{ $template->id }}"
+                                          action="{{ route('admin.document-templates.destroy', $template) }}"
+                                          method="POST"
                                           class="d-none">
                                         @csrf
                                         @method('DELETE')
                                     </form>
+
+                                    {{-- Modal duplication --}}
+                                    <div class="modal fade" id="duplicateModal-{{ $template->id }}" tabindex="-1">
+                                        <div class="modal-dialog modal-lg">
+                                            <form action="{{ route('admin.document-templates.duplicate', $template) }}" method="POST">
+                                                @csrf
+                                                <div class="modal-content text-start">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Dupliquer « {{ $template->nom }} »</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="alert alert-info small mb-3">
+                                                            <i class="fas fa-info-circle"></i>
+                                                            Le fichier <code>.blade.php</code> sera créé automatiquement.
+                                                            Si vous laissez le chemin vide, il sera calculé à partir du type d'organisation et du type d'opération choisis.
+                                                        </div>
+                                                        <div class="row g-3">
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Code <span class="text-danger">*</span></label>
+                                                                <input type="text" name="code" class="form-control text-uppercase" required pattern="[A-Z0-9_]+" placeholder="EX: ASSOC_CREATION_COPIE">
+                                                                <small class="text-muted">Majuscules, chiffres, underscore uniquement.</small>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <label class="form-label">Nom <span class="text-danger">*</span></label>
+                                                                <input type="text" name="nom" class="form-control" required value="Copie de {{ $template->nom }}">
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label">Type de document</label>
+                                                                <select name="type_document" class="form-select">
+                                                                    <option value="">— Inchangé ({{ $template->type_document }}) —</option>
+                                                                    <option value="recepisse_provisoire">Récépissé provisoire</option>
+                                                                    <option value="recepisse_definitif">Récépissé définitif</option>
+                                                                    <option value="recepisse_enregistrement">Récépissé d'enregistrement</option>
+                                                                    <option value="accuse_reception">Accusé de réception</option>
+                                                                    <option value="attestation">Attestation</option>
+                                                                    <option value="certificat">Certificat</option>
+                                                                    <option value="notification_rejet">Notification de rejet</option>
+                                                                    <option value="autre">Autre</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label">Type d'organisation</label>
+                                                                <select name="organisation_type_id" class="form-select">
+                                                                    <option value="">— Générique —</option>
+                                                                    @foreach($organisationTypes as $ot)
+                                                                        <option value="{{ $ot->id }}" {{ $template->organisation_type_id == $ot->id ? 'selected' : '' }}>{{ $ot->nom }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <label class="form-label">Type d'opération</label>
+                                                                <select name="operation_type_id" class="form-select">
+                                                                    <option value="">— Générique —</option>
+                                                                    @foreach($operationTypes as $op)
+                                                                        <option value="{{ $op->id }}" {{ $template->operation_type_id == $op->id ? 'selected' : '' }}>{{ $op->libelle ?? $op->code }}</option>
+                                                                    @endforeach
+                                                                </select>
+                                                            </div>
+                                                            <div class="col-12">
+                                                                <label class="form-label">Chemin du fichier (optionnel)</label>
+                                                                <input type="text" name="new_template_path" class="form-control" placeholder="documents.templates.<org>.<op>.<code> — laisser vide pour auto">
+                                                                <small class="text-muted">Caractères autorisés : lettres, chiffres, point, tiret, underscore.</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                                                        <button type="submit" class="btn btn-success"><i class="fas fa-copy"></i> Dupliquer</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

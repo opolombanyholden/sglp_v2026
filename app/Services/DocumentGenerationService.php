@@ -85,9 +85,17 @@ class DocumentGenerationService
                 $data['organisation_id']
             );
 
-            // 3. ✅ CORRIGÉ : Générer QR code avec URL basée sur numeroDocument
+            // 3. Générer le QR code. Pour les nouveaux récépissés, l'URL pointe
+            //    sur le numero_recepisse de l'organisation (lisible et stable).
+            //    Pour les anciens documents (sans numéro de récépissé encore
+            //    attribué), fallback sur numero_document — la rétrocompat est
+            //    assurée par AnnuaireController::verify() qui sait résoudre
+            //    aussi bien numero_recepisse que numero_document.
+            $org = Organisation::find($data['organisation_id']);
             $qrCode = $this->qrCodeService->generateForDocument($numeroDocument, [
                 'organisation_id' => $data['organisation_id'],
+                'organisation_nom' => $org->nom ?? 'Organisation',
+                'numero_recepisse' => $org->numero_recepisse ?? null,
                 'dossier_id' => $data['dossier_id'] ?? null,
                 'template_id' => $template->id,
                 'type_document' => $template->type_document,
@@ -127,7 +135,7 @@ class DocumentGenerationService
             $html = $this->renderTemplate($template, $variables, $qrCode);
 
             // 10. Générer le PDF en mémoire
-            $pdf = $this->generatePDF($html, $template, $qrCodeBase64);
+            $pdf = $this->generatePDF($html, $template, $qrCodeBase64, $numeroDocument);
 
             Log::info('Document généré avec succès', [
                 'template_id' => $template->id,
@@ -178,14 +186,33 @@ class DocumentGenerationService
         // Récupérer le QR code
         $qrCode = \App\Models\QrCode::where('code', $generation->qr_code_token)->first();
 
+        // Restaurer les types attendus par les templates (Collections) depuis le snapshot JSON
+        $variables = $this->rehydrateVariables($generation->variables_data);
+
+        // Injecter dynamiquement numero_affiche basé sur le numero_recepisse
+        // ACTUEL de l'organisation (les snapshots anciens ne contiennent pas cette
+        // clé — on la dérive à la régénération pour que tout récépissé imprimé
+        // affiche bien le numero_recepisse).
+        $currentOrg = Organisation::find($generation->organisation_id);
+        $variables['document'] = $variables['document'] ?? [];
+        $variables['document']['numero_affiche'] = ($currentOrg && $currentOrg->numero_recepisse)
+            ? $currentOrg->numero_recepisse
+            : $generation->numero_document;
+        // Synchroniser aussi organisation.numero_recepisse pour les templates
+        // qui le réutilisent dans le corps du texte.
+        if ($currentOrg && $currentOrg->numero_recepisse) {
+            $variables['organisation'] = $variables['organisation'] ?? [];
+            $variables['organisation']['numero_recepisse'] = $currentOrg->numero_recepisse;
+        }
+
         // Générer le HTML avec les variables sauvegardées
-        $html = $this->renderTemplate($template, $generation->variables_data, $qrCode);
+        $html = $this->renderTemplate($template, $variables, $qrCode);
 
         // Générer QR Code Base64 pour le PDF
         $qrCodeBase64 = $qrCode ? $this->qrCodeService->getQrCodeBase64ForPdf($qrCode) : '';
 
         // Générer le PDF
-        $pdf = $this->generatePDF($html, $template, $qrCodeBase64);
+        $pdf = $this->generatePDF($html, $template, $qrCodeBase64, $generation->numero_document);
 
         Log::info('Document régénéré', [
             'generation_id' => $generation->id,
@@ -200,8 +227,22 @@ class DocumentGenerationService
     }
 
     /**
+     * Après un round-trip JSON (persistance variables_data), les Collections
+     * deviennent des arrays. Les templates Blade appellent `->take()`, `->count()`, etc.
+     * On réhydrate les champs connus pour qu'ils soient à nouveau des Collections.
+     */
+    protected function rehydrateVariables(array $variables): array
+    {
+        if (isset($variables['organisation_membres']) && is_array($variables['organisation_membres'])) {
+            $variables['organisation_membres'] = collect($variables['organisation_membres']);
+        }
+
+        return $variables;
+    }
+
+    /**
      * Préparer les variables pour le template
-     * 
+     *
      * ⭐ VERSION AMÉLIORÉE avec variables dynamiques avancées
      * ✅ CORRIGÉ : Gestion robuste de la relation personnes()
      * 
@@ -371,6 +412,9 @@ class DocumentGenerationService
             // ========================================
             'document' => [
                 'numero_document' => $numeroDocument,
+                // Numéro à afficher en entête : numéro de récépissé de l'organisation
+                // si déjà attribué, sinon le numéro de génération comme fallback.
+                'numero_affiche' => $organisation->numero_recepisse ?: $numeroDocument,
                 'date_generation' => now()->format('d/m/Y'),
                 'date_generation_longue' => $this->formatDateLongue(now()),
                 'heure_generation' => now()->format('H:i'),
@@ -521,54 +565,74 @@ class DocumentGenerationService
             $nouvellesValeurs = $donneesSupp['modifications'] ?? [];
             $bureauMembres = $donneesSupp['bureau_modifications'] ?? [];
 
+            // La justification est postée sous `modifications[justification]` : la
+            // récupérer puis l'exclure de la liste des champs à comparer/appliquer.
+            $justification = $nouvellesValeurs['justification']
+                ?? $donneesSupp['justification']
+                ?? null;
+            unset($nouvellesValeurs['justification']);
+
+            // Champs dont la modification fera apparaître un bloc dans le récépissé.
+            // On ne considère un champ comme modifié que si la nouvelle valeur
+            // diffère réellement de l'ancienne (le formulaire pré-remplit les
+            // champs avec la valeur actuelle : un champ non touché vient dans le
+            // payload avec la valeur existante, ce qui ne doit PAS être traité
+            // comme une modification).
+            $fieldsToCompare = [
+                'nom', 'sigle', 'objet', 'siege_social', 'province', 'departement',
+                'ville_commune', 'commune', 'quartier', 'telephone', 'email',
+                'site_web', 'boite_postale',
+            ];
+            $champsReellementModifies = [];
+            foreach ($fieldsToCompare as $field) {
+                if (!array_key_exists($field, $nouvellesValeurs)) {
+                    continue;
+                }
+                $newVal = trim((string) $nouvellesValeurs[$field]);
+                $oldVal = trim((string) ($variables['organisation'][$field] ?? ''));
+                if ($newVal !== '' && $newVal !== $oldVal) {
+                    $champsReellementModifies[$field] = $newVal;
+                }
+            }
+
             // ✅ APPLIQUER LES NOUVELLES VALEURS À L'ORGANISATION
-            // Créer une copie modifiée des données organisation avec les nouvelles valeurs
-            if (!empty($nouvellesValeurs)) {
-                // Appliquer chaque modification aux données d'organisation
-                if (!empty($nouvellesValeurs['nom'])) {
-                    $variables['organisation']['nom'] = $nouvellesValeurs['nom'];
-                }
-                if (!empty($nouvellesValeurs['sigle'])) {
-                    $variables['organisation']['sigle'] = $nouvellesValeurs['sigle'];
-                }
-                if (!empty($nouvellesValeurs['objet'])) {
-                    $variables['organisation']['objet'] = $nouvellesValeurs['objet'];
-                }
-                if (!empty($nouvellesValeurs['siege_social'])) {
-                    $variables['organisation']['siege_social'] = $nouvellesValeurs['siege_social'];
-                }
-                if (!empty($nouvellesValeurs['province'])) {
-                    $variables['organisation']['province'] = $nouvellesValeurs['province'];
-                }
-                if (!empty($nouvellesValeurs['departement'])) {
-                    $variables['organisation']['departement'] = $nouvellesValeurs['departement'];
-                }
-                if (!empty($nouvellesValeurs['ville_commune'])) {
-                    $variables['organisation']['ville_commune'] = $nouvellesValeurs['ville_commune'];
-                }
-                if (!empty($nouvellesValeurs['commune'])) {
-                    $variables['organisation']['commune'] = $nouvellesValeurs['commune'];
-                }
-                if (!empty($nouvellesValeurs['quartier'])) {
-                    $variables['organisation']['quartier'] = $nouvellesValeurs['quartier'];
-                }
-                if (!empty($nouvellesValeurs['telephone'])) {
-                    $variables['organisation']['telephone'] = $nouvellesValeurs['telephone'];
-                }
-                if (!empty($nouvellesValeurs['email'])) {
-                    $variables['organisation']['email'] = $nouvellesValeurs['email'];
-                }
-                if (!empty($nouvellesValeurs['site_web'])) {
-                    $variables['organisation']['site_web'] = $nouvellesValeurs['site_web'];
-                }
-                if (!empty($nouvellesValeurs['boite_postale'])) {
-                    $variables['organisation']['boite_postale'] = $nouvellesValeurs['boite_postale'];
+            // Uniquement pour les champs effectivement modifiés.
+            if (!empty($champsReellementModifies) || !empty($bureauMembres)) {
+                // Conserver la dénomination précédente (n-1) avant écrasement :
+                // le corps du récépissé de modification doit citer l'ancien nom,
+                // la section "Nouvelles informations" montre le nouveau.
+                $variables['organisation']['nom_precedent'] = $variables['organisation']['nom'] ?? null;
+                $variables['organisation']['sigle_precedent'] = $variables['organisation']['sigle'] ?? null;
+
+                foreach ($champsReellementModifies as $field => $newVal) {
+                    $variables['organisation'][$field] = $newVal;
                 }
 
                 Log::info('Nouvelles valeurs appliquées à l\'organisation pour le PDF', [
                     'dossier_id' => $dossier->id,
-                    'champs_modifies' => array_keys($nouvellesValeurs),
+                    'champs_modifies' => array_keys($champsReellementModifies),
+                    'bureau_modifie' => !empty($bureauMembres),
                 ]);
+            }
+
+            // Flags par regroupement logique pour les templates
+            $typesModifies = [];
+            if (isset($champsReellementModifies['nom']) || isset($champsReellementModifies['sigle'])) {
+                $typesModifies['denomination'] = true;
+            }
+            if (!empty($bureauMembres)) {
+                $typesModifies['bureau'] = true;
+            }
+            if (isset($champsReellementModifies['telephone']) || isset($champsReellementModifies['email'])) {
+                $typesModifies['contact'] = true;
+            }
+            if (isset($champsReellementModifies['siege_social'])
+                || isset($champsReellementModifies['ville_commune'])
+                || isset($champsReellementModifies['quartier'])) {
+                $typesModifies['adresse'] = true;
+            }
+            if (isset($champsReellementModifies['objet'])) {
+                $typesModifies['objet'] = true;
             }
 
             // ✅ APPLIQUER LES NOUVEAUX MEMBRES DU BUREAU
@@ -591,8 +655,9 @@ class DocumentGenerationService
 
             $variables['modifications'] = [
                 'type_modification' => $donneesSupp['type_modification'] ?? null,
-                'justification' => $donneesSupp['justification'] ?? null,
-                'modifications' => $nouvellesValeurs,
+                'justification' => $justification,
+                'modifications' => $champsReellementModifies,
+                'types_modifies' => $typesModifies,
                 'articles_modifies' => $donneesSupp['articles'] ?? [],
                 'bureau_modifications' => $bureauMembres,
             ];
@@ -1094,19 +1159,23 @@ class DocumentGenerationService
      * @param string|null $qrCodeBase64 Image base64 du QR Code pour le footer
      * @return \Mpdf\Mpdf
      */
-    protected function generatePDF(string $html, DocumentTemplate $template, ?string $qrCodeBase64 = null)
+    protected function generatePDF(string $html, DocumentTemplate $template, ?string $qrCodeBase64 = null, ?string $numeroDocument = null)
     {
         Log::info('DocumentGenerationService::generatePDF', [
             'has_qr_code_base64' => !empty($qrCodeBase64),
             'qr_code_length' => strlen($qrCodeBase64 ?? ''),
-            'template_id' => $template->id
+            'template_id' => $template->id,
+            'numero_document' => $numeroDocument,
         ]);
 
         // Options pour PdfTemplateHelper (si le template a des headers/footers personnalisés)
         $pdfOptions = [
             'header_text' => $template->header_text ?? '',
             'signature_text' => $template->signature_text ?? '',
-            'qr_code_base64' => $qrCodeBase64 ?? '', // Passer le QR Code au helper mPDF
+            'qr_code_base64' => $qrCodeBase64 ?? '',
+            // Numéro interne de génération — affiché discrètement en pied de page
+            // pour la traçabilité (sans être le numéro principal qui figure en entête).
+            'internal_doc_number' => $numeroDocument ?? '',
         ];
 
         // Pour le récépissé définitif (document multi-pages), header uniquement sur première page

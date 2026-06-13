@@ -103,22 +103,26 @@ Route::middleware('guest')->group(function () {
         ->name('two-factor.resend');
 });
 
+// === VÉRIFICATION EMAIL ===
+// La page de notice et le renvoi nécessitent d'être connecté (sinon le user est inconnu).
+// La route de validation /email/verify/{id}/{hash} est PUBLIQUE : le lien signé fait foi.
+// (Sans cela, un user qui clique le lien depuis sa boîte mail dans un autre navigateur
+//  est redirigé vers /login, perd l'URL "intended", et tombe en boucle sur la notice.)
+Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('verification.verify');
+
+Route::get('email/verified', [VerificationController::class, 'verified'])
+    ->name('email.verified');
+
 Route::middleware('auth')->group(function () {
-    
-    // === VÉRIFICATION EMAIL ===
+
     Route::get('email/verify', [VerificationController::class, 'notice'])
         ->name('verification.notice');
-
-    Route::get('email/verify/{id}/{hash}', [VerificationController::class, 'verify'])
-        ->middleware(['signed', 'throttle:6,1'])
-        ->name('verification.verify');
 
     Route::post('email/verification-notification', [VerificationController::class, 'resend'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
-    
-    Route::get('email/verified', [VerificationController::class, 'verified'])
-        ->name('email.verified')->withoutMiddleware('auth');
 
     // === CONFIRMATION MOT DE PASSE (Routes basiques) ===
     Route::get('confirm-password', function () {
