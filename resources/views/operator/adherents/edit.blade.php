@@ -55,8 +55,8 @@
                                 @error('nom') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                             <div class="form-group col-md-4">
-                                <label for="prenom">Prénom <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control @error('prenom') is-invalid @enderror" id="prenom" name="prenom" value="{{ old('prenom', $adherent->prenom) }}" required>
+                                <label for="prenom">Prénom</label>
+                                <input type="text" class="form-control @error('prenom') is-invalid @enderror" id="prenom" name="prenom" value="{{ old('prenom', $adherent->prenom) }}">
                                 @error('prenom') <div class="invalid-feedback">{{ $message }}</div> @enderror
                             </div>
                         </div>

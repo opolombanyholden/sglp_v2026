@@ -97,7 +97,7 @@ class AdherentController extends Controller
         $validated = $request->validate([
             'string|max:255', // ✅ NIP non obligatoire
             'nom' => 'required|string|max:100',
-            'prenom' => 'required|string|max:100', 
+            'prenom' => 'nullable|string|max:100', 
             'date_naissance' => 'nullable|date|before:today', // ✅ Non obligatoire
             'lieu_naissance' => 'nullable|string|max:255',
             'sexe' => 'nullable|in:M,F',
@@ -615,7 +615,7 @@ class AdherentController extends Controller
         $validated = $request->validate([
             'string|max:255',
             'nom' => 'required|string|max:100',
-            'prenom' => 'required|string|max:100',
+            'prenom' => 'nullable|string|max:100',
             'date_naissance' => 'nullable|date|before:today',
             'lieu_naissance' => 'nullable|string|max:255',
             'sexe' => 'nullable|in:M,F',
@@ -901,7 +901,7 @@ class AdherentController extends Controller
         $validated = $request->validate([
             'string|max:255',
             'nom' => 'required|string|max:100',
-            'prenom' => 'required|string|max:100',
+            'prenom' => 'nullable|string|max:100',
             'date_naissance' => 'required|date|before:today',
             'lieu_naissance' => 'required|string|max:255',
             'sexe' => 'required|in:M,F',

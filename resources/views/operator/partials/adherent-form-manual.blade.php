@@ -55,10 +55,10 @@ Version: 2.0 - Interface moderne avec validation temps réel
             <!-- Prénom -->
             <div class="col-md-5 mb-3">
                 <label for="manual-prenom" class="form-label">
-                    <i class="fas fa-user me-1"></i>Prénom <span class="text-danger">*</span>
+                    <i class="fas fa-user me-1"></i>Prénom
                 </label>
                 <input type="text" class="form-control form-control-gabon" id="manual-prenom" name="prenom" 
-                       placeholder="Ex: Jean-Paul" maxlength="100" required>
+                       placeholder="Ex: Jean-Paul" maxlength="100">
                 <div class="invalid-feedback">
                     Le prénom est obligatoire.
                 </div>

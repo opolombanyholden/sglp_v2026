@@ -345,6 +345,9 @@ class DocumentGenerationService
 
                 // Contacts
                 'telephone' => $organisation->telephone ?? 'Non renseigné',
+                // Attendu par les récépissés (bloc "Contact") : la clé était absente,
+                // le téléphone secondaire n'apparaissait donc jamais.
+                'telephone_2' => $organisation->telephone_secondaire ?? '',
                 'email' => $organisation->email ?? '',
                 'site_web' => $organisation->site_web ?? '',
 

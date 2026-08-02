@@ -80,8 +80,8 @@ class WorkflowController extends Controller
                     return now()->diffInDays($dossier->created_at);
                 });
 
-            // Agents disponibles
-            $agents = User::where('role', 'agent')->get();
+            // Administrateurs disponibles pour assignation (source unique : scope assignables)
+            $agents = User::assignables()->orderBy('name')->get();
 
             return view('admin.workflow.en-attente', compact(
                 'dossiersEnAttente',
@@ -148,8 +148,8 @@ class WorkflowController extends Controller
                 })->count();
             $prioriteHaute = $dossiersEnCours->where('priorite', 'haute')->count();
 
-            // Agents pour les filtres
-            $agents = User::where('role', 'agent')->get();
+            // Administrateurs pour les filtres (mêmes comptes que ceux assignables)
+            $agents = User::assignables()->orderBy('name')->get();
 
             return view('admin.workflow.en-cours', compact(
                 'dossiersEnCours',

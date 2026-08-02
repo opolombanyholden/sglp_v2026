@@ -382,9 +382,9 @@
                 <form id="assignForm">
                     <div class="modal-body">
                         <div class="form-group mb-3">
-                            <label for="agent_id" class="form-label">Sélectionner un Agent</label>
+                            <label for="agent_id" class="form-label">Sélectionner un Administrateur ou Modérateur</label>
                             <select name="agent_id" id="agent_id" class="form-control" required>
-                                <option value="">-- Choisir un agent --</option>
+                                <option value="">-- Choisir un administrateur --</option>
                                 @if(isset($agents))
                                     @foreach($agents as $agent)
                                         <option value="{{ $agent->id }}">

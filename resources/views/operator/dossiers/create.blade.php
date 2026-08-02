@@ -951,13 +951,13 @@
 
                                                     <!-- Prénom -->
                                                     <div class="col-md-6 mb-4">
-                                                        <label for="demandeur_prenom" class="form-label fw-bold required">
+                                                        <label for="demandeur_prenom" class="form-label fw-bold">
                                                             <i class="fas fa-user me-2 text-primary"></i>
                                                             Prénom(s)
                                                         </label>
                                                         <input type="text" class="form-control form-control-lg"
                                                             id="demandeur_prenom" name="demandeur_prenom"
-                                                            placeholder="Vos prénoms" required>
+                                                            placeholder="Vos prénoms (facultatif)">
                                                         <div class="invalid-feedback"></div>
                                                     </div>
 
@@ -2547,8 +2547,8 @@
                         const telephone = document.getElementById('adherent-telephone')?.value?.trim();
 
                         // Validation
-                        if (!nom || !prenom || !nip) {
-                            showNotification('Nom, prénom et NIP sont obligatoires', 'warning');
+                        if (!nom || !nip) {
+                            showNotification('Nom et NIP sont obligatoires', 'warning');
                             return;
                         }
 
@@ -3686,7 +3686,7 @@
                             ['demandeur_nip', 'NIP', { required: true, pattern: '^[A-Z0-9]{2}-[0-9]{4}-[0-9]{8}$', patternMsg: 'NIP : format attendu XX-0000-00000000' }],
                             ['demandeur_civilite', 'Civilité', { required: true }],
                             ['demandeur_nom', 'Nom', { required: true, max: 255 }],
-                            ['demandeur_prenom', 'Prénom', { required: true, max: 255 }],
+                            ['demandeur_prenom', 'Prénom', { max: 255 }],
                             ['demandeur_date_naissance', 'Date de naissance', { required: true }],
                             ['demandeur_nationalite', 'Nationalité', { required: true }],
                             ['demandeur_telephone', 'Téléphone', { required: true, pattern: '^[0-9]{8,9}$', patternMsg: 'Téléphone : 8 ou 9 chiffres requis' }],

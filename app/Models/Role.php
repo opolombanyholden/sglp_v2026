@@ -12,6 +12,20 @@ class Role extends Model
     use HasFactory;
 
     /**
+     * Niveaux de référence des rôles avancés
+     * (super_admin=10, admin_general=9, admin_*=8, moderateur=6, operateur=4, auditeur=2)
+     */
+
+    /** Niveau minimal d'un rôle considéré comme "administrateur" */
+    public const ADMIN_LEVEL = 8;
+
+    /**
+     * Niveau minimal d'un rôle habilité à traiter un dossier :
+     * administrateurs + modérateurs. C'est le seuil des listes d'assignation.
+     */
+    public const ASSIGNABLE_LEVEL = 6;
+
+    /**
      * ✅ CORRECTION PRIORITAIRE - Ajouter is_system dans fillable
      */
     protected $fillable = [
@@ -276,7 +290,7 @@ class Role extends Model
 
     public function isAdminLevel()
     {
-        return $this->level >= 8;
+        return $this->level >= self::ADMIN_LEVEL;
     }
 
     // =================================================================

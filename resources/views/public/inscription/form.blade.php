@@ -176,9 +176,9 @@
                             </div>
                             <div class="col-md-5">
                                 <div class="form-group">
-                                    <label for="prenom">Prénom <span class="required-star">*</span></label>
+                                    <label for="prenom">Prénom</label>
                                     <input type="text" name="prenom" id="prenom" class="form-control @error('prenom') is-invalid @enderror"
-                                           value="{{ old('prenom') }}" required maxlength="100" placeholder="Votre prénom">
+                                           value="{{ old('prenom') }}" maxlength="100" placeholder="Votre prénom">
                                     @error('prenom') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                             </div>

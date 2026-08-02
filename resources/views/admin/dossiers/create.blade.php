@@ -218,11 +218,10 @@
                                                     placeholder="Nom de famille">
                                             </div>
                                             <div class="form-group">
-                                                <label class="form-label-modern">Prénom <span
-                                                        class="required">*</span></label>
+                                                <label class="form-label-modern">Prénom</label>
                                                 <input type="text" class="form-input-modern" name="demandeur_prenom"
-                                                    id="demandeur_prenom" value="{{ old('demandeur_prenom') }}" required
-                                                    placeholder="Prénom">
+                                                    id="demandeur_prenom" value="{{ old('demandeur_prenom') }}"
+                                                    placeholder="Prénom (facultatif)">
                                             </div>
                                             <div class="form-group">
                                                 <label class="form-label-modern">Téléphone <span
@@ -2810,7 +2809,7 @@
                 var fonction = document.getElementById('fondateur_fonction').value;
                 var civilite = document.getElementById('fondateur_civilite').value;
 
-                if (!nip || !nom || !prenom || !fonction) { alert('Veuillez remplir tous les champs obligatoires'); return; }
+                if (!nip || !nom || !fonction) { alert('Veuillez remplir tous les champs obligatoires'); return; }
                 if (fondateurs.some(function (f) { return f.nip === nip; })) { alert('Ce NIP est déjà ajouté'); return; }
 
                 fondateurs.push({ nip: nip, civilite: civilite, nom: nom, prenom: prenom, fonction: fonction });
@@ -2868,8 +2867,8 @@
                 var domicile = document.getElementById('membre_domicile').value.trim();
                 var afficherRecepisse = document.getElementById('membre_afficher_recepisse').checked;
 
-                if (!nip || !nom || !prenom || !fonction) {
-                    alert('Veuillez remplir NIP, Nom, Prénom et Fonction');
+                if (!nip || !nom || !fonction) {
+                    alert('Veuillez remplir NIP, Nom et Fonction');
                     return;
                 }
                 if (membresBureau.some(function (m) { return m.nip === nip; })) {
@@ -2950,7 +2949,7 @@
                 var prenom = document.getElementById('adherent_prenom').value.trim();
                 var profession = document.getElementById('adherent_profession').value.trim();
 
-                if (!nip || !nom || !prenom) { alert('Veuillez remplir NIP, Nom et Prénom'); return; }
+                if (!nip || !nom) { alert('Veuillez remplir NIP et Nom'); return; }
                 if (adherents.some(function (a) { return a.nip === nip; })) { alert('Ce NIP est déjà ajouté'); return; }
 
                 adherents.push({ nip: nip, nom: nom, prenom: prenom, profession: profession });
@@ -3003,7 +3002,6 @@
                 if (!document.querySelector('input[name="organisation_type_id"]:checked')) errors.push('Type d\'organisation');
                 if (!document.getElementById('demandeur_nip').value.trim()) errors.push('NIP du déclarant');
                 if (!document.getElementById('demandeur_nom').value.trim()) errors.push('Nom du déclarant');
-                if (!document.getElementById('demandeur_prenom').value.trim()) errors.push('Prénom du déclarant');
                 if (!document.getElementById('demandeur_telephone').value.trim()) errors.push('Téléphone du déclarant');
                 if (!document.getElementById('org_nom').value.trim()) errors.push('Nom de l\'organisation');
                 if (!document.getElementById('org_objet').value.trim()) errors.push('Objet social');

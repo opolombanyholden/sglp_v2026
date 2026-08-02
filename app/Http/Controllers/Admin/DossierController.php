@@ -491,9 +491,9 @@ class DossierController extends Controller
                 ->ordered()
                 ->get();
 
-            // Agents pour assignation
-            $agents = User::where('role', 'agent')
-                ->orWhere('role', 'admin')
+            // Administrateurs pour assignation (source unique : scope assignables)
+            $agents = User::assignables()
+                ->with('roleModel')
                 ->orderBy('name')
                 ->get();
 
@@ -554,7 +554,7 @@ class DossierController extends Controller
                 // Déclarant
                 'demandeur_nip' => 'required|string|max:255',
                 'demandeur_nom' => 'required|string|max:100',
-                'demandeur_prenom' => 'required|string|max:100',
+                'demandeur_prenom' => 'nullable|string|max:100',
                 'demandeur_telephone' => 'required|string|max:255',
                 'demandeur_email' => 'nullable|email|max:255',
                 'demandeur_civilite' => 'nullable|string|max:10',
@@ -757,7 +757,7 @@ class DossierController extends Controller
                 // Déclarant
                 'demandeur_nip' => 'required|string|max:255',
                 'demandeur_nom' => 'required|string|max:100',
-                'demandeur_prenom' => 'required|string|max:100',
+                'demandeur_prenom' => 'nullable|string|max:100',
                 'demandeur_email' => 'nullable|email|max:255',
                 'demandeur_telephone' => 'required|string|max:255',
                 'demandeur_role' => 'nullable|string|max:100',
@@ -788,7 +788,7 @@ class DossierController extends Controller
                 'fondateurs.*.nip' => 'required|string|max:255',
                 'fondateurs.*.civilite' => 'required|in:M,Mme,Mlle',
                 'fondateurs.*.nom' => 'required|string|max:100',
-                'fondateurs.*.prenom' => 'required|string|max:100',
+                'fondateurs.*.prenom' => 'nullable|string|max:100',
                 'fondateurs.*.fonction' => 'required|string|max:100',
                 'fondateurs.*.telephone' => 'nullable|string|max:255',
                 'fondateurs.*.email' => 'nullable|email|max:255',
@@ -797,7 +797,7 @@ class DossierController extends Controller
                 'adherents' => 'nullable|array',
                 'adherents.*.nip' => 'required_with:adherents|string|max:255',
                 'adherents.*.nom' => 'required_with:adherents|string|max:100',
-                'adherents.*.prenom' => 'required_with:adherents|string|max:100',
+                'adherents.*.prenom' => 'nullable|string|max:100',
                 'adherents.*.telephone' => 'nullable|string|max:255',
                 'adherents.*.profession' => 'nullable|string|max:100',
 
@@ -809,7 +809,6 @@ class DossierController extends Controller
                 'organisation_type_id.exists' => 'Le type d\'organisation est invalide.',
                 'demandeur_nip.required' => 'Le NIP du déclarant est obligatoire.',
                 'demandeur_nom.required' => 'Le nom du déclarant est obligatoire.',
-                'demandeur_prenom.required' => 'Le prénom du déclarant est obligatoire.',
                 'demandeur_telephone.required' => 'Le téléphone du déclarant est obligatoire.',
                 'org_nom.required' => 'La dénomination de l\'organisation est obligatoire.',
                 'org_objet.required' => 'L\'objet est obligatoire.',
@@ -825,7 +824,6 @@ class DossierController extends Controller
                 'fondateurs.*.nip.required' => 'Le NIP de chaque fondateur est obligatoire.',
                 'fondateurs.*.civilite.required' => 'La civilité de chaque fondateur est obligatoire.',
                 'fondateurs.*.nom.required' => 'Le nom de chaque fondateur est obligatoire.',
-                'fondateurs.*.prenom.required' => 'Le prénom de chaque fondateur est obligatoire.',
                 'fondateurs.*.fonction.required' => 'La fonction de chaque fondateur est obligatoire.',
                 'adherents.*.nip.required_with' => 'Le NIP de chaque adhérent est obligatoire.',
             ]);
@@ -1270,11 +1268,10 @@ class DossierController extends Controller
             $prioriteHaute = $this->calculateHighPriorityCountArchitecture();
             $delaiMoyen = $this->calculateAverageWaitingTimeArchitecture();
 
-            // Agents disponibles - Utiliser le modèle User correct
-            $agents = User::where('role', 'agent')
-                ->where('is_active', 1)
+            // Administrateurs disponibles pour assignation (source unique : scope assignables)
+            $agents = User::assignables()
                 ->orderBy('name')
-                ->get(['id', 'name', 'email']);
+                ->get(['id', 'name', 'email', 'role', 'role_id']);
 
             // Retour de la vue avec toutes les données
             return view('admin.dossiers.en-attente', compact(
@@ -1347,9 +1344,9 @@ class DossierController extends Controller
             $dossier->priorite_calculee = $isPriority ? 'haute' : 'normale';
             $dossier->raison_priorite = $reason;
 
-            // ========== AGENTS POUR ASSIGNATION ==========
-            $agents = User::where('role', 'agent')
-                ->orWhere('role', 'admin')
+            // ========== ADMINISTRATEURS POUR ASSIGNATION ==========
+            $agents = User::assignables()
+                ->with('roleModel')
                 ->orderBy('name')
                 ->get();
 
@@ -1908,7 +1905,15 @@ class DossierController extends Controller
             ]);
 
             $dossier = Dossier::findOrFail($id);
-            $agent = User::findOrFail($request->agent_id);
+            $agent = User::with('roleModel')->findOrFail($request->agent_id);
+
+            // Un dossier ne peut être assigné qu'à un administrateur/modérateur actif
+            if (!$agent->peutRecevoirDossier() || !$agent->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Le compte sélectionné n\'est pas habilité à traiter un dossier'
+                ], 422);
+            }
 
             $dossier->update([
                 'assigned_to' => $agent->id,
@@ -2215,7 +2220,7 @@ class DossierController extends Controller
             ]);
 
             $dossier = Dossier::findOrFail($id);
-            $agent = User::findOrFail($request->agent_id);
+            $agent = User::with('roleModel')->findOrFail($request->agent_id);
 
             // Vérifier que l'agent est actif
             if (!($agent->is_active ?? true)) {
@@ -2223,6 +2228,14 @@ class DossierController extends Controller
                     'success' => false,
                     'message' => 'L\'agent sélectionné n\'est pas actif'
                 ], 400);
+            }
+
+            // Un dossier ne peut être assigné qu'à un administrateur/modérateur
+            if (!$agent->peutRecevoirDossier()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Le compte sélectionné n\'est pas habilité à traiter un dossier'
+                ], 422);
             }
 
             // Assignation simple
@@ -3929,7 +3942,7 @@ class DossierController extends Controller
                 'fondateurs' => 'required|array|min:' . $organisationType->nb_min_fondateurs_majeurs,
                 'fondateurs.*.nip' => 'required|string|size:14',
                 'fondateurs.*.nom' => 'required|string|max:255',
-                'fondateurs.*.prenom' => 'required|string|max:255',
+                'fondateurs.*.prenom' => 'nullable|string|max:255',
                 'fondateurs.*.fonction' => 'required|string|max:255',
                 'fondateurs.*.telephone' => 'nullable|string|max:255',
                 'fondateurs.*.email' => 'nullable|email|max:255',

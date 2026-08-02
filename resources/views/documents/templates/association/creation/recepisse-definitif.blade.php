@@ -44,6 +44,12 @@
             @endif
         </p>
 
+        @if(!empty($organisation['telephone']) && $organisation['telephone'] !== 'Non renseigné')
+            <p class="mb-20">
+                <strong><u>Téléphone</u> :</strong> {{ $organisation['telephone'] }}@if(!empty($organisation['telephone_2'])) / {{ $organisation['telephone_2'] }}@endif
+            </p>
+        @endif
+
         <p class="mb-20">
 
             @if(isset($organisation_membres) && count($organisation_membres) > 0)

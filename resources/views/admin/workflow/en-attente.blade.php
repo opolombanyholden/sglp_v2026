@@ -499,9 +499,9 @@
                 <form id="assignForm">
                     <input type="hidden" id="assignDossierId">
                     <div class="mb-3">
-                        <label class="form-label">Agent assigné <span class="text-danger">*</span></label>
+                        <label class="form-label">Administrateur / modérateur assigné <span class="text-danger">*</span></label>
                         <select id="agentSelect" class="form-select" required>
-                            <option value="">Sélectionner un agent</option>
+                            <option value="">Sélectionner un administrateur</option>
                             @if(isset($agents))
                                 @foreach($agents as $agent)
                                     <option value="{{ $agent->id }}">{{ $agent->name }} - {{ $agent->email }}</option>

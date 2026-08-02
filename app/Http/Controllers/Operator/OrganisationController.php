@@ -1542,7 +1542,7 @@ class OrganisationController extends Controller
                 }
             ],
             'demandeur_nom' => 'required|string|max:255',
-            'demandeur_prenom' => 'required|string|max:255',
+            'demandeur_prenom' => 'nullable|string|max:255',
             'demandeur_email' => 'required|email|max:255',
             'demandeur_telephone' => 'required|string|max:255',
 
@@ -1698,7 +1698,7 @@ class OrganisationController extends Controller
                 }
             ],
             'demandeur_nom' => 'required|string|max:255',
-            'demandeur_prenom' => 'required|string|max:255',
+            'demandeur_prenom' => 'nullable|string|max:255',
             'demandeur_email' => 'required|email|max:255',
             'demandeur_telephone' => 'required|string|max:255',
             'demandeur_role' => 'nullable|string|max:255',
@@ -2692,7 +2692,7 @@ class OrganisationController extends Controller
                 }
             ],
             'demandeur_nom' => 'required|string|max:255',
-            'demandeur_prenom' => 'required|string|max:255',
+            'demandeur_prenom' => 'nullable|string|max:255',
             'demandeur_email' => 'required|email|max:255',
             'demandeur_telephone' => 'required|string|max:255',
             'demandeur_role' => 'nullable|string|max:255',
