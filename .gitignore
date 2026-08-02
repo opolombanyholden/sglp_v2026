@@ -11,7 +11,6 @@
 /.idea/
 /.vscode/
 *.sql
-!conception/sglp_sync_reference_data.sql
 .DS_Store
 conception/BD_NIP_FINALE.csv
 *.bak.*
@@ -22,5 +21,9 @@ DESIGN V1/
 .playwright-mcp/
 
 # Dumps/scratch volumineux (local) & junk macOS
-/conception/
+# NB : /conception/* et non /conception/ — git ne descend pas dans un dossier
+# exclu, ce qui rendrait la négation ci-dessous inopérante.
+/conception/*
+# Exception : données de référence indispensables à toute installation neuve
+!/conception/sglp_sync_reference_data.sql
 .DS_Store
