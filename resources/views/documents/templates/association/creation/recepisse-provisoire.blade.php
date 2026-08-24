@@ -18,11 +18,11 @@
             attestons que <strong>Monsieur/Madame
                 {{ $organisation['president_nom'] ?? '[Nom du Président]' }}</strong>
             de nationalité Gabonaise, <span
-                style="text-transform:capitalize;"><strong>{{ $organisation['president_fonction'] ?? 'Président(e)' }}</strong></span>
+                style=""><strong>{{ $organisation['president_fonction'] ?? 'Président(e)' }}</strong></span>
             de
             l'association à but non
             lucratif,
-            œuvrant dans le domaine du <strong>{{ $organisation['domaine'] ?? 'Social' }}</strong> dénommée :
+            œuvrant dans le domaine <strong>{{ $organisation['domaine'] ?? 'Social' }}</strong> dénommée :
         </p>
 
         <p class="text-center bold mb-30" style="font-size: 14px;">

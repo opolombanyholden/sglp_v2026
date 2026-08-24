@@ -318,11 +318,13 @@
                                                     id="org_date_creation" value="{{ old('org_date_creation') }}" required>
                                             </div>
                                             <div class="form-group">
-                                                <label class="form-label-modern">Téléphone <span
+                                                <label class="form-label-modern">Téléphone(s) <span
                                                         class="required">*</span></label>
+                                                {{-- Repris tel quel sur le récépissé : plusieurs numéros possibles --}}
                                                 <input type="text" class="form-input-modern" name="org_telephone"
                                                     id="org_telephone" value="{{ old('org_telephone') }}" required
-                                                    placeholder="+241 XX XX XX XX">
+                                                    maxlength="255"
+                                                    placeholder="Ex : 077 12 34 56 / 066 98 76 54">
                                             </div>
                                             <div class="form-group">
                                                 <label class="form-label-modern">Email</label>

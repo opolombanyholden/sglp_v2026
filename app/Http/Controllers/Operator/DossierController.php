@@ -2132,7 +2132,8 @@ class DossierController extends Controller
             'prenom' => trim($data['prenom'] ?? ''),
             'profession' => trim($data['profession'] ?? ''),
             'fonction' => trim($data['fonction'] ?? 'Membre'),
-            'telephone' => preg_replace('/[^0-9+]/', '', $data['telephone'] ?? ''),
+            // Saisie libre : plusieurs numéros possibles, séparateurs conservés
+            'telephone' => trim(preg_replace('/\s+/', ' ', $data['telephone'] ?? '')),
             'email' => isset($data['email']) && filter_var($data['email'], FILTER_VALIDATE_EMAIL) ? $data['email'] : null
         ];
     }

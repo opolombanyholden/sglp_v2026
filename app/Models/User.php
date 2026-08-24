@@ -901,9 +901,17 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * ⭐ MUTATEURS - Nettoyage automatique
      */
+    /**
+     * ✅ Saisie libre : le champ peut contenir plusieurs numéros et des
+     * séparateurs (- / ;). Filtrer les caractères non numériques supprimerait
+     * silencieusement ces séparateurs — on se limite donc à normaliser les
+     * espaces.
+     */
     public function setPhoneAttribute($value): void
     {
-        $this->attributes['phone'] = preg_replace('/[^0-9+]/', '', $value);
+        $this->attributes['phone'] = $value === null
+            ? null
+            : trim(preg_replace('/\s+/', ' ', $value));
     }
 
     public function setEmailAttribute($value): void

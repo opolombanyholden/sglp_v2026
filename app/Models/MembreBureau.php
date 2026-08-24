@@ -106,7 +106,8 @@ class MembreBureau extends Model
             'nom' => 'required|string|max:100',
             'prenom' => 'nullable|string|max:100',
             'fonction' => 'required|string|max:150',
-            'contact' => 'nullable|string|max:100',
+            // Saisie libre : peut contenir plusieurs numéros (colonne élargie à 255)
+            'contact' => 'nullable|string|max:255',
             'domicile' => 'nullable|string|max:255',
             'afficher_recepisse' => 'boolean',
             'ordre' => 'integer|min:0',

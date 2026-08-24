@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Services\RecepisseNumberService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Dossier;
@@ -1162,18 +1163,8 @@ class DossierController extends Controller
      */
     private function generateRecepisseNumberAdmin(string $type): string
     {
-        $prefixes = [
-            'association' => 'ASS',
-            'ong' => 'ONG',
-            'parti_politique' => 'PP',
-            'confession_religieuse' => 'CR',
-        ];
-
-        $prefix = $prefixes[$type] ?? 'ORG';
-        $year = date('Y');
-        $count = Organisation::whereYear('created_at', $year)->where('type', $type)->count() + 1;
-
-        return sprintf('%s/%s/%05d', $prefix, $year, $count);
+        // Numérotation centralisée : voir RecepisseNumberService.
+        return app(RecepisseNumberService::class)->generer($type);
     }
 
     /*
@@ -2126,11 +2117,9 @@ class DossierController extends Controller
      */
     private function generateRecepisseNumber($dossier)
     {
-        $type = $dossier->organisation ? substr($dossier->organisation->type, 0, 3) : 'ORG';
-        $year = now()->year;
-        $sequence = str_pad(Dossier::where('statut', 'approuve')->count() + 1, 4, '0', STR_PAD_LEFT);
-
-        return strtoupper($type) . '-' . $year . '-' . $sequence;
+        // Numérotation centralisée : voir RecepisseNumberService.
+        return app(RecepisseNumberService::class)
+            ->generer($dossier->organisation->type ?? '');
     }
 
     /**

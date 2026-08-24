@@ -42,13 +42,13 @@
             @if(!empty($organisation['boite_postale']))
                 , BP : {{ $organisation['boite_postale'] }}
             @endif
+
+             @if(!empty($organisation['telephone']) && $organisation['telephone'] !== 'Non renseigné')
+                <strong><u>; Téléphone</u> :</strong> {{ $organisation['telephone'] }}@if(!empty($organisation['telephone_2'])) / {{ $organisation['telephone_2'] }}@endif
+            @endif
         </p>
 
-        @if(!empty($organisation['telephone']) && $organisation['telephone'] !== 'Non renseigné')
-            <p class="mb-20">
-                <strong><u>Téléphone</u> :</strong> {{ $organisation['telephone'] }}@if(!empty($organisation['telephone_2'])) / {{ $organisation['telephone_2'] }}@endif
-            </p>
-        @endif
+       
 
         <p class="mb-20">
 

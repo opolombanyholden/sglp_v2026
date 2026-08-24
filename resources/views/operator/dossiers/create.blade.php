@@ -1019,15 +1019,16 @@
                                                             <i class="fas fa-phone me-2 text-success"></i>
                                                             Téléphone
                                                         </label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">+241</span>
-                                                            <input type="text" class="form-control form-control-lg"
-                                                                id="demandeur_telephone" name="demandeur_telephone"
-                                                                placeholder="01 23 45 67" pattern="[0-9]{8,9}" required>
-                                                        </div>
+                                                        {{-- Saisie libre : chiffres, texte et séparateurs (- / ;).
+                                                             Pas de préfixe +241 ni de masque, qui interdiraient
+                                                             la saisie de plusieurs numéros. --}}
+                                                        <input type="text" class="form-control form-control-lg"
+                                                            id="demandeur_telephone" name="demandeur_telephone"
+                                                            placeholder="Ex : 077 12 34 56 / 066 98 76 54"
+                                                            maxlength="255" required>
                                                         <div class="form-text">
                                                             <i class="fas fa-info me-1"></i>
-                                                            Format gabonais : 8 ou 9 chiffres (ex: 01234567)
+                                                            Plusieurs numéros possibles, séparés par « / », « ; » ou « - ».
                                                         </div>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
@@ -1261,13 +1262,18 @@
                                                     <div class="col-md-6 mb-4">
                                                         <label for="org_telephone" class="form-label fw-bold required">
                                                             <i class="fas fa-phone me-2 text-success"></i>
-                                                            Téléphone principal
+                                                            Téléphone(s)
                                                         </label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">+241</span>
-                                                            <input type="text" class="form-control form-control-lg"
-                                                                id="org_telephone" name="org_telephone"
-                                                                placeholder="01 23 45 67" pattern="[0-9]{8,9}" required>
+                                                        {{-- Saisie libre : ce champ est repris tel quel sur le récépissé
+                                                             et peut contenir plusieurs numéros. Pas de préfixe +241 ni de
+                                                             masque, qui empêcheraient les formats multiples. --}}
+                                                        <input type="text" class="form-control form-control-lg"
+                                                            id="org_telephone" name="org_telephone"
+                                                            placeholder="Ex : 077 12 34 56 / 066 98 76 54"
+                                                            maxlength="255" required>
+                                                        <div class="form-text">
+                                                            Repris tel quel sur le récépissé. Plusieurs numéros possibles,
+                                                            séparés par « / ».
                                                         </div>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
@@ -1700,12 +1706,13 @@
                                                     <div class="col-md-4 mb-3">
                                                         <label for="fondateur_telephone"
                                                             class="form-label fw-bold">Téléphone <span class="text-danger">*</span></label>
-                                                        <div class="input-group">
-                                                            <span class="input-group-text">+241</span>
-                                                            <input type="text" class="form-control" id="fondateur_telephone"
-                                                                placeholder="01234567" pattern="[0-9]{8,9}">
-                                                        </div>
-                                                        <small class="form-text text-muted">8 ou 9 chiffres</small>
+                                                        {{-- Saisie libre : plusieurs numéros possibles --}}
+                                                        <input type="text" class="form-control" id="fondateur_telephone"
+                                                            placeholder="Ex : 077 12 34 56 / 066 98 76 54"
+                                                            maxlength="255">
+                                                        <small class="form-text text-muted">
+                                                            Plusieurs numéros possibles, séparés par « / », « ; » ou « - ».
+                                                        </small>
                                                         <div class="invalid-feedback"></div>
                                                     </div>
 
@@ -1833,11 +1840,10 @@
                                                             <div class="col-md-4 mb-3">
                                                                 <label for="membre_contact"
                                                                     class="form-label fw-bold">Contact</label>
-                                                                <div class="input-group">
-                                                                    <span class="input-group-text">+241</span>
-                                                                    <input type="text" class="form-control"
-                                                                        id="membre_contact" placeholder="01234567">
-                                                                </div>
+                                                                {{-- Saisie libre : plusieurs numéros possibles --}}
+                                                                <input type="text" class="form-control"
+                                                                    id="membre_contact" maxlength="255"
+                                                                    placeholder="Ex : 077 12 34 56 / 066 98 76 54">
                                                             </div>
 
                                                             <div class="col-md-4 mb-3">
@@ -3689,7 +3695,8 @@
                             ['demandeur_prenom', 'Prénom', { max: 255 }],
                             ['demandeur_date_naissance', 'Date de naissance', { required: true }],
                             ['demandeur_nationalite', 'Nationalité', { required: true }],
-                            ['demandeur_telephone', 'Téléphone', { required: true, pattern: '^[0-9]{8,9}$', patternMsg: 'Téléphone : 8 ou 9 chiffres requis' }],
+                            // Saisie libre : peut contenir plusieurs numéros (voir le champ)
+                            ['demandeur_telephone', 'Téléphone', { required: true, max: 255 }],
                             ['demandeur_email', 'Email', { required: true }],
                             ['demandeur_adresse', 'Adresse', { required: true, max: 500 }],
                             ['demandeur_role', 'Rôle / Qualité', { required: true }]
@@ -3728,7 +3735,8 @@
                             ['org_nom', 'Nom de l\'organisation', { required: true, max: 255 }],
                             ['org_objet', 'Objet social / Mission', { required: true, min: 50 }],
                             ['org_date_creation', 'Date de création', { required: true }],
-                            ['org_telephone', 'Téléphone principal', { required: true, pattern: '^[0-9]{8,9}$', patternMsg: 'Téléphone : 8 ou 9 chiffres requis' }]
+                            // Saisie libre : peut contenir plusieurs numéros (voir le champ)
+                            ['org_telephone', 'Téléphone(s)', { required: true, max: 255 }]
                         ];
 
                         fields.forEach(([id, label, rules]) => {
@@ -5621,9 +5629,9 @@
                         const phoneInputs = document.querySelectorAll('input[name*="telephone"], input#membre_contact');
                         phoneInputs.forEach(input => {
                             input.addEventListener('blur', function () {
-                                if (this.value && !isValidGabonPhone(this.value)) {
+                                if (this.value && !isValidPhoneInput(this.value)) {
                                     this.classList.add('is-invalid');
-                                    showFieldError(this, 'Numéro de téléphone gabonais invalide');
+                                    showFieldError(this, 'Saisissez au moins un numéro (plusieurs numéros possibles, séparés par « / », « ; » ou « - »)');
                                 } else {
                                     this.classList.remove('is-invalid');
                                     clearFieldError(this);
@@ -5658,12 +5666,15 @@
                     }
 
                     /**
-                     * Valider téléphone gabonais
+                     * Valider une saisie téléphone
+                     *
+                     * Les champs téléphone acceptent une chaîne libre : chiffres, texte
+                     * et séparateurs (- / ;), afin de permettre plusieurs numéros dans
+                     * le même champ. Seule exigence : contenir au moins un chiffre,
+                     * ce qui écarte une saisie purement textuelle.
                      */
-                    function isValidGabonPhone(phone) {
-                        // Format gabonais : 8-9 chiffres
-                        const phoneRegex = /^[0-9]{8,9}$/;
-                        return phoneRegex.test(phone.replace(/\s/g, ''));
+                    function isValidPhoneInput(phone) {
+                        return /[0-9]/.test(phone);
                     }
 
                     /**

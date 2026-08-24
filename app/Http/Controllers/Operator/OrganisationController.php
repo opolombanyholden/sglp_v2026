@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Operator;
 
+use App\Services\RecepisseNumberService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -3667,23 +3668,8 @@ class OrganisationController extends Controller
      */
     private function generateRecepisseNumber($type)
     {
-        $prefixes = [
-            'parti_politique' => 'PP',
-            'association' => 'AS',
-            'ong' => 'ONG',
-            'confession_religieuse' => 'CR'
-        ];
-
-        $prefix = $prefixes[$type] ?? 'ORG';
-        $year = date('Y');
-
-        $count = Organisation::where('type', $type)
-            ->where('numero_recepisse', 'LIKE', "REC-{$prefix}-{$year}-%")
-            ->count();
-
-        $sequence = str_pad($count + 1, 5, '0', STR_PAD_LEFT);
-
-        return "REC-{$prefix}-{$year}-{$sequence}";
+        // Numérotation centralisée : voir RecepisseNumberService.
+        return app(RecepisseNumberService::class)->generer($type);
     }
 
     /**
