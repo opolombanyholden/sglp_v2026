@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="document-number" style="padding-left:40px; font-size:8pt; margin-top:0pt; padding-top:0pt;">
-        N° {{ $document['numero_document'] }}/MISD/SG/DGELP/DPPALC
+        N° {{ $document['numero_affiche'] ?? $document['numero_document'] }}/MISD/SG/DGELP/DPPALC
     </div>
 
     <div class="document-title">
@@ -12,20 +12,20 @@
 
 
 
-    <div class="content">
+    <div class="content" style="font-size:14px; line-height: normal; text-align: justify;">
         <p class="mb-20">
             Nous soussignés, Ministre de l'Intérieur, de la Sécurité et de la Décentralisation,
             attestons que <strong>Monsieur/Madame
                 {{ $organisation['president_nom'] ?? '[Nom du Président]' }}</strong>
             de nationalité Gabonaise, <span
-                style="text-transform:capitalize;"><strong>{{ $organisation['president_fonction'] ?? 'Président(e)' }}</strong></span>
+                style=""><strong>{{ $organisation['president_fonction'] ?? 'Président(e)' }}</strong></span>
             de
             l'association à but non
             lucratif,
-            œuvrant dans le domaine du <strong>{{ $organisation['domaine'] ?? 'Social' }}</strong> dénommée :
+            œuvrant dans le domaine <strong>{{ $organisation['domaine'] ?? 'Social' }}</strong> dénommée :
         </p>
 
-        <p class="text-center bold mb-30" style="font-size: 13pt;">
+        <p class="text-center bold mb-30" style="font-size: 14px;">
             « {{ strtoupper($organisation['nom']) }} »
         </p>
 

@@ -886,6 +886,92 @@
                     </div>
                 </div>
 
+                {{-- ========== RÉCÉPISSÉS ÉMIS (HISTORIQUE) ========== --}}
+                <div class="card mb-4">
+                    <div class="card-header py-3 d-flex align-items-center" style="background-color: #009e3f;">
+                        <h6 class="m-0 font-weight-bold text-white">
+                            <i class="fas fa-stamp me-2"></i>Récépissés émis (historique)
+                            @if(isset($recepisses))
+                                <span class="badge bg-light text-dark ms-2">{{ $recepisses->count() }}</span>
+                            @endif
+                        </h6>
+                        <small class="text-white ms-auto" style="opacity:0.85;">
+                            Opération : <strong>{{ ucfirst(str_replace('_', ' ', $dossier->type_operation ?? 'N/A')) }}</strong>
+                        </small>
+                    </div>
+                    <div class="card-body p-0">
+                        @if(isset($recepisses) && $recepisses->count() > 0)
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0 align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Document</th>
+                                            <th>Numéro</th>
+                                            <th>Émis le</th>
+                                            <th class="text-center">Téléch.</th>
+                                            <th>Statut</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($recepisses as $recepisse)
+                                            <tr>
+                                                <td>
+                                                    <i class="fas fa-file-pdf text-danger me-2"></i>
+                                                    <strong>{{ $recepisse->type_document_label }}</strong>
+                                                </td>
+                                                <td><code>{{ $recepisse->numero_document }}</code></td>
+                                                <td>
+                                                    <small>
+                                                        {{ \Carbon\Carbon::parse($recepisse->generated_at)->format('d/m/Y H:i') }}
+                                                        @if($recepisse->generatedBy)
+                                                            <br><span class="text-muted">par {{ $recepisse->generatedBy->name }}</span>
+                                                        @endif
+                                                    </small>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-secondary">{{ $recepisse->download_count ?? 0 }}</span>
+                                                </td>
+                                                <td>
+                                                    @if($recepisse->is_valid)
+                                                        <span class="badge bg-success">Valide</span>
+                                                    @else
+                                                        <span class="badge bg-danger" title="{{ $recepisse->invalidation_reason }}">Invalidé</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-end">
+                                                    @if($recepisse->is_valid)
+                                                        <a href="{{ route('admin.documents.download', $recepisse->id) }}"
+                                                           class="btn btn-sm btn-success"
+                                                           target="_blank"
+                                                           title="Imprimer / télécharger">
+                                                            <i class="fas fa-print me-1"></i>Imprimer
+                                                        </a>
+                                                        <a href="{{ route('admin.documents.show', $recepisse->id) }}"
+                                                           class="btn btn-sm btn-outline-primary"
+                                                           title="Détails">
+                                                            <i class="fas fa-eye"></i>
+                                                        </a>
+                                                    @else
+                                                        <button class="btn btn-sm btn-outline-secondary" disabled title="Invalidé">
+                                                            <i class="fas fa-ban"></i>
+                                                        </button>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="alert alert-info mb-0 m-3">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Aucun récépissé n'a encore été généré pour ce dossier. Utilisez les boutons « Documents Officiels » ci-dessous pour générer le récépissé correspondant à l'opération de ce dossier.
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
                 {{-- ============================================ --}}
                 {{-- FIN DES SECTIONS À AJOUTER --}}
                 {{-- ============================================ --}}

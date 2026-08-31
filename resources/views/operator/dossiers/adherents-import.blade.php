@@ -906,7 +906,7 @@ Version: 4.3 - Timeout étendu + Architecture modulaire CORRIGÉE
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js" integrity="sha384-EtqfExzDvAOmLLdnOsa5Dy174/rTmPzv9OnQXw8NQOXnTypob284TIsp6Gt3yEyL" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js" integrity="sha384-jLwhcmGu/RL8PSTUEl/559f8QVLL4QqM+HBvoZlt4F7XCdsdoDGAwW4nPFfoM7lU" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js" integrity="sha384-6kRQDsV2kVYRSENnw7WnekWKCx8/Lmv7rFKpDuR2AoIbjlBShlYcs3x0QlE3kuRh" crossorigin="anonymous"></script>
 
@@ -1360,7 +1360,7 @@ console.log('🔧 Process chunk URL:', window.Phase2Config.urls.processChunk);
 
 <script src="{{ asset('js/unified-config-manager.js') }}"></script>
     <script src="{{ asset('js/unified-csrf-manager.js') }}"></script>
-    <script src="{{ asset('js/csrf-manager.js') }}"></script> <!-- Avec détection -->
+    <script src="{{ asset('js/csrf-manager.js') }}?v=20260613"></script> <!-- Avec détection -->
     <script src="{{ asset('js/workflow-2phases.js') }}"></script>
     <script src="{{ asset('js/chunking-import.js') }}"></script>
 

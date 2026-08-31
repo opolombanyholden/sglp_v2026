@@ -319,14 +319,17 @@ class ChunkProcessorController extends Controller
         }
 
         // Validation du téléphone (si présent)
+        // Saisie libre : le champ peut contenir plusieurs numéros et des
+        // séparateurs (- / ;). Exiger 8-9 chiffres marquerait chaque saisie
+        // multi-numéros comme anomalie majeure. On ne signale donc qu'une
+        // valeur ne contenant aucun chiffre.
         if (!empty($adherentData['telephone'])) {
-            $telephone = preg_replace('/\s+/', '', $adherentData['telephone']);
-            if (!preg_match('/^[0-9]{8,9}$/', $telephone)) {
+            if (!preg_match('/[0-9]/', $adherentData['telephone'])) {
                 $anomalies[] = [
                     'type' => 'telephone_invalide',
                     'level' => 'majeure',
                     'message' => 'Format téléphone incorrect',
-                    'details' => "Téléphone '{$adherentData['telephone']}' ne respecte pas le format gabonais"
+                    'details' => "Téléphone '{$adherentData['telephone']}' ne contient aucun chiffre"
                 ];
                 $hasAnomalies = true;
             }
@@ -359,7 +362,8 @@ class ChunkProcessorController extends Controller
             'nom' => ucwords(strtolower(trim($adherentData['nom']))),
             'prenom' => ucwords(strtolower(trim($adherentData['prenom']))),
             'nip' => $nip,
-            'telephone' => !empty($adherentData['telephone']) ? preg_replace('/\s+/', '', $adherentData['telephone']) : null,
+            // Séparateurs conservés : la valeur peut contenir plusieurs numéros
+            'telephone' => !empty($adherentData['telephone']) ? trim(preg_replace('/\s+/', ' ', $adherentData['telephone'])) : null,
             'profession' => !empty($adherentData['profession']) ? trim($adherentData['profession']) : null,
             'processed_at' => now(),
             'chunk_id' => null, // Sera défini lors de la sauvegarde

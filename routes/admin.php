@@ -257,11 +257,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
 
         // Statuts
         Route::get('/en-attente', [DossierController::class, 'enAttente'])->name('en-attente');
-        Route::get('/en-cours', [DossierController::class, 'enCours'])->name('en-cours');
-        Route::get('/valides', [DossierController::class, 'valides'])->name('valides');
         Route::get('/rejetes', [DossierController::class, 'rejetes'])->name('rejetes');
         Route::get('/brouillons', [DossierController::class, 'brouillons'])->name('brouillons');
         Route::get('/annules', [DossierController::class, 'annules'])->name('annules');
+        Route::get('/tous', [DossierController::class, 'tous'])->name('tous');
         Route::get('/supprimes', [DossierController::class, 'supprimes'])->name('supprimes'); // Super admin only
 
         // Actions spécifiques
@@ -748,6 +747,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'verified', 'admin']
         Route::post('/bulk-operations', [DocumentTemplateController::class, 'bulkOperations'])->name('bulk-operations');
         Route::get('/export', [DocumentTemplateController::class, 'export'])->name('export');
         Route::post('/import', [DocumentTemplateController::class, 'import'])->name('import');
+
+        // Scanner les fichiers .blade.php physiques non encore enregistrés en BDD
+        Route::get('/scan', [DocumentTemplateController::class, 'scan'])->name('scan');
+        Route::post('/scan/register', [DocumentTemplateController::class, 'registerScanned'])->name('scan.register');
 
         // CRUD classique
         Route::get('/{documentTemplate}', [DocumentTemplateController::class, 'show'])->name('show');

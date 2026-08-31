@@ -433,6 +433,35 @@ class User extends Authenticatable implements MustVerifyEmail
                $this->hasAdvancedRole('super_admin');
     }
 
+    /**
+     * ✅ DÉFINITION UNIQUE D'UN "ADMINISTRATEUR" (système hybride)
+     *
+     * Le formulaire de création alimente deux systèmes de rôles indépendants :
+     *  - `role`     : colonne héritée (admin / agent / operator / visitor) = niveau d'accès
+     *  - `role_id`  : rôle avancé (super_admin, admin_associations, moderateur, ...)
+     *
+     * Un compte est administrateur s'il porte le rôle hérité `admin`
+     * OU un rôle avancé de niveau administrateur (>= Role::ADMIN_LEVEL).
+     * C'est cette définition qui fait foi pour l'assignation des dossiers.
+     *
+     * ⚠️ Ne pas confondre avec isAdmin() qui se base sur les permissions.
+     */
+    public function isAdministrateur(): bool
+    {
+        return $this->role === self::ROLE_ADMIN
+            || ($this->roleModel && $this->roleModel->isAdminLevel());
+    }
+
+    /**
+     * ✅ Habilité à recevoir un dossier : administrateurs et modérateurs.
+     * Pendant du scope assignables() — même seuil (Role::ASSIGNABLE_LEVEL).
+     */
+    public function peutRecevoirDossier(): bool
+    {
+        return $this->role === self::ROLE_ADMIN
+            || ($this->roleModel && $this->roleModel->level >= Role::ASSIGNABLE_LEVEL);
+    }
+
     public function isAgent(): bool
     {
         return $this->role === self::ROLE_AGENT || 
@@ -562,6 +591,35 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scopeVerified($query)
     {
         return $query->where('is_verified', true);
+    }
+
+    /**
+     * ✅ Tous les comptes administrateurs, quel que soit le système de rôles utilisé.
+     * Pendant du helper isAdministrateur() — voir son commentaire.
+     */
+    public function scopeAdministrateurs($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('role', self::ROLE_ADMIN)
+              ->orWhereHas('roleModel', function ($r) {
+                  $r->where('level', '>=', Role::ADMIN_LEVEL);
+              });
+        });
+    }
+
+    /**
+     * ✅ Comptes actifs pouvant recevoir un dossier : administrateurs et modérateurs.
+     * Source unique pour toutes les listes d'assignation.
+     */
+    public function scopeAssignables($query)
+    {
+        return $query->where('is_active', 1)
+                     ->where(function ($q) {
+                         $q->where('role', self::ROLE_ADMIN)
+                           ->orWhereHas('roleModel', function ($r) {
+                               $r->where('level', '>=', Role::ASSIGNABLE_LEVEL);
+                           });
+                     });
     }
 
     /**
@@ -843,9 +901,17 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * ⭐ MUTATEURS - Nettoyage automatique
      */
+    /**
+     * ✅ Saisie libre : le champ peut contenir plusieurs numéros et des
+     * séparateurs (- / ;). Filtrer les caractères non numériques supprimerait
+     * silencieusement ces séparateurs — on se limite donc à normaliser les
+     * espaces.
+     */
     public function setPhoneAttribute($value): void
     {
-        $this->attributes['phone'] = preg_replace('/[^0-9+]/', '', $value);
+        $this->attributes['phone'] = $value === null
+            ? null
+            : trim(preg_replace('/\s+/', ' ', $value));
     }
 
     public function setEmailAttribute($value): void

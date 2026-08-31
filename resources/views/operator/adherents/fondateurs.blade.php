@@ -117,8 +117,8 @@
                                     @error('nom') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                                 <div class="form-group col-6">
-                                    <label class="small">Prénom <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control form-control-sm @error('prenom') is-invalid @enderror" name="prenom" value="{{ old('prenom') }}" required>
+                                    <label class="small">Prénom</label>
+                                    <input type="text" class="form-control form-control-sm @error('prenom') is-invalid @enderror" name="prenom" value="{{ old('prenom') }}">
                                     @error('prenom') <div class="invalid-feedback">{{ $message }}</div> @enderror
                                 </div>
                             </div>

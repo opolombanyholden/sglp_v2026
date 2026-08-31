@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Dossier;
+use App\Models\DocumentGeneration;
 use App\Models\DocumentTemplate;
 use App\Services\DocumentGenerationService;
 use Illuminate\Support\Facades\Log;
@@ -130,16 +131,33 @@ class PDFService
                 throw new \Exception("Template '{$typeDocument}' introuvable ou inactif pour organisation_type={$organisationTypeId}, operation={$typeOperation}");
             }
 
-            // Préparer les données
+            // 1 récépissé par (dossier, type_document) : réutiliser la génération valide
+            // existante si elle existe, sinon en créer une nouvelle.
+            $existing = DocumentGeneration::where('dossier_id', $dossier->id)
+                ->where('type_document', $typeDocument)
+                ->where('is_valid', true)
+                ->orderByDesc('generated_at')
+                ->first();
+
+            if ($existing) {
+                Log::info('PDFService: régénération depuis génération existante', [
+                    'generation_id' => $existing->id,
+                    'dossier_id' => $dossier->id,
+                    'type_document' => $typeDocument,
+                ]);
+
+                $result = $this->documentService->regenerate($existing);
+                return $result['pdf'];
+            }
+
+            // Aucune génération existante → créer la première
             $data = [
                 'organisation_id' => $dossier->organisation_id,
                 'dossier_id' => $dossier->id,
             ];
 
-            // Générer via DocumentGenerationService
             $result = $this->documentService->generate($template, $data);
 
-            // Retourner l'objet Mpdf
             return $result['pdf'];
 
         } catch (\Exception $e) {

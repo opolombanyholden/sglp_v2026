@@ -84,19 +84,19 @@
                     <div class="card-body p-4">
                         <div class="text-center mb-4">
                             <h5 style="color: #003f7f;">
-                                <i class="fas fa-building mr-2"></i>
+                                <i class="fas fa-building me-2"></i>
                                 {{ $organisation->nom ?? 'Organisation' }}
                             </h5>
                         </div>
 
                         @if($requiert_validation)
                             <div class="alert alert-info mb-4" style="border-radius: 10px;">
-                                <i class="fas fa-info-circle mr-2"></i>
+                                <i class="fas fa-info-circle me-2"></i>
                                 Votre demande d'adhésion a été enregistrée et sera examinée par l'administrateur de l'organisation. Vous serez informé(e) de la suite donnée.
                             </div>
                         @else
                             <div class="alert alert-success mb-4" style="border-radius: 10px;">
-                                <i class="fas fa-check-circle mr-2"></i>
+                                <i class="fas fa-check-circle me-2"></i>
                                 Votre adhésion a été confirmée automatiquement. Bienvenue !
                             </div>
                         @endif
@@ -111,7 +111,7 @@
 
                         <div class="text-center mt-4">
                             <a href="{{ url('/') }}" class="btn btn-outline-secondary">
-                                <i class="fas fa-home mr-2"></i>Retour à l'accueil
+                                <i class="fas fa-home me-2"></i>Retour à l'accueil
                             </a>
                         </div>
                     </div>

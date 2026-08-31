@@ -352,13 +352,10 @@
         window.submitFormWithCSRFHandling = submitFormWithCSRFHandling;
         
         console.log('✅ CSRFManager autonome chargé avec succès');
-        
-        // Test initial de connectivité (optionnel)
-        if (window.CSRFManager) {
-            window.CSRFManager.testSessionConnectivity().catch(err => {
-                console.warn('⚠️ Test initial CSRF échoué:', err.message);
-            });
-        }
+
+        // Test de connectivité désactivé à l'init : la route /csrf-debug n'existe
+        // pas en production et provoquait un 404 console. La méthode reste
+        // disponible (window.CSRFManager.testSessionConnectivity()) pour le debug manuel.
     }
 
 })();

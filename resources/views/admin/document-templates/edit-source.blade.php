@@ -177,7 +177,7 @@
                 <div class="modal-body">
                     <div class="alert alert-info small mb-3">
                         <i class="fas fa-info-circle mr-1"></i>
-                        Le nouveau template sera créé <strong>inactif</strong> par défaut. Vous pourrez l'activer après vérification.
+                        Le nouveau template sera créé <strong>inactif</strong> par défaut et son fichier <code>.blade.php</code> sera créé automatiquement.
                     </div>
 
                     <div class="form-group">
@@ -195,21 +195,49 @@
                                value="{{ $documentTemplate->nom }} (copie)" required maxlength="255">
                     </div>
 
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Type d'organisation</label>
+                            <select name="organisation_type_id" class="form-control">
+                                <option value="">— Générique —</option>
+                                @foreach($organisationTypes as $ot)
+                                    <option value="{{ $ot->id }}" {{ $documentTemplate->organisation_type_id == $ot->id ? 'selected' : '' }}>{{ $ot->nom }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Type d'opération</label>
+                            <select name="operation_type_id" class="form-control">
+                                <option value="">— Générique —</option>
+                                @foreach($operationTypes as $op)
+                                    <option value="{{ $op->id }}" {{ $documentTemplate->operation_type_id == $op->id ? 'selected' : '' }}>{{ $op->libelle ?? $op->code }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Type de document</label>
+                        <select name="type_document" class="form-control">
+                            <option value="">— Inchangé ({{ $documentTemplate->type_document }}) —</option>
+                            <option value="recepisse_provisoire">Récépissé provisoire</option>
+                            <option value="recepisse_definitif">Récépissé définitif</option>
+                            <option value="recepisse_enregistrement">Récépissé d'enregistrement</option>
+                            <option value="accuse_reception">Accusé de réception</option>
+                            <option value="attestation">Attestation</option>
+                            <option value="certificat">Certificat</option>
+                            <option value="notification_rejet">Notification de rejet</option>
+                            <option value="autre">Autre</option>
+                        </select>
+                    </div>
+
                     <div class="form-group">
                         <label>Nouveau chemin du fichier Blade (optionnel)</label>
                         <input type="text" name="new_template_path" class="form-control"
                                placeholder="Laisser vide pour génération automatique">
                         <small class="form-text text-muted">
-                            Exemple : <code>documents.templates.association.recepisse_copy</code><br>
-                            Si vide, un chemin sera généré à partir du code.
+                            Auto-généré : <code>documents.templates.&lt;org&gt;.&lt;op&gt;.&lt;code&gt;</code>
                         </small>
-                    </div>
-
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="copy_file" value="1" id="copyFile" checked>
-                        <label class="form-check-label" for="copyFile">
-                            Dupliquer aussi le fichier source Blade
-                        </label>
                     </div>
                 </div>
                 <div class="modal-footer">

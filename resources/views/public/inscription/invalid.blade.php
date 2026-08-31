@@ -21,7 +21,7 @@
                 @endif
 
                 <a href="{{ url('/') }}" class="btn btn-primary">
-                    <i class="fas fa-home mr-2"></i>Retour à l'accueil
+                    <i class="fas fa-home me-2"></i>Retour à l'accueil
                 </a>
             </div>
         </div>

@@ -152,10 +152,7 @@
                     <div class="alert alert-danger alert-dismissible fade show" role="alert">
                         <i class="fas fa-exclamation-triangle"></i>
                         <strong>Erreur :</strong> {{ session('error') }}
-                        {{-- ✅ Bootstrap 4: close avec span au lieu de btn-close --}}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                     </div>
                 @endif
 
@@ -168,10 +165,7 @@
                                 <li>{{ $error }}</li>
                             @endforeach
                         </ul>
-                        {{-- ✅ Bootstrap 4: close avec span au lieu de btn-close --}}
-                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
                     </div>
                 @endif
                 
@@ -198,8 +192,8 @@
                     </div>
 
                     <button type="submit" class="btn btn-primary btn-verify w-100">
-                        {{-- ✅ Bootstrap 4: mr-2 au lieu de me-2 --}}
-                        <i class="fas fa-search mr-2"></i> Vérifier le document
+                        {{-- ✅ Bootstrap 4: me-2 au lieu de me-2 --}}
+                        <i class="fas fa-search me-2"></i> Vérifier le document
                     </button>
                 </form>
 

@@ -2,8 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Dossier;
 use App\Models\OrganizationDraft;
 use App\Models\Organisation;
+use App\Models\OrganisationType;
 use App\Models\Fondateur;
 use App\Models\Adherent;
 use App\Models\Document;
@@ -135,12 +137,17 @@ class OrganisationStepService
 
             // Récupérer ou créer le brouillon
             $draft = $this->getOrCreateDraft($userId, $sessionId);
-            
+
             // Mettre à jour les données de l'étape
             $stepData = $this->updateStepData($draft, $stepNumber, $data);
-            
+
             // Sauvegarder en base
             $draft->save();
+
+            // Persister parallèlement un Dossier brouillon (exigence "chaque
+            // étape persistée en BDD comme dossier brouillon"). Le dossier_id
+            // est conservé dans le draft pour réutilisation aux étapes suivantes.
+            $dossier = $this->upsertDossierBrouillon($draft, $userId);
 
             // Générer accusé si possible
             $accuseGenerated = false;
@@ -150,6 +157,7 @@ class OrganisationStepService
 
             Log::info("Étape {$stepNumber} sauvegardée avec succès", [
                 'draft_id' => $draft->id,
+                'dossier_id' => $dossier?->id,
                 'accuse_generated' => $accuseGenerated
             ]);
 
@@ -157,6 +165,8 @@ class OrganisationStepService
                 'success' => true,
                 'message' => "Étape {$stepNumber} sauvegardée avec succès",
                 'draft_id' => $draft->id,
+                'dossier_id' => $dossier?->id,
+                'numero_dossier' => $dossier?->numero_dossier,
                 'step_status' => $stepData['status'],
                 'accuse_generated' => $accuseGenerated,
                 'can_proceed_next' => $this->canProceedToStep($stepNumber + 1, $draft->id),
@@ -322,24 +332,68 @@ class OrganisationStepService
 
             DB::beginTransaction();
 
-            // Créer l'organisation finale
-            $organisationData = $this->consolidateOrganisationData($draft);
-            $organisation = Organisation::create($organisationData);
+            // S'assurer qu'un Dossier brouillon existe (idempotent)
+            $this->upsertDossierBrouillon($draft, $draft->user_id);
 
-            // Créer les entités liées
+            $meta = ($draft->form_data ?? [])['_meta'] ?? [];
+
+            // Réutiliser l'Organisation brouillon créée pendant le wizard plutôt
+            // que d'en créer une nouvelle (évite doublons + préserve les FK).
+            $organisation = !empty($meta['organisation_id'])
+                ? Organisation::find($meta['organisation_id'])
+                : null;
+
+            $organisationData = $this->consolidateOrganisationData($draft);
+            // À la finalisation : statut = soumis, is_active = true
+            $organisationData['statut'] = 'soumis';
+            $organisationData['is_active'] = true;
+
+            if ($organisation) {
+                $organisation->fill($organisationData)->save();
+            } else {
+                $organisation = Organisation::create($organisationData);
+            }
+
+            // Créer les entités liées (fondateurs/adhérents) — idempotent : on vide
+            // d'abord pour éviter les doublons en cas de re-finalisation.
+            // ORDRE : adhérents avant fondateurs (FK adherents.fondateur_id → fondateurs.id)
+            $organisation->adherents()->delete();
+            $organisation->fondateurs()->delete();
             $this->createRelatedEntities($organisation, $draft);
+
+            // Réutiliser le Dossier brouillon : passage à statut=soumis
+            $dossier = !empty($meta['dossier_id']) ? Dossier::find($meta['dossier_id']) : null;
+            if (!$dossier) {
+                // Cas exceptionnel : aucun upsert n'a réussi (FK manquantes en
+                // cours de wizard) → on en crée un maintenant.
+                $dossier = Dossier::create([
+                    'organisation_id' => $organisation->id,
+                    'numero_dossier'  => $this->generateNumeroDossierBrouillon($organisation->type ?? 'ORG'),
+                    'type_operation'  => 'creation',
+                    'statut'          => 'soumis',
+                    'is_active'       => true,
+                    'date_soumission' => now(),
+                ]);
+            } else {
+                $dossier->update([
+                    'organisation_id' => $organisation->id,
+                    'statut'          => 'soumis',
+                    'date_soumission' => now(),
+                ]);
+            }
 
             // Marquer le brouillon comme finalisé
             $draft->update([
                 'completion_percentage' => 100,
                 'current_step' => 9,
-                'expires_at' => now()->addDays(30) // Garder 30 jours pour référence
+                'expires_at' => now()->addDays(30)
             ]);
 
             DB::commit();
 
             Log::info("Organisation finalisée avec succès", [
                 'organisation_id' => $organisation->id,
+                'dossier_id' => $dossier->id,
                 'draft_id' => $draft->id
             ]);
 
@@ -347,6 +401,7 @@ class OrganisationStepService
                 'success' => true,
                 'message' => 'Organisation créée avec succès',
                 'organisation_id' => $organisation->id,
+                'dossier_id' => $dossier->id,
                 'organisation' => $organisation
             ];
 
@@ -550,6 +605,138 @@ class OrganisationStepService
     /**
      * Consolider les données pour créer l'organisation finale
      */
+    /**
+     * Crée ou met à jour un Dossier brouillon associé au draft.
+     *
+     * À la première étape : crée une Organisation provisoire (statut brouillon)
+     * + un Dossier (statut brouillon, type_operation=creation).
+     * Aux étapes suivantes : met à jour l'Organisation et le Dossier existants.
+     *
+     * Le dossier_id et organisation_id sont persistés dans form_data['_meta']
+     * pour pouvoir y accéder aux étapes suivantes et à la finalisation.
+     */
+    private function upsertDossierBrouillon(OrganizationDraft $draft, int $userId): ?Dossier
+    {
+        try {
+            $formData = $draft->form_data ?? [];
+            $meta = $formData['_meta'] ?? [];
+            $consolidated = [];
+            foreach ($formData as $stepKey => $stepData) {
+                if (is_string($stepKey) && str_starts_with($stepKey, 'step_') && isset($stepData['data'])) {
+                    $consolidated = array_merge($consolidated, (array) $stepData['data']);
+                }
+            }
+
+            // Tant qu'on n'a pas de type d'organisation, on ne peut pas créer
+            // proprement le couple Organisation+Dossier (FK obligatoires).
+            $typeCode = $consolidated['type_organisation'] ?? null;
+            if (!$typeCode) {
+                return null;
+            }
+
+            $orgType = OrganisationType::where('code', $typeCode)->first();
+            if (!$orgType) {
+                return null;
+            }
+
+            // 1) Organisation brouillon
+            $organisation = !empty($meta['organisation_id'])
+                ? Organisation::find($meta['organisation_id'])
+                : null;
+
+            $orgFields = [
+                'user_id'              => $userId,
+                'organisation_type_id' => $orgType->id,
+                'type'                 => $orgType->code,
+                'nom'                  => $consolidated['org_nom'] ?? ($organisation->nom ?? ('Brouillon #' . now()->timestamp)),
+                'sigle'                => $consolidated['org_sigle'] ?? ($organisation->sigle ?? null),
+                'objet'                => $consolidated['org_objet'] ?? ($organisation->objet ?? ''),
+                'siege_social'         => $consolidated['org_adresse_complete'] ?? ($organisation->siege_social ?? ''),
+                'province'             => $consolidated['org_province'] ?? ($organisation->province ?? ''),
+                'departement'          => $consolidated['org_departement'] ?? ($organisation->departement ?? null),
+                'prefecture'           => $consolidated['org_prefecture'] ?? ($organisation->prefecture ?? 'Non défini'),
+                'zone_type'            => $consolidated['org_zone_type'] ?? ($organisation->zone_type ?? 'urbaine'),
+                'latitude'             => $consolidated['org_latitude'] ?? ($organisation->latitude ?? null),
+                'longitude'            => $consolidated['org_longitude'] ?? ($organisation->longitude ?? null),
+                'email'                => $consolidated['org_email'] ?? ($organisation->email ?? null),
+                'telephone'            => $consolidated['org_telephone'] ?? ($organisation->telephone ?? ''),
+                'site_web'             => $consolidated['org_site_web'] ?? ($organisation->site_web ?? null),
+                'date_creation'        => $consolidated['org_date_creation'] ?? ($organisation->date_creation ?? null),
+                'statut'               => 'brouillon',
+                'is_active'            => false,
+            ];
+
+            if ($organisation) {
+                $organisation->fill(array_filter($orgFields, fn($v) => $v !== null && $v !== ''))->save();
+            } else {
+                $organisation = Organisation::create($orgFields);
+            }
+
+            // 2) Dossier brouillon
+            $dossier = !empty($meta['dossier_id'])
+                ? Dossier::find($meta['dossier_id'])
+                : null;
+
+            $donneesSupp = is_array($dossier?->donnees_supplementaires)
+                ? $dossier->donnees_supplementaires
+                : [];
+            $donneesSupp['demandeur'] = [
+                'nip'       => $consolidated['demandeur_nip']      ?? ($donneesSupp['demandeur']['nip']      ?? null),
+                'nom'       => $consolidated['demandeur_nom']      ?? ($donneesSupp['demandeur']['nom']      ?? null),
+                'prenom'    => $consolidated['demandeur_prenom']   ?? ($donneesSupp['demandeur']['prenom']   ?? null),
+                'email'     => $consolidated['demandeur_email']    ?? ($donneesSupp['demandeur']['email']    ?? null),
+                'telephone' => $consolidated['demandeur_telephone']?? ($donneesSupp['demandeur']['telephone']?? null),
+                'role'      => $consolidated['demandeur_role']     ?? ($donneesSupp['demandeur']['role']     ?? 'Déclarant'),
+            ];
+            $donneesSupp['draft_id'] = $draft->id;
+            $donneesSupp['last_completed_step'] = max(
+                (int) ($donneesSupp['last_completed_step'] ?? 0),
+                (int) $draft->current_step
+            );
+
+            if ($dossier) {
+                $dossier->update([
+                    'organisation_id'         => $organisation->id,
+                    'donnees_supplementaires' => $donneesSupp,
+                ]);
+            } else {
+                $dossier = Dossier::create([
+                    'organisation_id'         => $organisation->id,
+                    'numero_dossier'          => $this->generateNumeroDossierBrouillon($orgType->code),
+                    'type_operation'          => 'creation',
+                    'statut'                  => 'brouillon',
+                    'is_active'               => true,
+                    'donnees_supplementaires' => $donneesSupp,
+                ]);
+            }
+
+            // 3) Mémoriser les ids dans le draft
+            $meta['organisation_id'] = $organisation->id;
+            $meta['dossier_id']      = $dossier->id;
+            $formData['_meta']       = $meta;
+            $draft->form_data        = $formData;
+            $draft->save();
+
+            return $dossier;
+        } catch (\Throwable $e) {
+            Log::warning('upsertDossierBrouillon échoué (non bloquant)', [
+                'draft_id' => $draft->id,
+                'error'    => $e->getMessage(),
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Numéro de dossier provisoire pour les brouillons. Le numéro définitif
+     * est attribué à la soumission (méthode `soumettre`).
+     */
+    private function generateNumeroDossierBrouillon(string $orgCode): string
+    {
+        $prefix = strtoupper(substr($orgCode, 0, 3));
+        return 'BR-' . $prefix . '-' . now()->format('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(6));
+    }
+
     private function consolidateOrganisationData(OrganizationDraft $draft): array
     {
         $formData = $draft->form_data ?? [];

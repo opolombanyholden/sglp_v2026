@@ -312,10 +312,10 @@ class UserManagementController extends Controller
         try {
             $validator = Validator::make($request->all(), [
                 'nom' => 'required|string|max:255',
-                'prenom' => 'required|string|max:255',
+                'prenom' => 'nullable|string|max:255',
                 'email' => 'required|string|email|max:255|unique:users',
                 'phone' => 'nullable|string|max:255',
-                'string|max:255|unique:users',
+                'nip' => 'nullable|string|max:20|unique:users',
                 'role' => 'required|in:agent,operator,admin',
                 'role_id' => 'nullable|exists:roles,id',
                 'password' => 'required|string|min:8|confirmed',
@@ -323,6 +323,8 @@ class UserManagementController extends Controller
                 'city' => 'nullable|string|max:255',
                 'is_active' => 'boolean',
             ]);
+
+            $this->applyRoleCoherenceRules($validator, $request);
 
             if ($validator->fails()) {
                 return redirect()->back()
@@ -333,7 +335,7 @@ class UserManagementController extends Controller
             DB::beginTransaction();
 
             $user = User::create([
-                'name' => $request->nom . ' ' . $request->prenom,
+                'name' => trim($request->nom . ' ' . $request->prenom),
                 'nom' => $request->nom,
                 'prenom' => $request->prenom,
                 'email' => $request->email,
@@ -345,7 +347,9 @@ class UserManagementController extends Controller
                 'address' => $request->address,
                 'city' => $request->city,
                 'status' => 'active',
-                'is_active' => $request->has('is_active'),
+                // boolean() et non has() : le formulaire envoie un input caché "0"
+                // avant la case à cocher, has() renvoyait donc toujours true.
+                'is_active' => $request->boolean('is_active'),
                 'created_by' => auth()->id(),
                 'email_verified_at' => now(), // Auto-vérification
             ]);
@@ -360,7 +364,12 @@ class UserManagementController extends Controller
                 'created_by' => auth()->id()
             ]);
 
-            $redirectRoute = $request->role === 'agent' ? 'admin.users.agents' : 'admin.users.operators';
+            // Un compte 'admin' n'apparaît ni dans la liste agents ni dans la liste
+            // opérateurs : on renvoie sur la liste globale pour qu'il reste visible.
+            $redirectRoute = [
+                'agent' => 'admin.users.agents',
+                'operator' => 'admin.users.operators',
+            ][$request->role] ?? 'admin.users.index';
 
             return redirect()->route($redirectRoute)
                 ->with('success', ucfirst($request->role) . ' créé(e) avec succès.');
@@ -405,7 +414,7 @@ class UserManagementController extends Controller
 
             $validator = Validator::make($request->all(), [
                 'nom' => 'required|string|max:255',
-                'prenom' => 'required|string|max:255',
+                'prenom' => 'nullable|string|max:255',
                 'email' => [
                     'required',
                     'string',
@@ -429,6 +438,8 @@ class UserManagementController extends Controller
                 'password' => 'nullable|string|min:8|confirmed',
             ]);
 
+            $this->applyRoleCoherenceRules($validator, $request);
+
             if ($validator->fails()) {
                 return redirect()->back()
                     ->withErrors($validator)
@@ -438,7 +449,7 @@ class UserManagementController extends Controller
             DB::beginTransaction();
 
             $updateData = [
-                'name' => $request->nom . ' ' . $request->prenom,
+                'name' => trim($request->nom . ' ' . $request->prenom),
                 'nom' => $request->nom,
                 'prenom' => $request->prenom,
                 'email' => $request->email,
@@ -447,7 +458,8 @@ class UserManagementController extends Controller
                 'role' => $request->role,
                 'role_id' => $request->role_id,
                 'status' => $request->status,
-                'is_active' => $request->has('is_active'),
+                // boolean() et non has() : cf. store()
+                'is_active' => $request->boolean('is_active'),
                 'address' => $request->address,
                 'city' => $request->city,
                 'updated_by' => auth()->id(),
@@ -1247,8 +1259,63 @@ class UserManagementController extends Controller
                 });
 
             $roles['advanced'] = $advancedRoles->toArray();
+
+            // Niveau de chaque rôle avancé : permet au formulaire de n'afficher que
+            // les rôles compatibles avec le rôle système choisi (voir applyRoleCoherenceRules)
+            $roles['advanced_levels'] = Role::where('is_active', true)
+                ->pluck('level', 'id')
+                ->toArray();
         }
 
         return $roles;
+    }
+
+    /**
+     * ✅ COHÉRENCE DES DEUX SYSTÈMES DE RÔLES
+     *
+     * `role` (admin/agent/operator) donne le niveau d'accès, `role_id` le rôle métier.
+     * Les deux champs étaient saisis indépendamment : on pouvait créer un
+     * "Admin Associations" avec role=operator (invisible côté back-office) ou un
+     * compte back-office sans rôle avancé (ni administrateur, ni assignable).
+     *
+     * Règles appliquées :
+     *  - un compte back-office (admin/agent) doit porter un rôle avancé ;
+     *  - un rôle avancé habilité à traiter les dossiers (>= Role::ASSIGNABLE_LEVEL)
+     *    exige un accès back-office, sinon le compte serait assignable sans
+     *    pouvoir se connecter à l'administration.
+     */
+    private function applyRoleCoherenceRules($validator, Request $request): void
+    {
+        $validator->after(function ($validator) use ($request) {
+            $role = $request->input('role');
+            $roleId = $request->input('role_id');
+
+            $isBackOffice = in_array($role, ['admin', 'agent'], true);
+
+            if ($isBackOffice && empty($roleId)) {
+                $validator->errors()->add(
+                    'role_id',
+                    'Un compte administrateur ou agent doit avoir un rôle avancé : il détermine ses permissions et sa présence dans les listes d\'assignation.'
+                );
+                return;
+            }
+
+            if (empty($roleId)) {
+                return;
+            }
+
+            $niveau = Role::where('id', $roleId)->value('level');
+
+            if ($niveau === null) {
+                return; // règle exists:roles,id déjà appliquée
+            }
+
+            if ($niveau >= Role::ASSIGNABLE_LEVEL && !$isBackOffice) {
+                $validator->errors()->add(
+                    'role_id',
+                    'Ce rôle avancé donne accès au traitement des dossiers : le rôle système doit être "Administrateur" ou "Agent".'
+                );
+            }
+        });
     }
 }

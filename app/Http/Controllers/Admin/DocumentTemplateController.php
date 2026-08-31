@@ -76,8 +76,9 @@ class DocumentTemplateController extends Controller
         // Pagination
         $templates = $query->paginate(25);
 
-        // Données pour les filtres
+        // Données pour les filtres et le modal de duplication
         $organisationTypes = OrganisationType::orderBy('nom')->get();
+        $operationTypes = OperationType::ordered()->get();
         $typesDocument = $this->getTypesDocument();
 
         // Statistiques
@@ -90,6 +91,7 @@ class DocumentTemplateController extends Controller
         return view('admin.document-templates.index', compact(
             'templates',
             'organisationTypes',
+            'operationTypes',
             'typesDocument',
             'stats'
         ));
@@ -409,8 +411,8 @@ class DocumentTemplateController extends Controller
      */
     private function resolveTemplateAbsolutePath(string $templatePath): string
     {
-        // Validation stricte du format
-        if (!preg_match('/^[A-Za-z0-9_.]+$/', $templatePath)) {
+        // Validation stricte du format (alphanum, underscore, tiret, point)
+        if (!preg_match('/^[A-Za-z0-9_.\-]+$/', $templatePath)) {
             abort(400, 'Chemin de template invalide (caractères interdits).');
         }
 
@@ -437,6 +439,95 @@ class DocumentTemplateController extends Controller
     }
 
     /**
+     * Détecter les fichiers .blade.php physiques présents dans resources/views/documents/templates
+     * mais non encore enregistrés dans la table document_templates.
+     */
+    public function scan()
+    {
+        $baseDir = resource_path('views/documents/templates');
+        $physicalFiles = [];
+
+        if (File::isDirectory($baseDir)) {
+            foreach (File::allFiles($baseDir) as $file) {
+                if ($file->getExtension() !== 'php') {
+                    continue;
+                }
+                $relative = ltrim(str_replace($baseDir, '', $file->getPathname()), DIRECTORY_SEPARATOR);
+                $relative = preg_replace('/\.blade\.php$/', '', $relative);
+                $dotted = 'documents.templates.' . str_replace(DIRECTORY_SEPARATOR, '.', $relative);
+                $physicalFiles[$dotted] = [
+                    'path' => $file->getPathname(),
+                    'dotted' => $dotted,
+                    'size' => $file->getSize(),
+                    'modified_at' => date('Y-m-d H:i', $file->getMTime()),
+                ];
+            }
+        }
+
+        $registered = DocumentTemplate::pluck('template_path')->all();
+        $orphans = array_values(array_filter(
+            $physicalFiles,
+            fn($f) => !in_array($f['dotted'], $registered, true)
+        ));
+
+        $organisationTypes = OrganisationType::orderBy('nom')->get();
+        $operationTypes = OperationType::orderBy('nom')->get();
+
+        return view('admin.document-templates.scan', compact('orphans', 'organisationTypes', 'operationTypes'));
+    }
+
+    /**
+     * Enregistrer en base un template physique détecté par scan().
+     */
+    public function registerScanned(Request $request)
+    {
+        if (!auth()->user() || auth()->user()->role !== 'admin') {
+            abort(403, 'Seuls les administrateurs peuvent enregistrer un template depuis le disque.');
+        }
+
+        $validated = $request->validate([
+            'template_path' => ['required', 'string', 'max:500', 'regex:/^[A-Za-z0-9_.\-]+$/', 'unique:document_templates,template_path'],
+            'code' => ['required', 'string', 'max:100', 'regex:/^[A-Z0-9_]+$/', 'unique:document_templates,code'],
+            'nom' => 'required|string|max:255',
+            'type_document' => 'required|string|max:100',
+            'organisation_type_id' => 'nullable|exists:organisation_types,id',
+            'operation_type_id' => 'nullable|exists:operation_types,id',
+        ], [
+            'template_path.regex' => 'Chemin invalide.',
+            'template_path.unique' => 'Ce template est déjà enregistré.',
+            'code.regex' => 'Code invalide (majuscules, chiffres, underscore).',
+            'code.unique' => 'Ce code est déjà utilisé.',
+        ]);
+
+        // Vérifier que le fichier existe réellement
+        $absolute = $this->resolveTemplateAbsolutePath($validated['template_path']);
+        if (!File::exists($absolute)) {
+            return back()->with('error', 'Le fichier .blade.php n\'existe pas sur le disque.');
+        }
+
+        $template = DocumentTemplate::create([
+            'code' => $validated['code'],
+            'nom' => $validated['nom'],
+            'template_path' => $validated['template_path'],
+            'type_document' => $validated['type_document'],
+            'organisation_type_id' => $validated['organisation_type_id'] ?? null,
+            'operation_type_id' => $validated['operation_type_id'] ?? null,
+            'is_active' => false,
+            'has_qr_code' => true,
+        ]);
+
+        Log::info('Template physique enregistré depuis scan', [
+            'template_id' => $template->id,
+            'path' => $validated['template_path'],
+            'user_id' => auth()->id(),
+        ]);
+
+        return redirect()
+            ->route('admin.document-templates.edit', $template)
+            ->with('success', 'Template enregistré. Complétez les métadonnées puis activez-le.');
+    }
+
+    /**
      * Afficher l'éditeur de code source du template
      */
     public function editSource(DocumentTemplate $documentTemplate)
@@ -445,11 +536,16 @@ class DocumentTemplateController extends Controller
         $exists = File::exists($absolutePath);
         $content = $exists ? File::get($absolutePath) : '';
 
+        $organisationTypes = OrganisationType::orderBy('nom')->get();
+        $operationTypes = OperationType::ordered()->get();
+
         return view('admin.document-templates.edit-source', compact(
             'documentTemplate',
             'content',
             'absolutePath',
-            'exists'
+            'exists',
+            'organisationTypes',
+            'operationTypes'
         ));
     }
 
@@ -512,56 +608,93 @@ class DocumentTemplateController extends Controller
      */
     public function duplicate(Request $request, DocumentTemplate $documentTemplate)
     {
-        $request->validate([
-            'code' => 'required|string|max:100|regex:/^[A-Z0-9_]+$/|unique:document_templates,code',
-            'nom' => 'required|string|max:255',
-            'copy_file' => 'nullable|boolean',
-            'new_template_path' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z0-9_.]+$/'],
-        ], [
-            'code.unique' => 'Ce code est déjà utilisé.',
-            'code.regex' => 'Le code ne doit contenir que des majuscules, chiffres et underscores.',
-            'new_template_path.regex' => 'Le chemin de template ne peut contenir que lettres, chiffres, tiret bas et points.',
-        ]);
-
         // SÉCURITÉ : réservé aux administrateurs (privilège élevé)
         if (!auth()->user() || auth()->user()->role !== 'admin') {
             abort(403, 'Seuls les administrateurs peuvent dupliquer un template.');
         }
 
+        $validated = $request->validate([
+            'code' => 'required|string|max:100|regex:/^[A-Z0-9_]+$/|unique:document_templates,code',
+            'nom' => 'required|string|max:255',
+            'type_document' => 'nullable|string|max:100',
+            'organisation_type_id' => 'nullable|exists:organisation_types,id',
+            'operation_type_id' => 'nullable|exists:operation_types,id',
+            'new_template_path' => ['nullable', 'string', 'max:500', 'regex:/^[A-Za-z0-9_.\-]+$/'],
+        ], [
+            'code.unique' => 'Ce code est déjà utilisé.',
+            'code.regex' => 'Le code ne doit contenir que des majuscules, chiffres et underscores.',
+            'new_template_path.regex' => 'Le chemin de template ne peut contenir que lettres, chiffres, tiret bas, point et tiret.',
+        ]);
+
         DB::beginTransaction();
         try {
             $copy = $documentTemplate->replicate();
-            $copy->code = $request->input('code');
-            $copy->nom = $request->input('nom');
+            $copy->code = $validated['code'];
+            $copy->nom = $validated['nom'];
             $copy->is_active = false; // Désactivé par défaut pour révision
 
-            // Dupliquer le fichier source si demandé
-            $copyFile = $request->boolean('copy_file', true);
-            $newTemplatePath = $request->input('new_template_path');
-
-            if ($copyFile) {
-                if (!$newTemplatePath) {
-                    // Générer un chemin basé sur le code (en minuscules)
-                    $originalParts = explode('.', $documentTemplate->template_path);
-                    $fileName = Str::slug($request->input('code'), '_');
-                    $originalParts[count($originalParts) - 1] = $fileName;
-                    $newTemplatePath = implode('.', $originalParts);
-                }
-
-                $sourcePath = $this->resolveTemplateAbsolutePath($documentTemplate->template_path);
-                $destPath = $this->resolveTemplateAbsolutePath($newTemplatePath);
-
-                if (File::exists($sourcePath)) {
-                    $destDir = dirname($destPath);
-                    if (!File::isDirectory($destDir)) {
-                        File::makeDirectory($destDir, 0755, true);
-                    }
-                    File::copy($sourcePath, $destPath);
-                }
-
-                $copy->template_path = $newTemplatePath;
+            // Paramétrage : si fourni, écrase celui de l'original
+            if (array_key_exists('type_document', $validated) && $validated['type_document']) {
+                $copy->type_document = $validated['type_document'];
+            }
+            if (array_key_exists('organisation_type_id', $validated)) {
+                $copy->organisation_type_id = $validated['organisation_type_id'] ?: null;
+            }
+            if (array_key_exists('operation_type_id', $validated)) {
+                $copy->operation_type_id = $validated['operation_type_id'] ?: null;
             }
 
+            // Chemin de destination : utiliser le fourni, sinon auto-générer
+            $newTemplatePath = $validated['new_template_path']
+                ?? null;
+
+            if (!$newTemplatePath) {
+                $newTemplatePath = $this->buildTemplatePath(
+                    $copy->organisation_type_id,
+                    $copy->operation_type_id,
+                    $validated['code'],
+                    $documentTemplate->template_path
+                );
+            }
+
+            // Vérifier l'unicité du chemin en BDD (pas déjà utilisé)
+            $pathExistsInDb = DocumentTemplate::where('template_path', $newTemplatePath)->exists();
+            if ($pathExistsInDb) {
+                DB::rollBack();
+                return back()->withInput()->with('error',
+                    "Le chemin « {$newTemplatePath} » est déjà utilisé par un autre template. Précisez un chemin différent.");
+            }
+
+            // Créer physiquement le fichier .blade.php
+            $sourcePath = $this->resolveTemplateAbsolutePath($documentTemplate->template_path);
+            $destPath = $this->resolveTemplateAbsolutePath($newTemplatePath);
+
+            if (File::exists($destPath)) {
+                DB::rollBack();
+                return back()->withInput()->with('error',
+                    "Un fichier existe déjà à l'emplacement « {$newTemplatePath} ». Choisissez un autre chemin.");
+            }
+
+            $destDir = dirname($destPath);
+            if (!File::isDirectory($destDir)) {
+                File::makeDirectory($destDir, 0755, true);
+            }
+
+            if (File::exists($sourcePath)) {
+                File::copy($sourcePath, $destPath);
+            } else {
+                // Source manquante : créer un stub minimal pour que l'utilisateur
+                // puisse éditer le contenu via l'interface sans toucher au filesystem.
+                $stub = "@extends('documents.layouts.official')\n\n@section('content')\n"
+                    . "    {{-- Template dupliqué depuis {$documentTemplate->code} (source physique manquante) --}}\n"
+                    . "    <div class=\"content\" style=\"font-size:14px; line-height: normal; text-align: justify;\">\n"
+                    . "        <p>{$validated['nom']}</p>\n"
+                    . "    </div>\n"
+                    . "@endsection\n";
+                File::put($destPath, $stub);
+            }
+
+            $copy->template_path = $newTemplatePath;
             $copy->save();
 
             DB::commit();
@@ -569,18 +702,55 @@ class DocumentTemplateController extends Controller
             Log::info('Template duplicated', [
                 'original_id' => $documentTemplate->id,
                 'new_id' => $copy->id,
-                'user_id' => auth()->id(), 'ip' => request()->ip(), 'ua' => substr(request()->userAgent() ?? '', 0, 200),
+                'source_path' => $documentTemplate->template_path,
+                'new_path' => $newTemplatePath,
+                'user_id' => auth()->id(),
+                'ip' => request()->ip(),
+                'ua' => substr(request()->userAgent() ?? '', 0, 200),
             ]);
 
             return redirect()
-                ->route('admin.document-templates.edit', $copy->id)
-                ->with('success', 'Template dupliqué avec succès. Vous pouvez maintenant le modifier.');
+                ->route('admin.document-templates.edit-source', $copy->id)
+                ->with('success', "Template dupliqué avec succès. Fichier créé : {$newTemplatePath}");
 
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Erreur duplication template: ' . $e->getMessage());
-            return back()->with('error', 'Erreur lors de la duplication : ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Erreur lors de la duplication : ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Construire un template_path cohérent avec la taxonomie du projet :
+     * documents.templates.<org_code>.<op_code>.<code_slugifié>
+     * Fallback : on réutilise le répertoire du template source et on remplace
+     * uniquement le nom de fichier.
+     */
+    private function buildTemplatePath(?int $orgTypeId, ?int $opTypeId, string $code, string $sourcePath): string
+    {
+        $fileSegment = strtolower(Str::slug($code, '_'));
+
+        if ($orgTypeId) {
+            $orgCode = OrganisationType::find($orgTypeId)?->code;
+        }
+        $orgCode = $orgCode ?? null;
+
+        if ($opTypeId) {
+            $opCode = OperationType::find($opTypeId)?->code;
+        }
+        $opCode = $opCode ?? null;
+
+        $orgSegment = $orgCode ? preg_replace('/[^A-Za-z0-9_\-]+/', '_', $orgCode) : null;
+        $opSegment = $opCode ? preg_replace('/[^A-Za-z0-9_\-]+/', '_', $opCode) : null;
+
+        if ($orgSegment && $opSegment) {
+            return "documents.templates.{$orgSegment}.{$opSegment}.{$fileSegment}";
+        }
+
+        // Fallback : même dossier que la source, nom remplacé
+        $parts = explode('.', $sourcePath);
+        $parts[count($parts) - 1] = $fileSegment;
+        return implode('.', $parts);
     }
 
     /**

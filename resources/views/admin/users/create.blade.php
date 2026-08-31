@@ -137,11 +137,11 @@
                                 <div class="col-md-6 mb-3">
                                     <label for="prenom" class="form-label fw-bold">
                                         <i class="fas fa-user text-primary me-2"></i>
-                                        Prénom(s) <span class="text-danger">*</span>
+                                        Prénom(s)
                                     </label>
                                     <input type="text" id="prenom" name="prenom" class="form-control form-control-lg" 
-                                           value="{{ old('prenom') }}" required placeholder="Jean">
-                                    <div class="form-text">Prénom(s) officiels</div>
+                                           value="{{ old('prenom') }}" placeholder="Jean">
+                                    <div class="form-text">Prénom(s) officiels (facultatif)</div>
                                     @error('prenom')
                                     <div class="text-danger mt-1">
                                         <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
@@ -306,17 +306,22 @@
                             <div class="mb-3">
                                 <label for="role_id" class="form-label fw-bold">
                                     <i class="fas fa-cogs text-secondary me-2"></i>
-                                    Rôle avancé (optionnel)
+                                    Rôle avancé <span class="text-danger" id="role_id_required">*</span>
                                 </label>
                                 <select id="role_id" name="role_id" class="form-select form-select-lg">
                                     <option value="">Aucun rôle avancé</option>
                                     @foreach($roles['advanced'] as $roleId => $roleLabel)
-                                    <option value="{{ $roleId }}" {{ old('role_id') == $roleId ? 'selected' : '' }}>
+                                    <option value="{{ $roleId }}"
+                                            data-level="{{ $roles['advanced_levels'][$roleId] ?? 0 }}"
+                                            {{ old('role_id') == $roleId ? 'selected' : '' }}>
                                         {{ $roleLabel }}
                                     </option>
                                     @endforeach
                                 </select>
-                                <div class="form-text">Système de rôles avancé avec permissions granulaires</div>
+                                <div class="form-text" id="role_id_help">
+                                    Obligatoire pour un compte Administrateur ou Agent : il détermine les permissions
+                                    et la présence du compte dans les listes d'assignation de dossiers.
+                                </div>
                                 @error('role_id')
                                 <div class="text-danger mt-1">
                                     <i class="fas fa-exclamation-circle me-1"></i>{{ $message }}
@@ -653,7 +658,43 @@ function selectRole(role) {
     } else if (role === 'admin') {
         selectedOption.classList.add('border-danger', 'bg-light');
     }
+
+    syncAdvancedRoleOptions(role);
 }
+
+// Cohérence des deux systèmes de rôles (cf. UserManagementController::applyRoleCoherenceRules) :
+// un compte back-office (Administrateur/Agent) doit porter un rôle avancé,
+// un opérateur ne peut pas porter un rôle habilité à traiter les dossiers.
+const BACKOFFICE_ROLE_LEVEL = {{ \App\Models\Role::ASSIGNABLE_LEVEL }};
+
+function syncAdvancedRoleOptions(role) {
+    const select = document.getElementById('role_id');
+    if (!select) return;
+
+    const isBackOffice = (role === 'admin' || role === 'agent');
+
+    Array.from(select.options).forEach(option => {
+        if (!option.value) return;
+
+        const incompatible = !isBackOffice
+            && parseInt(option.dataset.level || '0', 10) >= BACKOFFICE_ROLE_LEVEL;
+
+        option.hidden = incompatible;
+        option.disabled = incompatible;
+        if (incompatible && option.selected) {
+            select.value = '';
+        }
+    });
+
+    select.required = isBackOffice;
+    const marker = document.getElementById('role_id_required');
+    if (marker) marker.style.display = isBackOffice ? '' : 'none';
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const checked = document.querySelector('input[name="role"]:checked');
+    syncAdvancedRoleOptions(checked ? checked.value : 'operator');
+});
 
 // Toggle visibilité mot de passe
 function togglePasswordVisibility(inputId) {

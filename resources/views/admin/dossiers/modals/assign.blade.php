@@ -39,16 +39,16 @@
                             <div class="row">
                                 <div class="col-md-12 mb-3">
                                     <label for="agent_id" class="form-label">
-                                        <i class="fas fa-user mr-1"></i>Sélectionner un Agent <span
-                                            class="text-danger">*</span>
+                                        <i class="fas fa-user mr-1"></i>Sélectionner un Administrateur ou Modérateur
+                                        <span class="text-danger">*</span>
                                     </label>
                                     <select name="agent_id" id="agent_id" class="form-control" required>
-                                        <option value="">-- Choisir un agent --</option>
+                                        <option value="">-- Choisir un administrateur --</option>
                                         @if(isset($agents) && $agents->count() > 0)
                                             @foreach($agents as $agent)
                                                 <option value="{{ $agent->id }}" data-email="{{ $agent->email }}"
                                                     data-phone="{{ $agent->phone ?? '' }}"
-                                                    data-role="{{ $agent->role ?? 'Agent' }}"
+                                                    data-role="{{ $agent->roleModel->display_name ?? ucfirst($agent->role) }}"
                                                     data-workload="{{ $agent->dossiers_en_cours ?? 0 }}">
                                                     {{ $agent->name }} - {{ $agent->email }}
                                                     @if($agent->phone)
@@ -59,13 +59,13 @@
                                                 </option>
                                             @endforeach
                                         @else
-                                            <option value="" disabled>Aucun agent disponible</option>
+                                            <option value="" disabled>Aucun administrateur ou modérateur disponible</option>
                                         @endif
                                     </select>
                                     <small class="form-text text-muted">
                                         <i class="fas fa-info-circle mr-1"></i>
-                                        L'agent sélectionné recevra une notification et le dossier passera en statut "En
-                                        cours"
+                                        L'administrateur sélectionné recevra une notification et le dossier passera en
+                                        statut "En cours"
                                     </small>
                                 </div>
                             </div>

@@ -7,8 +7,8 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>@yield('title', 'Accueil') - DGELP | Direction Générale des Élections et des Libertés Publiques</title>
 
-        <!-- Bootstrap 5 CSS via CDN -->
-        <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-xOolHFLEh07PJGoPkLv1IbcEPTNtaed2xpHsD9ESMhqIYd0nLMwNLD69Npy4HI+N" crossorigin="anonymous">
+        <!-- Bootstrap 5.3 CSS via CDN (aligné sur le markup BS5 des vues publiques) -->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
         <!-- Font Awesome -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha384-iw3OoTErCYJJB9mCa8LNS2hbsQ7M3C0EpIsO/H5+EGAkPGc6rk+V8i04oW/K5xq0" crossorigin="anonymous">
         <!-- CSS personnalisé -->
@@ -388,7 +388,9 @@
             }
         </style>
         @stack('styles')
-        <!-- ✅ Commentaire: Fichier migré vers Bootstrap 4.6.2 -->
+
+        <!-- Couche responsive globale (mobile & tablette) — chargée en dernier pour primer -->
+        <link rel="stylesheet" href="{{ asset('css/portail-responsive.css') }}">
     </head>
 
     <body>
@@ -399,7 +401,8 @@
                     <div class="logo-icon"></div>
                     DGELP
                 </a>
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarMain">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMain"
+                    aria-controls="navbarMain" aria-expanded="false" aria-label="Ouvrir la navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
@@ -408,52 +411,52 @@
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('home') ? 'active' : '' }}"
                                 href="{{ route('home') }}">
-                                <i class="fas fa-home mr-1"></i>Accueil
+                                <i class="fas fa-home me-1"></i>Accueil
                             </a>
                         </li>
                         {{-- Lien Actualités masqué
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('actualites.*') ? 'active' : '' }}"
                                 href="{{ route('actualites.index') }}">
-                                <i class="fas fa-newspaper mr-1"></i>Actualités
+                                <i class="fas fa-newspaper me-1"></i>Actualités
                             </a>
                         </li>
                         --}}
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('annuaire*') ? 'active' : '' }}"
                                 href="{{ route('annuaire.index') }}">
-                                <i class="fas fa-address-book mr-1"></i>Annuaire
+                                <i class="fas fa-address-book me-1"></i>Annuaire
                             </a>
                         </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle {{ request()->routeIs(['documents.*', 'faq', 'guides', 'calendrier']) ? 'active' : '' }}"
                                 href="#" id="servicesDropdown" role="button" aria-haspopup="true" aria-expanded="false"
                                 onclick="toggleServicesMenu(event)">
-                                <i class="fas fa-th mr-1"></i>Ressources
+                                <i class="fas fa-th me-1"></i>Ressources
                             </a>
                             <ul class="dropdown-menu" id="servicesMenu" style="display:none; position:absolute; z-index:9999;">
                                 <li>
                                     <a class="dropdown-item {{ request()->routeIs('documents.*') ? 'active' : '' }}"
                                         href="{{ route('documents.index') }}">
-                                        <i class="fas fa-file-alt mr-2"></i>Documents
+                                        <i class="fas fa-file-alt me-2"></i>Documents
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item {{ request()->routeIs('faq') ? 'active' : '' }}"
                                         href="{{ route('faq') }}">
-                                        <i class="fas fa-question-circle mr-2"></i>FAQ
+                                        <i class="fas fa-question-circle me-2"></i>FAQ
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item {{ request()->routeIs('guides') ? 'active' : '' }}"
                                         href="{{ route('guides') }}">
-                                        <i class="fas fa-book mr-2"></i>Guides
+                                        <i class="fas fa-book me-2"></i>Guides
                                     </a>
                                 </li>
                                 <li>
                                     <a class="dropdown-item {{ request()->routeIs('calendrier') ? 'active' : '' }}"
                                         href="{{ route('calendrier') }}">
-                                        <i class="fas fa-calendar-alt mr-2"></i>Calendrier
+                                        <i class="fas fa-calendar-alt me-2"></i>Calendrier
                                     </a>
                                 </li>
                             </ul>
@@ -461,7 +464,7 @@
                         <li class="nav-item">
                             <a class="nav-link {{ request()->routeIs('about') ? 'active' : '' }}"
                                 href="{{ route('about') }}">
-                                <i class="fas fa-info-circle mr-1"></i>À propos
+                                <i class="fas fa-info-circle me-1"></i>À propos
                             </a>
                         </li>
                         
@@ -471,28 +474,28 @@
                     <div class="user-menu">
                         @guest
                             <a href="{{ route('login') }}" class="btn btn-outline-primary">
-                                <i class="fas fa-sign-in-alt mr-1"></i>Connexion
+                                <i class="fas fa-sign-in-alt me-1"></i>Connexion
                             </a>
                             <a href="{{ route('register') }}" class="btn btn-custom-primary">
-                                <i class="fas fa-user-plus mr-1"></i>Inscription
+                                <i class="fas fa-user-plus me-1"></i>Inscription
                             </a>
                         @else
                             @if(!auth()->user()->hasVerifiedEmail())
                                 <a href="{{ route('verification.notice') }}" class="btn btn-custom-warning">
-                                    <i class="fas fa-envelope mr-1"></i>Vérifier email
+                                    <i class="fas fa-envelope me-1"></i>Vérifier email
                                 </a>
                             @else
                                 @if(auth()->user()->role === 'operator')
                                     <a href="{{ route('operator.dashboard') }}" class="btn btn-custom-primary">
-                                        <i class="fas fa-th-large mr-1"></i>Mon espace
+                                        <i class="fas fa-th-large me-1"></i>Mon espace
                                     </a>
                                 @elseif(in_array(auth()->user()->role, ['admin', 'agent']))
                                     <a href="{{ route('admin.dashboard') }}" class="btn btn-custom-primary">
-                                        <i class="fas fa-th-large mr-1"></i>Administration
+                                        <i class="fas fa-th-large me-1"></i>Administration
                                     </a>
                                 @else
                                     <a href="{{ route('home') }}" class="btn btn-custom-primary">
-                                        <i class="fas fa-th-large mr-1"></i>Accueil
+                                        <i class="fas fa-th-large me-1"></i>Accueil
                                     </a>
                                 @endif
                             @endif
@@ -501,7 +504,7 @@
                                 @csrf
                                 <button type="submit" class="btn btn-outline-secondary" title="Se déconnecter">
                                     <i class="fas fa-sign-out-alt"></i>
-                                    <span class="d-none d-sm-inline ml-1">Déconnexion</span>
+                                    <span class="d-none d-sm-inline ms-1">Déconnexion</span>
                                 </button>
                             </form>
                         @endguest
@@ -521,64 +524,64 @@
                 <div class="row">
                     <div class="col-md-4 mb-4">
                         <h5 class="mb-3">
-                            <i class="fas fa-info-circle mr-2"></i>À propos de la DGELP
+                            <i class="fas fa-info-circle me-2"></i>À propos de la DGELP
                         </h5>
                         <p>La Direction Générale des Élections et des Libertés Publiques facilite la formalisation et la
                             gestion des organisations associatives, religieuses et politiques du Gabon.</p>
                         <div class="mt-3">
-                            <a href="#" class="text-white mr-3"><i class="fab fa-facebook-f"></i></a>
-                            <a href="#" class="text-white mr-3"><i class="fab fa-twitter"></i></a>
-                            <a href="#" class="text-white mr-3"><i class="fab fa-linkedin-in"></i></a>
+                            <a href="#" class="text-white me-3"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#" class="text-white me-3"><i class="fab fa-twitter"></i></a>
+                            <a href="#" class="text-white me-3"><i class="fab fa-linkedin-in"></i></a>
                             <a href="#" class="text-white"><i class="fab fa-youtube"></i></a>
                         </div>
                     </div>
                     <div class="col-md-4 mb-4">
                         <h5 class="mb-3">
-                            <i class="fas fa-link mr-2"></i>Liens rapides
+                            <i class="fas fa-link me-2"></i>Liens rapides
                         </h5>
                         <ul class="list-unstyled">
                             <li class="mb-2">
                                 <a href="{{ route('actualites.index') }}">
-                                    <i class="fas fa-chevron-right mr-1"></i>Actualités
+                                    <i class="fas fa-chevron-right me-1"></i>Actualités
                                 </a>
                             </li>
                             <li class="mb-2">
                                 <a href="{{ route('documents.index') }}">
-                                    <i class="fas fa-chevron-right mr-1"></i>Documents
+                                    <i class="fas fa-chevron-right me-1"></i>Documents
                                 </a>
                             </li>
                             <li class="mb-2">
                                 <a href="{{ route('faq') }}">
-                                    <i class="fas fa-chevron-right mr-1"></i>FAQ
+                                    <i class="fas fa-chevron-right me-1"></i>FAQ
                                 </a>
                             </li>
                             <li class="mb-2">
                                 <a href="{{ route('guides') }}">
-                                    <i class="fas fa-chevron-right mr-1"></i>Guides pratiques
+                                    <i class="fas fa-chevron-right me-1"></i>Guides pratiques
                                 </a>
                             </li>
                             <li class="mb-2">
                                 <a href="{{ route('contact') }}">
-                                    <i class="fas fa-chevron-right mr-1"></i>Contact
+                                    <i class="fas fa-chevron-right me-1"></i>Contact
                                 </a>
                             </li>
                         </ul>
                     </div>
                     <div class="col-md-4 mb-4">
                         <h5 class="mb-3">
-                            <i class="fas fa-phone-alt mr-2"></i>Contact
+                            <i class="fas fa-phone-alt me-2"></i>Contact
                         </h5>
                         <p class="mb-2">
-                            <i class="fas fa-map-marker-alt mr-2"></i>Libreville, Gabon
+                            <i class="fas fa-map-marker-alt me-2"></i>Libreville, Gabon
                         </p>
                         <p class="mb-2">
-                            <i class="fas fa-phone mr-2"></i>+241 01 23 45 67
+                            <i class="fas fa-phone me-2"></i>+241 01 23 45 67
                         </p>
                         <p class="mb-2">
-                            <i class="fas fa-envelope mr-2"></i>contact@dgelp.ga
+                            <i class="fas fa-envelope me-2"></i>contact@dgelp.ga
                         </p>
                         <p class="mb-0">
-                            <i class="fas fa-clock mr-2"></i>Lun - Ven: 8h00 - 17h00
+                            <i class="fas fa-clock me-2"></i>Lun - Ven: 8h00 - 17h00
                         </p>
                     </div>
                 </div>
@@ -591,11 +594,11 @@
         </footer>
 
         <!-- Scripts -->
-        <!-- ✅ jQuery (requis pour Bootstrap 4) -->
+        <!-- ✅ jQuery (conservé pour les scripts de vue) -->
         <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha384-vtXRMe3mGCbOeY7l30aIg8H9p3GdeSe4IFlP6G8JMa7o7lXvnz3GFKzPxzJdPfGK" crossorigin="anonymous"></script>
 
-        <!-- ✅ Bootstrap 4.6.2 JS -->
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-Fy6S3B9q64WdZWQUiU+q4/2Lc9npb8tCaSX9FK7E8HnRr0Jz8D6OP9dO5Vg3Q9ct" crossorigin="anonymous"></script>
+        <!-- ✅ Bootstrap 5.3.3 JS (bundle avec Popper) -->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
         <script>
             // Nav background on scroll
             window.addEventListener('scroll', function () {

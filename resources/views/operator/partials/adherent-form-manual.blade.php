@@ -55,10 +55,10 @@ Version: 2.0 - Interface moderne avec validation temps réel
             <!-- Prénom -->
             <div class="col-md-5 mb-3">
                 <label for="manual-prenom" class="form-label">
-                    <i class="fas fa-user me-1"></i>Prénom <span class="text-danger">*</span>
+                    <i class="fas fa-user me-1"></i>Prénom
                 </label>
                 <input type="text" class="form-control form-control-gabon" id="manual-prenom" name="prenom" 
-                       placeholder="Ex: Jean-Paul" maxlength="100" required>
+                       placeholder="Ex: Jean-Paul" maxlength="100">
                 <div class="invalid-feedback">
                     Le prénom est obligatoire.
                 </div>
@@ -95,17 +95,17 @@ Version: 2.0 - Interface moderne avec validation temps réel
                 <label for="manual-telephone" class="form-label">
                     <i class="fas fa-phone me-1"></i>Téléphone
                 </label>
-                <div class="input-group">
-                    <span class="input-group-text">+241</span>
-                    <input type="tel" class="form-control form-control-gabon" id="manual-telephone" name="telephone" 
-                           placeholder="Ex: 06 12 34 56 78" maxlength="15">
-                </div>
+                {{-- Saisie libre : chiffres, texte et séparateurs (- / ;), plusieurs
+                     numéros possibles. type="text" et non "tel" : certains claviers
+                     mobiles n'exposent pas les séparateurs en mode "tel". --}}
+                <input type="text" class="form-control form-control-gabon" id="manual-telephone" name="telephone"
+                       placeholder="Ex : 077 12 34 56 / 066 98 76 54" maxlength="255">
                 <div class="invalid-feedback">
                     Format téléphone invalide.
                 </div>
                 <small class="form-text text-muted">
                     <i class="fas fa-info-circle me-1"></i>
-                    Optionnel - Format international recommandé
+                    Optionnel — plusieurs numéros possibles, séparés par « / », « ; » ou « - »
                 </small>
             </div>
         </div>
@@ -439,8 +439,15 @@ function checkNIPDuplicate(nip) {
  * Formater le numéro de téléphone
  */
 function formatPhoneNumber(input) {
+    // Le champ accepte plusieurs numéros et du texte (séparateurs - / ;).
+    // On ne met en forme que la saisie d'un numéro simple : dès qu'un autre
+    // caractère apparaît, la valeur est laissée telle quelle.
+    if (/[^\d\s]/.test(input.value)) {
+        return;
+    }
+
     let value = input.value.replace(/\D/g, ''); // Supprimer non-chiffres
-    
+
     if (value.length > 0) {
         if (value.length <= 2) {
             value = value;
@@ -494,7 +501,7 @@ function updatePreview() {
         previewContent.innerHTML = `
             <h6 class="text-success">${civilite || ''} ${prenom} ${nom}</h6>
             <p class="mb-1"><strong>NIP:</strong> ${nip}</p>
-            ${telephone ? `<p class="mb-1"><strong>Téléphone:</strong> +241 ${telephone}</p>` : ''}
+            ${telephone ? `<p class="mb-1"><strong>Téléphone:</strong> ${telephone}</p>` : ''}
             ${profession ? `<p class="mb-1"><strong>Profession:</strong> ${profession}</p>` : ''}
         `;
         

@@ -81,7 +81,7 @@ class PublicRegistrationController extends Controller
         $validated = $request->validate([
             'civilite'        => 'nullable|in:M,F',
             'nom'             => 'required|string|max:100',
-            'prenom'          => 'required|string|max:100',
+            'prenom'          => 'nullable|string|max:100',
             'string|max:255',
             'date_naissance'  => 'nullable|date|before:today',
             'lieu_naissance'  => 'nullable|string|max:255',
@@ -97,7 +97,6 @@ class PublicRegistrationController extends Controller
             'piece_identite'  => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ], [
             'nom.required'             => 'Le nom est obligatoire.',
-            'prenom.required'          => 'Le prénom est obligatoire.',
             'piece_identite.required'  => 'La pièce d\'identité est obligatoire.',
             'piece_identite.mimes'     => 'La pièce d\'identité doit être au format PDF, JPG ou PNG.',
             'piece_identite.max'       => 'La pièce d\'identité ne doit pas dépasser 5 Mo.',
