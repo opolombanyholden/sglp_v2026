@@ -29,7 +29,7 @@
             $nomCorps = !empty($organisation['nom_precedent']) ? $organisation['nom_precedent'] : ($organisation['nom'] ?? '');
         @endphp
         <p class="text-center bold mb-30" style="font-size: 14px;">
-            « {{ strtoupper($nomCorps) }} »
+            « {{ mb_strtoupper($nomCorps) }} »
         </p>
 
         <p class="mb-20">

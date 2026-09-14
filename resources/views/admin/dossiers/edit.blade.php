@@ -616,9 +616,10 @@
                                                     placeholder="Nom">
                                                 <input type="text" class="form-input-modern" id="fondateur_prenom"
                                                     placeholder="Prénom">
-                                                <select class="form-select-modern" id="fondateur_fonction">
-                                                    <option value="">Fonction...</option>
-                                                </select>
+                                                {{-- Saisie libre : toute fonction peut être saisie, la liste ne propose que des suggestions --}}
+                                                <input type="text" class="form-input-modern" id="fondateur_fonction"
+                                                    list="fonctions_suggestions" maxlength="100"
+                                                    placeholder="Fonction (saisie libre)" autocomplete="off">
                                                 <button type="button" class="btn-add" id="btnAddFondateur">
                                                     <i class="fas fa-plus"></i> Ajouter
                                                 </button>
@@ -706,21 +707,10 @@
                                                         placeholder="Prénom *">
                                                 </div>
                                                 <div class="form-group">
-                                                    <select class="form-select-modern" id="membre_fonction">
-                                                        <option value="">Fonction *</option>
-                                                        <option value="Président(e)">Président(e)</option>
-                                                        <option value="Vice-Président(e)">Vice-Président(e)</option>
-                                                        <option value="Secrétaire Général(e)">Secrétaire Général(e)</option>
-                                                        <option value="Secrétaire Général(e) Adjoint(e)">Secrétaire
-                                                            Général(e) Adjoint(e)</option>
-                                                        <option value="Trésorier(ère)">Trésorier(ère)</option>
-                                                        <option value="Trésorier(ère) Adjoint(e)">Trésorier(ère) Adjoint(e)
-                                                        </option>
-                                                        <option value="Commissaire aux Comptes">Commissaire aux Comptes
-                                                        </option>
-                                                        <option value="Conseiller(ère)">Conseiller(ère)</option>
-                                                        <option value="Coordonnateur(trice)">Coordonnateur(trice)</option>
-                                                    </select>
+                                                    {{-- Saisie libre : toute fonction peut être saisie --}}
+                                                    <input type="text" class="form-input-modern" id="membre_fonction"
+                                                        list="fonctions_suggestions" maxlength="150"
+                                                        placeholder="Fonction * (saisie libre)" autocomplete="off">
                                                 </div>
                                                 <div class="form-group">
                                                     <input type="text" class="form-input-modern" id="membre_contact"
@@ -2744,6 +2734,19 @@
                             });
 
                             // Charger fonctions dynamiquement
+                            /**
+                             * Les champs « fonction » sont en saisie libre : on alimente un
+                             * datalist de suggestions, pas une liste fermée. Les optgroup et
+                             * l'option vide n'ont pas de sens dans un datalist.
+                             */
+                            function remplirSuggestionsFonctions(html) {
+                                var dl = document.getElementById('fonctions_suggestions');
+                                if (!dl) return;
+                                dl.innerHTML = html
+                                    .replace(/<\/?optgroup[^>]*>/g, '')
+                                    .replace(/<option value=""[^>]*>[^<]*<\/option>/g, '');
+                            }
+
                             function loadFonctions() {
                                 // Essayer d'abord la route nommée, sinon URL directe
                                 var apiUrl = '{{ route("admin.api.fonctions", [], false) }}?grouped=1';
@@ -2833,7 +2836,7 @@
                                 var selectF = document.getElementById('fondateur_fonction');
                                 var selectR = document.getElementById('demandeur_role');
 
-                                if (selectF) selectF.innerHTML = htmlF;
+                                remplirSuggestionsFonctions(htmlF);
                                 if (selectR) selectR.innerHTML = htmlR;
                             }
 
@@ -3038,4 +3041,16 @@
                             console.log('✅ Formulaire DGELP (édition) initialisé');
                             });
                         </script>
+{{-- Suggestions de fonctions : valeurs par défaut, enrichies par loadFonctions() --}}
+<datalist id="fonctions_suggestions">
+    <option value="Président(e)">
+    <option value="Vice-Président(e)">
+    <option value="Secrétaire Général(e)">
+    <option value="Secrétaire Général(e) Adjoint(e)">
+    <option value="Trésorier(ère)">
+    <option value="Trésorier(ère) Adjoint(e)">
+    <option value="Commissaire aux Comptes">
+    <option value="Conseiller(ère)">
+    <option value="Coordonnateur(trice)">
+</datalist>
 @endsection

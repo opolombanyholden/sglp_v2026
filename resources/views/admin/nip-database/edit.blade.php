@@ -151,12 +151,16 @@
                         <div class="row mb-3">
                             <div class="col-md-6">
                                 <label for="telephone" class="form-label">Téléphone</label>
-                                <input type="tel" 
-                                       class="form-control @error('telephone') is-invalid @enderror" 
-                                       id="telephone" 
+                                {{-- Saisie libre : chiffres, lettres et séparateurs, plusieurs
+                                     numéros possibles. type="text" et non "tel" : en mode "tel",
+                                     certains claviers mobiles masquent les séparateurs. --}}
+                                <input type="text"
+                                       class="form-control @error('telephone') is-invalid @enderror"
+                                       id="telephone"
                                        name="telephone"
                                        value="{{ old('telephone', $nip->telephone) }}"
-                                       placeholder="Ex: 066123456">
+                                       maxlength="255"
+                                       placeholder="Ex : 077 12 34 56 / 066 98 76 54">
                                 @error('telephone')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -377,8 +381,15 @@ $(document).ready(function() {
     });
 
     // Formatage du téléphone
+    // Le champ accepte une saisie libre (plusieurs numéros, séparateurs, texte).
+    // On ne met en forme que la saisie d'un numéro simple : dès qu'un autre
+    // caractère apparaît, la valeur est laissée telle quelle.
     $('#telephone').on('input', function() {
-        let tel = $(this).val().replace(/\D/g, ''); // Supprimer tout sauf les chiffres
+        const brut = $(this).val();
+        if (/[^\d\s]/.test(brut)) {
+            return;
+        }
+        let tel = brut.replace(/\D/g, '');
         if (tel.length > 0) {
             // Format gabonais : 0XX XX XX XX
             if (tel.length > 3) {
@@ -419,9 +430,12 @@ $(document).ready(function() {
         }
 
         // Validation téléphone si renseigné
-        const telephone = $('#telephone').val().replace(/\D/g, '');
-        if (telephone && (telephone.length < 8 || telephone.length > 9)) {
-            errors.push('Numéro de téléphone invalide');
+        // Saisie libre : seule exigence, contenir au moins un chiffre — ce qui
+        // écarte une saisie purement textuelle sans interdire les séparateurs
+        // ni les numéros multiples.
+        const telephone = $('#telephone').val().trim();
+        if (telephone && !/[0-9]/.test(telephone)) {
+            errors.push('Le téléphone doit contenir au moins un chiffre');
             isValid = false;
         }
 

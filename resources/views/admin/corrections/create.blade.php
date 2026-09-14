@@ -276,7 +276,9 @@
                         </div>
                         <div class="col-md-6">
                             <label for="corr_telephone" class="form-label">Téléphone principal</label>
-                            <input type="tel" class="form-control" id="corr_telephone" name="champs[telephone]"
+                            {{-- Saisie libre : plusieurs numéros possibles, repris tels quels sur le récépissé --}}
+                            <input type="text" class="form-control" id="corr_telephone" name="champs[telephone]"
+                                   maxlength="255" placeholder="Ex : 077 12 34 56 / 066 98 76 54"
                                    value="{{ old('champs.telephone', $organisation->telephone) }}">
                             @if($organisation->telephone)
                                 <small class="form-text text-muted">Actuel : {{ $organisation->telephone }}</small>
@@ -284,7 +286,8 @@
                         </div>
                         <div class="col-md-6">
                             <label for="corr_telephone_secondaire" class="form-label">Téléphone secondaire</label>
-                            <input type="tel" class="form-control" id="corr_telephone_secondaire" name="champs[telephone_secondaire]"
+                            <input type="text" class="form-control" id="corr_telephone_secondaire" name="champs[telephone_secondaire]"
+                                   maxlength="255" placeholder="Ex : 077 12 34 56 / 066 98 76 54"
                                    value="{{ old('champs.telephone_secondaire', $organisation->telephone_secondaire) }}">
                         </div>
                         <div class="col-md-6">
@@ -379,10 +382,11 @@
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small">Contact</label>
-                                        <input type="tel" class="form-control form-control-sm"
+                                        <input type="text" class="form-control form-control-sm"
                                                name="membres_bureau[{{ $membre->id }}][contact]"
                                                value="{{ $membre->contact }}"
-                                               placeholder="+241..." disabled>
+                                               maxlength="255"
+                                               placeholder="Ex : 077 12 34 56 / 066 98 76 54" disabled>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="form-label small">Domicile</label>

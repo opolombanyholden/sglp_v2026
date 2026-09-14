@@ -26,7 +26,8 @@
         </p>
 
         <p class="text-center bold mb-30" style="font-size: 14px;">
-            « {{ strtoupper($organisation['nom']) }} »
+            {{-- Sigle entre parenthèses, même convention que le récépissé définitif --}}
+            « {{ mb_strtoupper($organisation['nom']) }} »@if(!empty($organisation['sigle'])) ({{ mb_strtoupper($organisation['sigle']) }})@endif
         </p>
 
         <p class="mb-20">

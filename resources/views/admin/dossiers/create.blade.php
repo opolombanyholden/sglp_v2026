@@ -621,9 +621,10 @@
                                                     placeholder="Nom">
                                                 <input type="text" class="form-input-modern" id="fondateur_prenom"
                                                     placeholder="Prénom">
-                                                <select class="form-select-modern" id="fondateur_fonction" data-allow-other="fonction">
-                                                    <option value="">Fonction...</option>
-                                                </select>
+                                                {{-- Saisie libre : toute fonction peut être saisie, la liste ne propose que des suggestions --}}
+                                                <input type="text" class="form-input-modern" id="fondateur_fonction"
+                                                    list="fonctions_suggestions" maxlength="100"
+                                                    placeholder="Fonction (saisie libre)" autocomplete="off">
                                                 <button type="button" class="btn-add" id="btnAddFondateur">
                                                     <i class="fas fa-plus"></i> Ajouter
                                                 </button>
@@ -711,9 +712,10 @@
                                                         placeholder="Prénom *">
                                                 </div>
                                                 <div class="form-group">
-                                                    <select class="form-select-modern" id="membre_fonction" data-allow-other="fonction">
-                                                        <option value="">Chargement des fonctions...</option>
-                                                    </select>
+                                                    {{-- Saisie libre : toute fonction peut être saisie --}}
+                                                    <input type="text" class="form-input-modern" id="membre_fonction"
+                                                        list="fonctions_suggestions" maxlength="150"
+                                                        placeholder="Fonction * (saisie libre)" autocomplete="off">
                                                 </div>
                                                 <div class="form-group">
                                                     <input type="text" class="form-input-modern" id="membre_contact"
@@ -3034,7 +3036,20 @@
                 document.getElementById('btnSubmitForm').innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span>Enregistrement en cours...</span>';
             });
 
-            // Charger fonctions dynamiquement pour les 3 selects (fondateur, demandeur, membre bureau)
+            /**
+             * Les champs « fonction » sont en saisie libre : on n'alimente plus une
+             * liste déroulante fermée, mais un datalist de suggestions. Les optgroup
+             * et l'option vide n'ont pas de sens dans un datalist, on les retire.
+             */
+            function remplirSuggestionsFonctions(html) {
+                var dl = document.getElementById('fonctions_suggestions');
+                if (!dl) return;
+                dl.innerHTML = html
+                    .replace(/<\/?optgroup[^>]*>/g, '')
+                    .replace(/<option value=""[^>]*>[^<]*<\/option>/g, '');
+            }
+
+            // Charger les fonctions : suggestions libres + select du rôle déclarant
             function loadFonctions() {
                 var apiUrl = '{{ route("admin.api.fonctions", [], false) }}?grouped=1';
 
@@ -3048,11 +3063,9 @@
                     .then(function (response) {
                         var selectF = document.getElementById('fondateur_fonction');
                         var selectR = document.getElementById('demandeur_role');
-                        var selectM = document.getElementById('membre_fonction');
 
                         var htmlF = '<option value="">Sélectionner une fonction...</option>';
                         var htmlR = '<option value="Déclarant" selected>Déclarant</option>';
-                        var htmlM = '<option value="">Fonction *</option>';
 
                         if (response.success && response.data) {
                             var categories = [
@@ -3066,16 +3079,13 @@
                                 if (items && items.length > 0) {
                                     htmlF += '<optgroup label="' + cat.label + '">';
                                     htmlR += '<optgroup label="' + cat.label + '">';
-                                    htmlM += '<optgroup label="' + cat.label + '">';
                                     items.forEach(function (f) {
                                         var nom = f.nom || f.name || f;
                                         htmlF += '<option value="' + nom + '">' + nom + '</option>';
                                         htmlR += '<option value="' + nom + '">' + nom + '</option>';
-                                        htmlM += '<option value="' + nom + '">' + nom + '</option>';
                                     });
                                     htmlF += '</optgroup>';
                                     htmlR += '</optgroup>';
-                                    htmlM += '</optgroup>';
                                 }
                             });
 
@@ -3085,14 +3095,12 @@
                                 var nom = f.nom || f.name || f;
                                 htmlF += '<option value="' + nom + '">' + nom + '</option>';
                                 htmlR += '<option value="' + nom + '">' + nom + '</option>';
-                                htmlM += '<option value="' + nom + '">' + nom + '</option>';
                             });
                             console.log('✅ Fonctions chargées (liste simple)');
                         }
 
-                        if (selectF) selectF.innerHTML = htmlF;
+                        remplirSuggestionsFonctions(htmlF);
                         if (selectR) selectR.innerHTML = htmlR;
-                        if (selectM) selectM.innerHTML = htmlM;
                     })
                     .catch(function (err) {
                         console.warn('⚠️ API fonctions indisponible, utilisation du fallback:', err.message);
@@ -3122,15 +3130,12 @@
                 htmlF += '</optgroup>';
 
                 var htmlR = '<option value="Déclarant" selected>Déclarant</option>' + htmlF.replace('<option value="">Sélectionner une fonction...</option>', '');
-                var htmlM = '<option value="">Fonction *</option>' + htmlF.replace('<option value="">Sélectionner une fonction...</option>', '');
 
                 var selectF = document.getElementById('fondateur_fonction');
                 var selectR = document.getElementById('demandeur_role');
-                var selectM = document.getElementById('membre_fonction');
 
-                if (selectF) selectF.innerHTML = htmlF;
+                remplirSuggestionsFonctions(htmlF);
                 if (selectR) selectR.innerHTML = htmlR;
-                if (selectM) selectM.innerHTML = htmlM;
             }
 
             // Charger les fonctions au démarrage
@@ -3143,4 +3148,6 @@
             console.log('✅ Formulaire DGELP initialisé');
         });
     </script>
+{{-- Suggestions de fonctions, alimentées par loadFonctions() --}}
+<datalist id="fonctions_suggestions"></datalist>
 @endsection

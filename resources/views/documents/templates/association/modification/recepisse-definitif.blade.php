@@ -42,9 +42,9 @@
                 $nomCorps = !empty($organisation['nom_precedent']) ? $organisation['nom_precedent'] : ($organisation['nom'] ?? '');
                 $sigleCorps = array_key_exists('sigle_precedent', $organisation) ? $organisation['sigle_precedent'] : ($organisation['sigle'] ?? null);
             @endphp
-            « <strong>{{ strtoupper($nomCorps) }}</strong>
+            « <strong>{{ mb_strtoupper($nomCorps) }}</strong>
             @if(!empty($sigleCorps))
-                ({{ strtoupper($sigleCorps) }})
+                ({{ mb_strtoupper($sigleCorps) }})
             @endif
             »,
             @if(!empty($organisation['numero_recepisse']))
@@ -79,9 +79,9 @@
         @if(isset($typesModifies['denomination']))
             <p class="mb-10" style="text-align: justify;">
                 <strong><u>Dénomination :</u></strong>
-                {{ strtoupper($organisation['nom']) }}
+                {{ mb_strtoupper($organisation['nom']) }}
                 @if(!empty($organisation['sigle']))
-                    ({{ strtoupper($organisation['sigle']) }})
+                    ({{ mb_strtoupper($organisation['sigle']) }})
                 @endif
             </p>
         @endif
@@ -103,8 +103,8 @@
                 @foreach($bureauModifications as $membre)
                     <p style="margin-bottom: 2px;">
                         <strong><u>{{ $membre['fonction'] ?? 'Membre' }} :</u></strong>
-                        <span style="text-transform: uppercase;"> {{ strtoupper(($membre['nom'] ?? '')) }}</span>
-                        <span style="text-transform: capitalize;"> {{ strtoupper(' ' . ($membre['prenom'] ?? '')) }} ;</span>
+                        <span style="text-transform: uppercase;"> {{ mb_strtoupper(($membre['nom'] ?? '')) }}</span>
+                        <span style="text-transform: capitalize;"> {{ mb_strtoupper(' ' . ($membre['prenom'] ?? '')) }} ;</span>
                     </p>
                 @endforeach
             </div>

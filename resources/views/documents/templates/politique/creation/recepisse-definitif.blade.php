@@ -20,9 +20,9 @@
         </p>
 
         <p class="mb-20">
-            <strong><u>Dénomination</u> :</strong> {{ strtoupper($organisation['nom']) }}
+            <strong><u>Dénomination</u> :</strong> {{ mb_strtoupper($organisation['nom']) }}
             @if(!empty($organisation['sigle']))
-                ({{ strtoupper($organisation['sigle']) }})
+                ({{ mb_strtoupper($organisation['sigle']) }})
             @endif
         </p>
 
