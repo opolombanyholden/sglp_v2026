@@ -27,3 +27,10 @@ DESIGN V1/
 # Exception : données de référence indispensables à toute installation neuve
 !/conception/sglp_sync_reference_data.sql
 .DS_Store
+
+# Archives de récépissés (Word/PDF, ~65 Mo) : pièces sources de la reprise,
+# conservées hors dépôt. Le tableur extrait, lui, est versionné.
+/backups/recepisse/
+
+# Cache de résultats PHPUnit (local)
+.phpunit.result.cache
