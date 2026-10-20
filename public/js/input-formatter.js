@@ -6,7 +6,8 @@
  *  - NIP        : format XX-0000-AAAAMMJJ (tirets auto, 2 alphanum + 12 chiffres)
  *                 OU numérique pur si le champ n'utilise pas le format à tirets
  *                 (piloté par l'attribut `pattern` / `maxlength` du champ).
- *  - Téléphone  : chiffres uniquement, limité par maxlength (défaut 9).
+ *  - Téléphone  : AUCUN formatage (saisie libre : plusieurs numéros,
+ *                 espaces et séparateurs).
  *  - Nom/Sigle  : MAJUSCULES automatiques.
  *  - Email      : minuscules + suppression des espaces.
  *
@@ -93,19 +94,12 @@
             },
             isKept: function (input) { return usesDashedNip(input) ? isAlnum : isDigit; }
         },
-        {
-            name: 'phone',
-            match: function (input) {
-                var key = (input.name || '') + ' ' + (input.id || '');
-                return /telephone|phone|mobile|gsm|portable/i.test(key) ||
-                    input.id === 'membre_contact' || input.name === 'membre_contact';
-            },
-            build: function (input, raw) {
-                var max = input.maxLength && input.maxLength > 0 ? input.maxLength : 9;
-                return raw.replace(/[^0-9]/g, '').slice(0, max);
-            },
-            isKept: function () { return isDigit; }
-        },
+        // Pas de règle « téléphone » : ces champs acceptent une saisie libre
+        // (plusieurs numéros, espaces et séparateurs - / ; . +, mentions
+        // textuelles). Un formatage « chiffres uniquement » les mutilait à la
+        // frappe, et réécrivait aussi les valeurs déjà enregistrées au
+        // chargement des formulaires d'édition. La longueur reste bornée par
+        // l'attribut maxlength du champ, que le navigateur applique seul.
         {
             name: 'email',
             match: function (input) {
