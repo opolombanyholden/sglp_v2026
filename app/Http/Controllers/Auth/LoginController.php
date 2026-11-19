@@ -36,6 +36,10 @@ class LoginController extends Controller
     {
         $this->validateLogin($request);
 
+        // Les e-mails sont stockés en minuscules (User::setEmailAttribute) ;
+        // PostgreSQL compare en respectant la casse, contrairement à MySQL.
+        $request->merge(['email' => Str::lower(trim($request->input('email')))]);
+
         // Vérifier le rate limiting
         $this->ensureIsNotRateLimited($request);
 

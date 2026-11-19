@@ -632,9 +632,9 @@ class DossierController extends Controller
                 ->join('adherents as a', 'aa.adherent_id', '=', 'a.id')
                 ->where('a.organisation_id', $organisation->id)
                 ->select([
-                    \DB::raw('SUM(CASE WHEN aa.type_anomalie = "critique" THEN 1 ELSE 0 END) as total_critiques'),
-                    \DB::raw('SUM(CASE WHEN aa.type_anomalie = "majeure" THEN 1 ELSE 0 END) as total_majeures'),
-                    \DB::raw('SUM(CASE WHEN aa.type_anomalie = "mineure" THEN 1 ELSE 0 END) as total_mineures')
+                    \DB::raw("SUM(CASE WHEN aa.type_anomalie = 'critique' THEN 1 ELSE 0 END) as total_critiques"),
+                    \DB::raw("SUM(CASE WHEN aa.type_anomalie = 'majeure' THEN 1 ELSE 0 END) as total_majeures"),
+                    \DB::raw("SUM(CASE WHEN aa.type_anomalie = 'mineure' THEN 1 ELSE 0 END) as total_mineures")
                 ])
                 ->first();
 

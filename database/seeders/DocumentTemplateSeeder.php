@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\RefuseSurDonneesExistantes;
 use Illuminate\Database\Seeder;
 use App\Models\DocumentTemplate;
 use App\Models\OrganisationType;
@@ -22,23 +23,17 @@ use Illuminate\Support\Facades\DB;
  */
 class DocumentTemplateSeeder extends Seeder
 {
+    use RefuseSurDonneesExistantes;
+
     /**
      * Run the database seeds.
      */
     public function run(): void
     {
         $this->command->info('🚀 Insertion des templates de documents...');
-
-        // Désactiver temporairement les contraintes de clés étrangères
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
-        // Vider les tables (dans le bon ordre)
-        DB::table('document_verifications')->truncate();
-        DB::table('document_generations')->truncate();
-        DB::table('document_templates')->truncate();
-        
-        // Réactiver les contraintes
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (!$this->tablesVides(['document_templates', 'document_generations', 'document_verifications'])) {
+            return;
+        }
 
         // Récupérer les IDs nécessaires
         $orgTypes = $this->getOrganisationTypes();

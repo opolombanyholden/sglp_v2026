@@ -145,14 +145,16 @@ class DashboardController extends Controller
      */
     private function getTopAgents()
     {
+        $validationsRecentes = function ($query) {
+            $query->where('created_at', '>=', now()->subMonth())
+                  ->whereNotNull('decided_at');
+        };
+
+        // whereHas plutôt que having('validations_count') : PostgreSQL refuse
+        // un HAVING sur un alias de sous-requête sans GROUP BY
         return User::where('role', 'agent')
-            ->withCount([
-                'dossierValidations as validations_count' => function($query) {
-                    $query->where('created_at', '>=', now()->subMonth())
-                          ->whereNotNull('decided_at');
-                }
-            ])
-            ->having('validations_count', '>', 0)
+            ->withCount(['dossierValidations as validations_count' => $validationsRecentes])
+            ->whereHas('dossierValidations', $validationsRecentes)
             ->orderByDesc('validations_count')
             ->take(5)
             ->get()

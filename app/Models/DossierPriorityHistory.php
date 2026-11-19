@@ -162,16 +162,16 @@ class DossierPriorityHistory extends Model
      */
     public function scopeOrderedByFifo($query)
     {
-        return $query->orderByRaw('
+        return $query->orderByRaw("
             CASE 
-                WHEN priorite_urgente = 1 THEN 0
-                WHEN priorite_niveau = "haute" THEN 1
-                WHEN priorite_niveau = "moyenne" THEN 2
+                WHEN priorite_urgente = TRUE THEN 0
+                WHEN priorite_niveau = 'haute' THEN 1
+                WHEN priorite_niveau = 'moyenne' THEN 2
                 ELSE 3
             END ASC,
             ordre_traitement ASC,
             created_at ASC
-        ');
+        ");
     }
 
     /**

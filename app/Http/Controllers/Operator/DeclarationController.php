@@ -79,13 +79,13 @@ class DeclarationController extends Controller
                 $anneesEvenements = \App\Models\Declaration::whereIn('organisation_id', $organisations->pluck('id'))
                     ->whereNotNull('date_evenement')
                     ->distinct()
-                    ->selectRaw('YEAR(date_evenement) as year')
+                    ->selectRaw('EXTRACT(YEAR FROM date_evenement)::int as year')
                     ->orderBy('year', 'desc')
                     ->pluck('year');
                     
                 $anneesCreations = \App\Models\Declaration::whereIn('organisation_id', $organisations->pluck('id'))
                     ->distinct()
-                    ->selectRaw('YEAR(created_at) as year')
+                    ->selectRaw('EXTRACT(YEAR FROM created_at)::int as year')
                     ->orderBy('year', 'desc')
                     ->pluck('year');
                     

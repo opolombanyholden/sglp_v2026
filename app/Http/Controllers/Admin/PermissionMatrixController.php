@@ -315,9 +315,9 @@ class PermissionMatrixController extends Controller
         // Rôles avec trop de permissions critiques
         $criticalRoles = Role::whereHas('permissions', function ($query) {
             $query->where('risk_level', 'high');
-        })->withCount(['permissions' => function ($query) {
+        }, '>', 5)->withCount(['permissions' => function ($query) {
             $query->where('risk_level', 'high');
-        }])->having('permissions_count', '>', 5)->get();
+        }])->get();
 
         if ($criticalRoles->count() > 0) {
             $alerts[] = [
@@ -382,7 +382,7 @@ class PermissionMatrixController extends Controller
     private function getOverprivilegedRoles()
     {
         return Role::withCount('permissions')
-            ->having('permissions_count', '>', 20)
+            ->has('permissions', '>', 20)
             ->get()
             ->toArray();
     }
@@ -390,7 +390,7 @@ class PermissionMatrixController extends Controller
     private function getUnderprivilegedRoles()
     {
         return Role::withCount('permissions')
-            ->having('permissions_count', '<', 3)
+            ->has('permissions', '<', 3)
             ->where('level', '>', 2)
             ->get()
             ->toArray();

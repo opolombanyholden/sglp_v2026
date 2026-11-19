@@ -64,13 +64,13 @@ class RecepisseNumberService
      * Plus haute séquence déjà émise, tous formats confondus.
      *
      * Les trois formats se terminent par la séquence, précédée de « - » ou
-     * de « / ». On normalise le séparateur avant d'extraire le dernier segment :
-     * REPLACE + SUBSTRING_INDEX fonctionnent dès MySQL 5.7, contrairement à
-     * REGEXP_SUBSTR qui exige MySQL 8.
+     * de « / ». Les lignes candidates sont verrouillées (FOR UPDATE), puis la
+     * séquence est extraite en PHP : PostgreSQL refuse FOR UPDATE sur un
+     * agrégat, et l'extraction reste ainsi indépendante du moteur SQL.
      */
     private function derniereSequence(string $type, string $prefixe, int $annee): int
     {
-        return (int) Organisation::query()
+        $numeros = Organisation::query()
             ->where('type', $type)
             ->whereNotNull('numero_recepisse')
             ->where(function ($requete) use ($prefixe, $annee) {
@@ -80,9 +80,19 @@ class RecepisseNumberService
                     ->orWhere('numero_recepisse', 'like', "%-{$annee}-%");
             })
             ->lockForUpdate()
-            ->selectRaw(
-                "COALESCE(MAX(CAST(SUBSTRING_INDEX(REPLACE(numero_recepisse, '/', '-'), '-', -1) AS UNSIGNED)), 0) AS derniere"
-            )
-            ->value('derniere');
+            ->pluck('numero_recepisse');
+
+        return (int) $numeros->map(fn ($numero) => self::sequenceDe($numero))->max();
+    }
+
+    /**
+     * Séquence d'un numéro existant : dernier segment après « - » ou « / »
+     * (`ASS/2026/00082` → 82, `REC-AS-2026-00002` → 2).
+     */
+    public static function sequenceDe(string $numero): int
+    {
+        $segments = explode('-', str_replace('/', '-', $numero));
+
+        return (int) end($segments);
     }
 }

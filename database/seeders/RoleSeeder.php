@@ -255,7 +255,7 @@ class RoleSeeder extends Seeder
         
         // Vérifier les niveaux hiérarchiques
         $levelConflicts = Role::select('level')
-                             ->selectRaw('GROUP_CONCAT(name) as roles')
+                             ->selectRaw("STRING_AGG(name, ',') as roles")
                              ->groupBy('level')
                              ->havingRaw('COUNT(*) > 3') // Max 3 rôles par niveau
                              ->get();

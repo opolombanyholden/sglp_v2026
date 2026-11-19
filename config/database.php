@@ -15,7 +15,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -61,6 +61,22 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+        ],
+
+        // Ancienne base MySQL, lue uniquement par `php artisan sglp:copier-depuis-mysql`
+        // pendant la bascule vers PostgreSQL.
+        'mysql_source' => [
+            'driver' => 'mysql',
+            'host' => env('SOURCE_DB_HOST', '127.0.0.1'),
+            'port' => env('SOURCE_DB_PORT', '3306'),
+            'database' => env('SOURCE_DB_DATABASE', 'forge'),
+            'username' => env('SOURCE_DB_USERNAME', 'forge'),
+            'password' => env('SOURCE_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'strict' => true,
+            'engine' => 'InnoDB',
         ],
 
         'pgsql' => [

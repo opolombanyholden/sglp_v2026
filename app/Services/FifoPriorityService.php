@@ -180,15 +180,15 @@ class FifoPriorityService
     public function reorganizeQueue(string $statut): void
     {
         $dossiers = Dossier::where('statut', $statut)
-            ->orderByRaw('
+            ->orderByRaw("
                 CASE 
-                    WHEN priorite_urgente = 1 THEN 0
-                    WHEN priorite_niveau = "haute" THEN 1
-                    WHEN priorite_niveau = "moyenne" THEN 2
+                    WHEN priorite_urgente = TRUE THEN 0
+                    WHEN priorite_niveau = 'haute' THEN 1
+                    WHEN priorite_niveau = 'moyenne' THEN 2
                     ELSE 3
                 END ASC,
                 created_at ASC
-            ')
+            ")
             ->get();
             
         foreach ($dossiers as $index => $dossier) {
@@ -208,16 +208,16 @@ class FifoPriorityService
     {
         $dossiers = Dossier::with(['organisation', 'assignedAgent'])
             ->where('statut', $statut)
-            ->orderByRaw('
+            ->orderByRaw("
                 CASE 
-                    WHEN priorite_urgente = 1 THEN 0
-                    WHEN priorite_niveau = "haute" THEN 1
-                    WHEN priorite_niveau = "moyenne" THEN 2
+                    WHEN priorite_urgente = TRUE THEN 0
+                    WHEN priorite_niveau = 'haute' THEN 1
+                    WHEN priorite_niveau = 'moyenne' THEN 2
                     ELSE 3
                 END ASC,
                 ordre_traitement ASC,
                 created_at ASC
-            ')
+            ")
             ->limit($limit)
             ->get();
             
@@ -273,14 +273,14 @@ class FifoPriorityService
     public function getQueueStatistics(string $statut): array
     {
         $stats = Dossier::where('statut', $statut)
-            ->selectRaw('
+            ->selectRaw("
                 COUNT(*) as total,
-                SUM(CASE WHEN priorite_urgente = 1 THEN 1 ELSE 0 END) as urgents,
-                SUM(CASE WHEN priorite_niveau = "haute" THEN 1 ELSE 0 END) as hauts,
-                SUM(CASE WHEN priorite_niveau = "moyenne" THEN 1 ELSE 0 END) as moyens,
-                SUM(CASE WHEN priorite_niveau = "normale" OR priorite_niveau IS NULL THEN 1 ELSE 0 END) as normaux,
-                AVG(DATEDIFF(NOW(), created_at)) as delai_moyen
-            ')
+                SUM(CASE WHEN priorite_urgente = TRUE THEN 1 ELSE 0 END) as urgents,
+                SUM(CASE WHEN priorite_niveau = 'haute' THEN 1 ELSE 0 END) as hauts,
+                SUM(CASE WHEN priorite_niveau = 'moyenne' THEN 1 ELSE 0 END) as moyens,
+                SUM(CASE WHEN priorite_niveau = 'normale' OR priorite_niveau IS NULL THEN 1 ELSE 0 END) as normaux,
+                AVG(CURRENT_DATE - created_at::date) as delai_moyen
+            ")
             ->first();
             
         return [

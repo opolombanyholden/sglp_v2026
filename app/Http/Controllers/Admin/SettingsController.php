@@ -90,8 +90,8 @@ public function index()
     private function getMySQLVersion()
     {
         try {
-            $result = DB::select('SELECT VERSION() as version');
-            return $result[0]->version ?? 'Unknown';
+            $result = DB::select('SHOW server_version');
+            return isset($result[0]->server_version) ? 'PostgreSQL ' . $result[0]->server_version : 'Unknown';
         } catch (\Exception $e) {
             return 'Unknown';
         }
@@ -159,12 +159,7 @@ public function index()
     private function getDatabaseSize()
     {
         try {
-            $database = config('database.connections.mysql.database');
-            $result = DB::select("
-                SELECT ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS size_mb
-                FROM information_schema.tables
-                WHERE table_schema = ?
-            ", [$database]);
+            $result = DB::select('SELECT ROUND(pg_database_size(current_database()) / 1024.0 / 1024, 2) AS size_mb');
             return ($result[0]->size_mb ?? 0) . ' MB';
         } catch (\Exception $e) {
             return 'N/A';

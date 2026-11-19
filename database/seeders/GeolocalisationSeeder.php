@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\RefuseSurDonneesExistantes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Log;
  */
 class GeolocalisationSeeder extends Seeder
 {
+    use RefuseSurDonneesExistantes;
+
     public function run(): void
     {
         $this->command->info('');
@@ -26,21 +29,12 @@ class GeolocalisationSeeder extends Seeder
         $this->command->info('🌍 ===============================================');
         $this->command->info('');
 
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+        if (!$this->tablesVides(['localites', 'regroupements', 'cantons', 'arrondissements', 'communes_villes', 'departements', 'provinces'])) {
+            return;
+        }
 
         try {
             $startTime = microtime(true);
-
-            // Nettoyer les tables dans l'ordre inverse des dépendances
-            $this->command->info('🧹 Nettoyage des tables existantes...');
-            DB::table('localites')->delete();
-            DB::table('regroupements')->delete();
-            DB::table('cantons')->delete();
-            DB::table('arrondissements')->delete();
-            DB::table('communes_villes')->delete();
-            DB::table('departements')->delete();
-            DB::table('provinces')->delete();
-            $this->command->info('✅ Tables nettoyées');
             $this->command->info('');
 
             // ============================================================
@@ -99,8 +93,6 @@ class GeolocalisationSeeder extends Seeder
             $this->command->error('❌ Erreur : ' . $e->getMessage());
             Log::error('GeolocalisationSeeder error: ' . $e->getMessage());
             throw $e;
-        } finally {
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         }
     }
 

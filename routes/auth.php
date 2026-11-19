@@ -49,7 +49,8 @@ Route::middleware('guest')->group(function () {
             'email.email' => 'Veuillez entrer une adresse email valide.',
         ]);
 
-        $status = Password::sendResetLink($request->only('email'));
+        // E-mails stockés en minuscules ; PostgreSQL compare en respectant la casse
+        $status = Password::sendResetLink(['email' => Str::lower(trim($request->input('email')))]);
 
         return $status === Password::RESET_LINK_SENT
             ? back()->with('status', 'Un lien de réinitialisation a été envoyé à votre adresse email.')
@@ -77,7 +78,7 @@ Route::middleware('guest')->group(function () {
         ]);
 
         $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
+            ['email' => Str::lower(trim($request->input('email')))] + $request->only('password', 'password_confirmation', 'token'),
             function ($user, $password) {
                 $user->forceFill([
                     'password' => Hash::make($password),

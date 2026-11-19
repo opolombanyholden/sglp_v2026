@@ -455,7 +455,7 @@ class AnalyticsController extends Controller
     private function getChartsData()
     {
         return [
-            'monthly_registrations' => Organisation::selectRaw('MONTH(created_at) as month, COUNT(*) as count')
+            'monthly_registrations' => Organisation::selectRaw('EXTRACT(MONTH FROM created_at)::int as month, COUNT(*) as count')
                 ->where('created_at', '>=', now()->subYear())
                 ->groupBy('month')
                 ->pluck('count', 'month'),

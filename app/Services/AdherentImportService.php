@@ -469,7 +469,7 @@ class AdherentImportService
             ->select('nip', DB::raw('COUNT(*) as count'))
             ->where('organisation_id', $organisation->id)
             ->groupBy('nip')
-            ->having('count', '>', 1)
+            ->havingRaw('COUNT(*) > 1')
             ->get();
         
         foreach ($nipDuplicates as $duplicate) {

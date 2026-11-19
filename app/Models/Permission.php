@@ -583,12 +583,12 @@ class Permission extends Model
         })
         ->orderByRaw("
             CASE 
-                WHEN name = '{$query}' THEN 1
-                WHEN name LIKE '{$query}%' THEN 2
-                WHEN display_name LIKE '{$query}%' THEN 3
+                WHEN name = ? THEN 1
+                WHEN name ILIKE ? THEN 2
+                WHEN display_name ILIKE ? THEN 3
                 ELSE 4
             END
-        ")
+        ", [$query, "{$query}%", "{$query}%"])
         ->get();
     }
 

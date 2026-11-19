@@ -681,7 +681,7 @@ class Organisation extends Model
     {
         return $this->fondateurs()
             ->whereNotNull('date_naissance')
-            ->where(DB::raw('TIMESTAMPDIFF(YEAR, date_naissance, CURDATE())'), '>=', 18)
+            ->whereRaw('date_naissance <= ?', [now()->subYears(18)->toDateString()])
             ->count();
     }
 

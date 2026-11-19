@@ -2,24 +2,22 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\RefuseSurDonneesExistantes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class WorkflowStepSeeder extends Seeder
 {
+    use RefuseSurDonneesExistantes;
+
     /**
      * Exécuter les seeds.
      */
     public function run(): void
     {
-        // Désactiver les vérifications de clés étrangères
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
-        // Vider la table
-        DB::table('workflow_steps')->truncate();
-        
-        // Réactiver les vérifications
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (!$this->tablesVides(['workflow_steps'])) {
+            return;
+        }
 
         // ========================================
         // WORKFLOW : ASSOCIATION - CRÉATION

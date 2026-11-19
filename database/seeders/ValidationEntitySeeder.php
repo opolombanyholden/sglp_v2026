@@ -2,24 +2,22 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\RefuseSurDonneesExistantes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class ValidationEntitySeeder extends Seeder
 {
+    use RefuseSurDonneesExistantes;
+
     /**
      * Exécuter les seeds.
      */
     public function run(): void
     {
-        // Désactiver les vérifications de clés étrangères
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
-        // Vider la table
-        DB::table('validation_entities')->truncate();
-        
-        // Réactiver les vérifications
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (!$this->tablesVides(['validation_entities'])) {
+            return;
+        }
 
         $entities = [
             [

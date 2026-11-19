@@ -185,7 +185,7 @@ class PermissionSeeder extends Seeder
         }
         
         // Vérifier le format des noms
-        $invalidNames = Permission::where('name', 'not regexp', '^[a-z]+\\.[a-z_]+$')
+        $invalidNames = Permission::where('name', '!~', '^[a-z]+\\.[a-z_]+$') // « not regexp » MySQL
                                  ->pluck('name');
         
         if ($invalidNames->count() > 0) {

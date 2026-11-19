@@ -312,15 +312,15 @@ $updatedAt = \Carbon\Carbon::parse($step->updated_at);
                     @php
                     $stats = DB::table('dossier_validations')
                         ->where('workflow_step_id', $step->id)
-                        ->selectRaw('
+                        ->selectRaw("
                             COUNT(*) as total,
-                            SUM(CASE WHEN decision = "approuve" THEN 1 ELSE 0 END) as approuves,
-                            SUM(CASE WHEN decision = "rejete" THEN 1 ELSE 0 END) as rejetes,
-                            SUM(CASE WHEN decision = "en_attente" THEN 1 ELSE 0 END) as en_attente,
-                            AVG(TIMESTAMPDIFF(HOUR, created_at, decided_at)) as delai_moyen,
-                            MIN(TIMESTAMPDIFF(HOUR, created_at, decided_at)) as delai_min,
-                            MAX(TIMESTAMPDIFF(HOUR, created_at, decided_at)) as delai_max
-                        ')
+                            SUM(CASE WHEN decision = 'approuve' THEN 1 ELSE 0 END) as approuves,
+                            SUM(CASE WHEN decision = 'rejete' THEN 1 ELSE 0 END) as rejetes,
+                            SUM(CASE WHEN decision = 'en_attente' THEN 1 ELSE 0 END) as en_attente,
+                            AVG(EXTRACT(EPOCH FROM (decided_at - created_at)) / 3600) as delai_moyen,
+                            MIN(EXTRACT(EPOCH FROM (decided_at - created_at)) / 3600) as delai_min,
+                            MAX(EXTRACT(EPOCH FROM (decided_at - created_at)) / 3600) as delai_max
+                        ")
                         ->first();
                     
                     $tauxApprobation = $stats->total > 0 ? round(($stats->approuves / $stats->total) * 100, 1) : 0;

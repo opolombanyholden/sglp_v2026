@@ -1417,7 +1417,7 @@ class WorkflowStepController extends Controller
                     ->where('dv.decision', 'en_attente');
             })
             ->where('d.current_step_id', $stepId)
-            ->whereRaw('TIMESTAMPDIFF(HOUR, dv.assigned_at, NOW()) > ?', [$delaiHeures])
+            ->where('dv.assigned_at', '<', now()->subHours($delaiHeures))
             ->count();
     }
 

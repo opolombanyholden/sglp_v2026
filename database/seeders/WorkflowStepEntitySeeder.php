@@ -2,24 +2,22 @@
 
 namespace Database\Seeders;
 
+use Database\Seeders\Concerns\RefuseSurDonneesExistantes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class WorkflowStepEntitySeeder extends Seeder
 {
+    use RefuseSurDonneesExistantes;
+
     /**
      * Exécuter les seeds.
      */
     public function run(): void
     {
-        // Désactiver les vérifications de clés étrangères
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
-        // Vider la table
-        DB::table('workflow_step_entities')->truncate();
-        
-        // Réactiver les vérifications
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        if (!$this->tablesVides(['workflow_step_entities'])) {
+            return;
+        }
 
         // Récupérer les IDs des étapes et entités par leur code
         $steps = [

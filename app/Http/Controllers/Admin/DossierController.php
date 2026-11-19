@@ -4713,7 +4713,7 @@ class DossierController extends Controller
         $anomaliesCritiques = DB::table('adherent_anomalies as aa')
             ->join('adherents as a', 'aa.adherent_id', '=', 'a.id')
             ->where('a.organisation_id', $organisation->id)
-            ->where('aa.priorite', 'critique')
+            ->where('aa.type_anomalie', 'critique') // `priorite` est un entier (1 = critique)
             ->count();
 
         $anomaliesParType = DB::table('adherent_anomalies as aa')

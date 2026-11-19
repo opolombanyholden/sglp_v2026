@@ -20,9 +20,6 @@ class ReferenceDataSeeder extends Seeder
         $this->command->info('========================================');
         $this->command->newLine();
         
-        // Désactiver les vérifications de clés étrangères
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        
         try {
             // ========================================
             // ÉTAPE 1 : Entités de Validation
@@ -80,9 +77,6 @@ class ReferenceDataSeeder extends Seeder
         } catch (\Exception $e) {
             $this->command->error('❌ Erreur lors du peuplement : ' . $e->getMessage());
             throw $e;
-        } finally {
-            // Réactiver les vérifications de clés étrangères
-            DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         }
     }
 }

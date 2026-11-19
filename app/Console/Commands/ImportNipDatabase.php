@@ -176,7 +176,7 @@ class ImportNipDatabase extends Command
     private function insertBatch(array $batch): array
     {
         try {
-            // INSERT IGNORE : skip les NIP déjà existants (contrainte UNIQUE)
+            // ON CONFLICT DO NOTHING : ignore les NIP déjà existants (contrainte UNIQUE)
             $placeholders = implode(',', array_fill(0, count($batch), '(?,?,?,?,?,?,?,?,?,?)'));
             $values = [];
             foreach ($batch as $row) {
@@ -196,9 +196,10 @@ class ImportNipDatabase extends Command
             }
 
             $affected = DB::affectingStatement(
-                "INSERT IGNORE INTO nip_database
+                "INSERT INTO nip_database
                     (nom, prenom, nip, date_naissance, lieu_naissance, statut, source_import, date_import, created_at, updated_at)
-                 VALUES {$placeholders}",
+                 VALUES {$placeholders}
+                 ON CONFLICT DO NOTHING",
                 $values
             );
 

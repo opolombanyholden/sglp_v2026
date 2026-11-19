@@ -364,7 +364,7 @@
                                                     <td>{{ $systemInfo['laravel_version'] }}</td>
                                                 </tr>
                                                 <tr>
-                                                    <td><strong>MySQL :</strong></td>
+                                                    <td><strong>Base de données :</strong></td>
                                                     <td>{{ $systemInfo['mysql_version'] ?? 'N/A' }}</td>
                                                 </tr>
                                                 <tr>

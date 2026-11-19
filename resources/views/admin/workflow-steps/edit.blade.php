@@ -346,12 +346,12 @@
                             @php
                                 $stats = DB::table('dossier_validations')
                                     ->where('workflow_step_id', $step->id)
-                                    ->selectRaw('
+                                    ->selectRaw("
                                                                 COUNT(*) as total,
-                                                                SUM(CASE WHEN decision = "approuve" THEN 1 ELSE 0 END) as approuves,
-                                                                SUM(CASE WHEN decision = "rejete" THEN 1 ELSE 0 END) as rejetes,
-                                                                AVG(TIMESTAMPDIFF(HOUR, created_at, decided_at)) as delai_moyen
-                                                            ')
+                                                                SUM(CASE WHEN decision = 'approuve' THEN 1 ELSE 0 END) as approuves,
+                                                                SUM(CASE WHEN decision = 'rejete' THEN 1 ELSE 0 END) as rejetes,
+                                                                AVG(EXTRACT(EPOCH FROM (decided_at - created_at)) / 3600) as delai_moyen
+                                                            ")
                                     ->first();
                             @endphp
                             <ul class="small mb-0">

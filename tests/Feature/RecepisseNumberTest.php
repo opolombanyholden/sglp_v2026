@@ -55,8 +55,9 @@ class RecepisseNumberTest extends TestCase
             ->where('type', 'association')
             ->whereNotNull('numero_recepisse')
             ->where('numero_recepisse', 'like', "%{$annee}%")
-            ->selectRaw("MAX(CAST(SUBSTRING_INDEX(REPLACE(numero_recepisse, '/', '-'), '-', -1) AS UNSIGNED)) m")
-            ->value('m');
+            ->pluck('numero_recepisse')
+            ->map(fn ($n) => (int) preg_replace('/^.*[-\/]/', '', $n))
+            ->max();
 
         $numero = $this->genererNumero('association');
         $sequence = (int) substr($numero, strrpos($numero, '-') + 1);
