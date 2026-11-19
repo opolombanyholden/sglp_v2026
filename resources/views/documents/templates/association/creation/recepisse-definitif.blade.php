@@ -44,7 +44,7 @@
             @endif
 
              @if(!empty($organisation['telephone']) && $organisation['telephone'] !== 'Non renseigné')
-                <strong><u>; Téléphone</u> :</strong> {{ $organisation['telephone'] }}@if(!empty($organisation['telephone_2'])) / {{ $organisation['telephone_2'] }}@endif
+                <strong>; <u>Téléphone</u> :</strong> {{ $organisation['telephone'] }}@if(!empty($organisation['telephone_2'])) / {{ $organisation['telephone_2'] }}@endif
             @endif
         </p>
 
